@@ -1,0 +1,45 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+    }
+}
+
+version '1.0-SNAPSHOT'
+
+allprojects {
+    apply plugin: 'idea'
+
+    repositories {
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'scala'
+
+    group 'org.schemakeeper'
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    tasks.withType(JavaCompile) {
+        options.encoding = 'UTF-8'
+    }
+
+    dependencies {
+        if (this.name != 'schemakeeper-common')
+            implementation project(':schemakeeper-common')
+
+        implementation 'org.scala-lang:scala-library:2.12.8'
+
+        compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
+
+        testCompile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
+        testCompile group: 'org.scalatest', name: 'scalatest_2.12', version: '3.0.8'
+        testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.5.1'
+    }
+}

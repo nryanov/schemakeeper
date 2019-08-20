@@ -1,0 +1,4 @@
+rootProject.name = 'schemakeeper'
+include 'schemakeeper-common'
+include 'schemakeeper-avro'
+
