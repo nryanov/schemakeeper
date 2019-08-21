@@ -8,9 +8,11 @@ public abstract class AbstractAvroSerDe {
     protected static final byte AVRO_BYTE = 0x1;
 
     protected AvroSchemaKeeperClient client;
+    protected AvroSerDeConfig config;
 
-    public AbstractAvroSerDe(AvroSchemaKeeperClient client) {
+    public AbstractAvroSerDe(AvroSchemaKeeperClient client, AvroSerDeConfig config) {
         this.client = client;
+        this.config = config;
     }
 
     protected void writeAvroProtocolByte(ByteArrayOutputStream out) {

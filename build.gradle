@@ -31,9 +31,6 @@ subprojects {
     }
 
     dependencies {
-        if (this.name != 'schemakeeper-common')
-            implementation project(':schemakeeper-common')
-
         implementation 'org.scala-lang:scala-library:2.12.8'
 
         compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'

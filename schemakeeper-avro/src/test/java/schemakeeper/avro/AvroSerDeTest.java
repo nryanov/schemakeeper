@@ -6,22 +6,26 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import schemakeeper.avro.test.Message;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 
 public class AvroSerDeTest {
     private InMemorySchemaKeeperClient client;
     private AvroSerializer serializer;
     private AvroDeserializer deserializer;
+    private AvroSerDeConfig config;
 
     @BeforeEach
     public void set() {
         this.client = new InMemorySchemaKeeperClient();
-        this.serializer = new AvroSerializer(client);
-        this.deserializer = new AvroDeserializer(client);
+        this.config = new AvroSerDeConfig(Collections.emptyMap());
+        this.serializer = new AvroSerializer(client, config);
+        this.deserializer = new AvroDeserializer(client, config);
     }
 
     @Test
@@ -111,5 +115,24 @@ public class AvroSerDeTest {
 
         assertEquals(record, d);
 
+    }
+
+    @Test
+    public void specificData() throws IOException {
+        config = new AvroSerDeConfig(Collections.singletonMap(AvroSerDeConfig.USE_SPECIFIC_READER_CONFIG, true));
+        serializer = new AvroSerializer(client, config);
+        deserializer = new AvroDeserializer(client, config);
+
+        Message message = Message.newBuilder()
+                .setF1(1)
+                .setF2("2")
+                .setF3(3)
+                .setF4(null)
+                .build();
+
+        byte[] result = serializer.serialize("test", message);
+        Object d = deserializer.deserialize(result);
+
+        assertEquals(message, d);
     }
 }

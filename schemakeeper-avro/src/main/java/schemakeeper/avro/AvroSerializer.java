@@ -5,6 +5,8 @@ import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.DatumWriter;
 import org.apache.avro.io.EncoderFactory;
+import org.apache.avro.specific.SpecificDatumWriter;
+import org.apache.avro.specific.SpecificRecord;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -13,9 +15,13 @@ import java.util.Optional;
 public class AvroSerializer extends AbstractAvroSerDe {
     private final EncoderFactory encoderFactory;
 
-    public AvroSerializer(AvroSchemaKeeperClient client) {
-        super(client);
+    public AvroSerializer(AvroSchemaKeeperClient client, AvroSerDeConfig config) {
+        super(client, config);
         this.encoderFactory = EncoderFactory.get();
+    }
+
+    public AvroSerializer(AvroSerDeConfig config) {
+        this(null, config);
     }
 
     public byte[] serialize(String subject, Object value) throws IOException {
@@ -35,7 +41,7 @@ public class AvroSerializer extends AbstractAvroSerDe {
         writeAvroSchemaId(out, id);
 
         if (value instanceof byte[]) {
-            out.write((byte[])value);
+            out.write((byte[]) value);
         } else {
             handleGeneric(out, value, schema);
         }
@@ -56,8 +62,16 @@ public class AvroSerializer extends AbstractAvroSerDe {
 
     private void handleGeneric(ByteArrayOutputStream out, Object value, Schema schema) throws IOException {
         BinaryEncoder binaryEncoder = encoderFactory.directBinaryEncoder(out, null);
-        DatumWriter<Object> writer = new GenericDatumWriter<>(schema);
+        DatumWriter<Object> writer = createWriter(value, schema);
         writer.write(value, binaryEncoder);
         binaryEncoder.flush();
+    }
+
+    private DatumWriter<Object> createWriter(Object value, Schema schema) {
+        if (value instanceof SpecificRecord) {
+            return new SpecificDatumWriter<>(schema);
+        } else {
+            return new GenericDatumWriter<>(schema);
+        }
     }
 }

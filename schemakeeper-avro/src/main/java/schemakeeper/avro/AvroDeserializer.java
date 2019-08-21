@@ -5,17 +5,35 @@ import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.io.BinaryDecoder;
 import org.apache.avro.io.DatumReader;
 import org.apache.avro.io.DecoderFactory;
+import org.apache.avro.specific.SpecificData;
+import org.apache.avro.specific.SpecificDatumReader;
+import org.apache.avro.specific.SpecificRecord;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class AvroDeserializer extends AbstractAvroSerDe {
     private final DecoderFactory decoderFactory;
 
-    public AvroDeserializer(AvroSchemaKeeperClient client) {
-        super(client);
+    protected boolean useSpecificReaderSchema;
+    protected final Map<String, Schema> readerSchemaCache;
+
+    public AvroDeserializer(AvroSchemaKeeperClient client, AvroSerDeConfig config) {
+        super(client, config);
         this.decoderFactory = DecoderFactory.get();
+        this.readerSchemaCache = new ConcurrentHashMap<>();
+        this.useSpecificReaderSchema = config.getBooleanOrDefault(AvroSerDeConfig.USE_SPECIFIC_READER_CONFIG, false);
+
+        Map<String, Schema> specificSchemas = (Map<String, Schema>) config.getOrDefault(AvroSerDeConfig.SPECIFIC_READER_SCHEMA_PER_SUBJECT_CONFIG, Collections.EMPTY_MAP);
+        readerSchemaCache.putAll(specificSchemas);
+    }
+
+    public AvroDeserializer(AvroSerDeConfig config) {
+        this(null, config);
     }
 
     public Object deserialize(byte[] data) throws IOException {
@@ -39,7 +57,7 @@ public class AvroDeserializer extends AbstractAvroSerDe {
         int start = byteBuffer.position() + byteBuffer.arrayOffset();
 
         BinaryDecoder binaryDecoder = decoderFactory.binaryDecoder(byteBuffer.array(), start, dataLength, null);
-        DatumReader<Object> reader = new GenericDatumReader<>(schema);
+        DatumReader<Object> reader = createDatumReader(schema, null);
         Object result = reader.read(null, binaryDecoder);
 
         if (schema.getType() == Schema.Type.STRING) {
@@ -66,5 +84,42 @@ public class AvroDeserializer extends AbstractAvroSerDe {
 
     private Object handleString(Object result) {
         return result.toString();
+    }
+
+    private DatumReader<Object> createDatumReader(Schema writerSchema, Schema readerSchema) {
+        if (AvroSchemaUtils.isPrimitive(writerSchema)) {
+            return new GenericDatumReader<>(writerSchema);
+        }
+
+        if (useSpecificReaderSchema) {
+            if (readerSchema == null) {
+                readerSchema = getReaderSchema(writerSchema);
+            }
+
+            return new SpecificDatumReader<>(writerSchema, readerSchema);
+        } else {
+            return readerSchema == null ? new GenericDatumReader<>(writerSchema) : new GenericDatumReader<>(writerSchema, readerSchema);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Schema getReaderSchema(Schema writerSchema) {
+        Schema readerSchema = readerSchemaCache.get(writerSchema.getFullName());
+
+        if (readerSchema == null) {
+            try {
+                Class<SpecificRecord> clazz = SpecificData.get().getClass(writerSchema);
+                if (clazz != null) {
+                    readerSchema = clazz.newInstance().getSchema();
+                    readerSchemaCache.put(writerSchema.getFullName(), readerSchema);
+                } else {
+                    throw new RuntimeException("Specific record schema cannot be used due to not existing class"); //todo: use domain exception
+                }
+            } catch (InstantiationException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return readerSchema;
     }
 }

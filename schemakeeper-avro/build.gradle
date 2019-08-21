@@ -1,5 +1,31 @@
 version '1.0-SNAPSHOT'
 
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath "com.commercehub.gradle.plugin:gradle-avro-plugin:0.16.0"
+    }
+}
+apply plugin: "com.commercehub.gradle.plugin.avro"
+
 dependencies {
+    implementation project(':schemakeeper-common')
+
     compile group: 'org.apache.avro', name: 'avro', version: '1.8.2'
 }
+
+sourceSets {
+    main {
+        scala {
+            srcDirs = ['src/main/scala', 'src/main/java']
+        }
+        java {
+            srcDirs = []
+        }
+    }
+}
+
+generateAvroProtocol.enabled = false
+generateAvroJava.enabled = false

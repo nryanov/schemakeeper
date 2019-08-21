@@ -45,4 +45,6 @@ object AvroSchemaUtils {
     case _: GenericContainer => false
     case _ => throw new IllegalArgumentException("Unsupported avro type")
   }
+
+  def isPrimitive(schema: Schema): Boolean = primitiveTypes.contains(schema.getType)
 }
