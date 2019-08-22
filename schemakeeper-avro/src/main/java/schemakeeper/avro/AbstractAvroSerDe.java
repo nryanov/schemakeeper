@@ -1,5 +1,7 @@
 package schemakeeper.avro;
 
+import schemakeeper.avro.exception.AvroDeserializationException;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -23,9 +25,9 @@ public abstract class AbstractAvroSerDe {
         out.write(ByteBuffer.allocate(4).putInt(id).array());
     }
 
-    protected void readAvroProtocolByte(ByteBuffer buffer) {
+    protected void readAvroProtocolByte(ByteBuffer buffer) throws AvroDeserializationException {
         if (buffer.get() != AVRO_BYTE) {
-            throw new IllegalArgumentException("This is not an avro data");
+            throw new AvroDeserializationException("This is not an avro data");
         }
     }
 }

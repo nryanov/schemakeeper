@@ -6,11 +6,11 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import schemakeeper.avro.exception.AvroException;
 import schemakeeper.avro.test.Message;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
@@ -29,7 +29,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void byteArrayData() throws IOException {
+    public void byteArrayData() throws AvroException {
         byte[] data = "some data".getBytes(StandardCharsets.UTF_8);
         byte[] s = serializer.serialize("test", data);
         byte[] d = (byte[]) deserializer.deserialize(s);
@@ -37,7 +37,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void byteData() throws IOException {
+    public void byteData() throws AvroException {
         byte data = 0x1;
         byte[] s = serializer.serialize("test", data);
         int d = (int) deserializer.deserialize(s); // returned data will be an Integer
@@ -45,7 +45,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void shortData() throws IOException {
+    public void shortData() throws AvroException {
         short data = 1;
         byte[] s = serializer.serialize("test", data);
         int d = (int) deserializer.deserialize(s); // returned data will be an Integer
@@ -53,7 +53,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void intData() throws IOException {
+    public void intData() throws AvroException {
         int data = 1;
         byte[] s = serializer.serialize("test", data);
         int d = (int) deserializer.deserialize(s);
@@ -61,7 +61,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void longData() throws IOException {
+    public void longData() throws AvroException {
         long data = 1L;
         byte[] s = serializer.serialize("test", data);
         long d = (long) deserializer.deserialize(s);
@@ -69,7 +69,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void floatData() throws IOException {
+    public void floatData() throws AvroException {
         float data = 1.0f;
         byte[] s = serializer.serialize("test", data);
         float d = (float) deserializer.deserialize(s);
@@ -77,7 +77,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void doubleData() throws IOException {
+    public void doubleData() throws AvroException {
         double data = 1.0D;
         byte[] s = serializer.serialize("test", data);
         double d = (double) deserializer.deserialize(s);
@@ -85,7 +85,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void stringData() throws IOException {
+    public void stringData() throws AvroException {
         String data = "1";
         byte[] s = serializer.serialize("test", data);
         String d = (String) deserializer.deserialize(s);
@@ -93,7 +93,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void nullData() throws IOException {
+    public void nullData() throws AvroException {
         Object data = null;
         byte[] s = serializer.serialize("test", data);
         Object d = deserializer.deserialize(s);
@@ -101,7 +101,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void genericData() throws IOException {
+    public void genericData() throws AvroException {
         Schema schema = SchemaBuilder.record("test")
                 .fields()
                 .requiredString("f")
@@ -118,7 +118,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void specificData() throws IOException {
+    public void specificData() throws AvroException {
         config = new AvroSerDeConfig(Collections.singletonMap(AvroSerDeConfig.USE_SPECIFIC_READER_CONFIG, true));
         serializer = new AvroSerializer(client, config);
         deserializer = new AvroDeserializer(client, config);

@@ -8,6 +8,10 @@ import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.specific.SpecificData;
 import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import schemakeeper.avro.exception.AvroDeserializationException;
+import schemakeeper.avro.exception.AvroException;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -17,6 +21,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class AvroDeserializer extends AbstractAvroSerDe {
+    private static final Logger logger = LoggerFactory.getLogger(AvroDeserializer.class);
     private final DecoderFactory decoderFactory;
 
     protected boolean useSpecificReaderSchema;
@@ -36,42 +41,47 @@ public class AvroDeserializer extends AbstractAvroSerDe {
         this(null, config);
     }
 
-    public Object deserialize(byte[] data) throws IOException {
+    public Object deserialize(byte[] data) throws AvroException {
         if (data == null) {
             return null;
         }
 
-        ByteBuffer byteBuffer = ByteBuffer.wrap(data);
-        readAvroProtocolByte(byteBuffer);
+        try {
+            ByteBuffer byteBuffer = ByteBuffer.wrap(data);
+            readAvroProtocolByte(byteBuffer);
 
-        int id = byteBuffer.getInt();
-        // todo: may be null
-        Schema schema = client.getSchemaById(id);
+            int id = byteBuffer.getInt();
+            Schema schema = client.getSchemaById(id);
 
-        int dataLength = byteBuffer.limit() - 5;
+            int dataLength = byteBuffer.limit() - 5;
 
-        if (schema.getType() == Schema.Type.BYTES) {
-            return handleByteArray(byteBuffer, dataLength);
+            if (schema.getType() == Schema.Type.BYTES) {
+                return handleByteArray(byteBuffer, dataLength);
+            }
+
+            int start = byteBuffer.position() + byteBuffer.arrayOffset();
+
+            BinaryDecoder binaryDecoder = decoderFactory.binaryDecoder(byteBuffer.array(), start, dataLength, null);
+            DatumReader<Object> reader = createDatumReader(schema, null);
+            Object result = reader.read(null, binaryDecoder);
+
+            if (schema.getType() == Schema.Type.STRING) {
+                return handleString(result);
+            }
+
+            return result;
+        } catch (AvroDeserializationException e) {
+            throw e;
+        } catch (IOException e) {
+            throw new AvroDeserializationException(e);
         }
-
-        int start = byteBuffer.position() + byteBuffer.arrayOffset();
-
-        BinaryDecoder binaryDecoder = decoderFactory.binaryDecoder(byteBuffer.array(), start, dataLength, null);
-        DatumReader<Object> reader = createDatumReader(schema, null);
-        Object result = reader.read(null, binaryDecoder);
-
-        if (schema.getType() == Schema.Type.STRING) {
-            return handleString(result);
-        }
-
-        return result;
     }
 
     public Optional<Object> deserializeSafe(byte[] data) {
         try {
             return Optional.of(deserialize(data));
-        } catch (IOException e) {
-            //todo: log error
+        } catch (AvroException e) {
+            logger.warn("Deserialization error", e);
             return Optional.empty();
         }
     }
@@ -86,7 +96,7 @@ public class AvroDeserializer extends AbstractAvroSerDe {
         return result.toString();
     }
 
-    private DatumReader<Object> createDatumReader(Schema writerSchema, Schema readerSchema) {
+    private DatumReader<Object> createDatumReader(Schema writerSchema, Schema readerSchema) throws AvroDeserializationException {
         if (AvroSchemaUtils.isPrimitive(writerSchema)) {
             return new GenericDatumReader<>(writerSchema);
         }
@@ -103,7 +113,7 @@ public class AvroDeserializer extends AbstractAvroSerDe {
     }
 
     @SuppressWarnings("unchecked")
-    private Schema getReaderSchema(Schema writerSchema) {
+    private Schema getReaderSchema(Schema writerSchema) throws AvroDeserializationException {
         Schema readerSchema = readerSchemaCache.get(writerSchema.getFullName());
 
         if (readerSchema == null) {
@@ -113,10 +123,10 @@ public class AvroDeserializer extends AbstractAvroSerDe {
                     readerSchema = clazz.newInstance().getSchema();
                     readerSchemaCache.put(writerSchema.getFullName(), readerSchema);
                 } else {
-                    throw new RuntimeException("Specific record schema cannot be used due to not existing class"); //todo: use domain exception
+                    throw new AvroDeserializationException("Specific record schema cannot be used due to not existing class");
                 }
             } catch (InstantiationException | IllegalAccessException e) {
-                e.printStackTrace();
+                throw new AvroDeserializationException("Error while getting class by name", e);
             }
         }
 
