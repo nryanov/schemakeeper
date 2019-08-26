@@ -20,7 +20,7 @@ create table if not exists schemakeeper.subject (
 );
 
 create table if not exists schemakeeper.schema_info (
-  id serial,
+  id int auto_increment,
   version int not null,
   schema_type_name varchar(255) not null,
   subject_name varchar(255) not null,
@@ -32,8 +32,8 @@ create table if not exists schemakeeper.schema_info (
   constraint schema_info_schema_hash_unique unique (schema_hash)
 );
 
-create index if not exists schemakeeper_schema_info_fk_idx on schemakeeper.schema_info (subject_name);
-create index if not exists schemakeeper_schema_info_type_subject_version_idx on schemakeeper.schema_info (schema_type_name, subject_name, version);
+alter table schemakeeper.schema_info add index (subject_name);
+alter table schemakeeper.schema_info add index (schema_type_name, subject_name, version);
 
 insert into schemakeeper.schema_type(schema_type_name) values ('avro');
 

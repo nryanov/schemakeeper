@@ -9,4 +9,5 @@ object Utils {
       .map(0xFF & _)
       .map("%02x".format(_))
       .foldLeft("")(_ + _)
+      .take(32) // just to be sure
 }

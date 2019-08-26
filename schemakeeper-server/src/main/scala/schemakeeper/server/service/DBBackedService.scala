@@ -86,15 +86,15 @@ class DBBackedService[F[_]: Applicative](config: Configuration) extends Service[
 
   private def isSchemaCompatible(subject: String, newSchema: Schema, compatibilityType: CompatibilityType): ConnectionIO[Boolean] = compatibilityType match {
     case CompatibilityType.None => Free.pure[connection.ConnectionOp, Boolean](true)
-    case CompatibilityType.Backward => getLastSchemaParsed(subject).map(previousSchema => AvroSchemaCompatibility.BACKWARD_VALIDATOR.isCompatible(newSchema, previousSchema))
-    case CompatibilityType.Forward => getLastSchemaParsed(subject).map(previousSchema => AvroSchemaCompatibility.FORWARD_VALIDATOR.isCompatible(newSchema, previousSchema))
-    case CompatibilityType.Full => getLastSchemaParsed(subject).map(previousSchema => AvroSchemaCompatibility.FULL_VALIDATOR.isCompatible(newSchema, previousSchema))
+    case CompatibilityType.Backward => getLastSchemaParsed(subject).map(_.forall(previousSchema => AvroSchemaCompatibility.BACKWARD_VALIDATOR.isCompatible(newSchema, previousSchema)))
+    case CompatibilityType.Forward => getLastSchemaParsed(subject).map(_.forall(previousSchema => AvroSchemaCompatibility.FORWARD_VALIDATOR.isCompatible(newSchema, previousSchema)))
+    case CompatibilityType.Full => getLastSchemaParsed(subject).map(_.forall(previousSchema => AvroSchemaCompatibility.FULL_VALIDATOR.isCompatible(newSchema, previousSchema)))
     case CompatibilityType.BackwardTransitive => getLastSchemasParsed(subject).map(previousSchemas => AvroSchemaCompatibility.BACKWARD_TRANSITIVE_VALIDATOR.isCompatible(newSchema, previousSchemas))
     case CompatibilityType.ForwardTransitive => getLastSchemasParsed(subject).map(previousSchemas => AvroSchemaCompatibility.FORWARD_TRANSITIVE_VALIDATOR.isCompatible(newSchema, previousSchemas))
     case CompatibilityType.FullTransitive => getLastSchemasParsed(subject).map(previousSchemas => AvroSchemaCompatibility.FULL_TRANSITIVE_VALIDATOR.isCompatible(newSchema, previousSchemas))
   }
 
-  private def getLastSchemaParsed(subject: String): ConnectionIO[Schema] = storage.getLastSchema(subject).map(_.get).map(AvroSchemaUtils.parseSchema)
+  private def getLastSchemaParsed(subject: String): ConnectionIO[Option[Schema]] = storage.getLastSchema(subject).map(_.map(AvroSchemaUtils.parseSchema))
 
   private def getLastSchemasParsed(subject: String): ConnectionIO[List[Schema]] = storage.getLastSchemas(subject).map(_.map(AvroSchemaUtils.parseSchema))
 }

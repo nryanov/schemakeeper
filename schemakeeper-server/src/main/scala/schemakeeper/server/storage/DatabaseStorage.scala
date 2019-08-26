@@ -6,6 +6,8 @@ import doobie._
 import doobie.implicits._
 
 class DatabaseStorage() extends SchemaStorage[ConnectionIO] {
+  private implicit val logHandler: LogHandler = LogHandler.jdkLogHandler
+
   override def schemaById(id: Int): ConnectionIO[Option[String]] =
     sql"select schema_text from schemakeeper.schema_info where id = $id"
       .query[String]
@@ -17,7 +19,7 @@ class DatabaseStorage() extends SchemaStorage[ConnectionIO] {
       .to[List]
 
   override def subjectVersions(subject: String): ConnectionIO[List[Int]] =
-    sql"select version from schemakeeper.schema_info where subject_name = $subject"
+    sql"select version from schemakeeper.schema_info where subject_name = $subject order by version asc"
       .query[Int]
       .to[List]
 
@@ -61,8 +63,8 @@ class DatabaseStorage() extends SchemaStorage[ConnectionIO] {
 
   override def getNextVersionNumber(subject: String): ConnectionIO[Int] =
     sql"select max(version) from schemakeeper.schema_info where subject_name = $subject"
-      .query[Int]
-      .option
+      .query[Option[Int]]
+      .unique
       .map(_.map(_ + 1).getOrElse(1))
 
   override def getLastSchema(subject: String): ConnectionIO[Option[String]] =
