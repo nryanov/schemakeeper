@@ -1,4 +1,4 @@
-package schemakeeper.server.avro
+package schemakeeper.avro.compatibility
 
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.scalatest.{Matchers, WordSpec}
@@ -88,12 +88,12 @@ class AvroSchemaCompatibilityTest extends WordSpec with Matchers {
         .requiredString("f1")
         .nullableString("f2", "default")
         .name("nested")
-          .`type`()
-          .optional()
-          .record("nested")
-          .fields()
-          .optionalString("nested_f1")
-          .endRecord()
+        .`type`()
+        .optional()
+        .record("nested")
+        .fields()
+        .optionalString("nested_f1")
+        .endRecord()
         .endRecord()
 
       assert(validator.isCompatible(secondSchema, firstSchema))
