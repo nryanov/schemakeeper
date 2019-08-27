@@ -6,8 +6,12 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import schemakeeper.avro.exception.AvroException;
 import schemakeeper.avro.test.Message;
+import schemakeeper.client.InMemorySchemaKeeperClient;
+import schemakeeper.exception.SchemaKeeperException;
+import schemakeeper.serialization.AvroDeserializer;
+import schemakeeper.serialization.AvroSerDeConfig;
+import schemakeeper.serialization.AvroSerializer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -29,7 +33,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void byteArrayData() throws AvroException {
+    public void byteArrayData() throws SchemaKeeperException {
         byte[] data = "some data".getBytes(StandardCharsets.UTF_8);
         byte[] s = serializer.serialize("test", data);
         byte[] d = (byte[]) deserializer.deserialize(s);
@@ -37,7 +41,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void byteData() throws AvroException {
+    public void byteData() throws SchemaKeeperException {
         byte data = 0x1;
         byte[] s = serializer.serialize("test", data);
         int d = (int) deserializer.deserialize(s); // returned data will be an Integer
@@ -45,7 +49,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void shortData() throws AvroException {
+    public void shortData() throws SchemaKeeperException {
         short data = 1;
         byte[] s = serializer.serialize("test", data);
         int d = (int) deserializer.deserialize(s); // returned data will be an Integer
@@ -53,7 +57,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void intData() throws AvroException {
+    public void intData() throws SchemaKeeperException {
         int data = 1;
         byte[] s = serializer.serialize("test", data);
         int d = (int) deserializer.deserialize(s);
@@ -61,7 +65,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void longData() throws AvroException {
+    public void longData() throws SchemaKeeperException {
         long data = 1L;
         byte[] s = serializer.serialize("test", data);
         long d = (long) deserializer.deserialize(s);
@@ -69,7 +73,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void floatData() throws AvroException {
+    public void floatData() throws SchemaKeeperException {
         float data = 1.0f;
         byte[] s = serializer.serialize("test", data);
         float d = (float) deserializer.deserialize(s);
@@ -77,7 +81,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void doubleData() throws AvroException {
+    public void doubleData() throws SchemaKeeperException {
         double data = 1.0D;
         byte[] s = serializer.serialize("test", data);
         double d = (double) deserializer.deserialize(s);
@@ -85,7 +89,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void stringData() throws AvroException {
+    public void stringData() throws SchemaKeeperException {
         String data = "1";
         byte[] s = serializer.serialize("test", data);
         String d = (String) deserializer.deserialize(s);
@@ -93,7 +97,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void nullData() throws AvroException {
+    public void nullData() throws SchemaKeeperException {
         Object data = null;
         byte[] s = serializer.serialize("test", data);
         Object d = deserializer.deserialize(s);
@@ -101,7 +105,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void genericData() throws AvroException {
+    public void genericData() throws SchemaKeeperException {
         Schema schema = SchemaBuilder.record("test")
                 .fields()
                 .requiredString("f")
@@ -118,7 +122,7 @@ public class AvroSerDeTest {
     }
 
     @Test
-    public void specificData() throws AvroException {
+    public void specificData() throws SchemaKeeperException {
         config = new AvroSerDeConfig(Collections.singletonMap(AvroSerDeConfig.USE_SPECIFIC_READER_CONFIG, true));
         serializer = new AvroSerializer(client, config);
         deserializer = new AvroDeserializer(client, config);

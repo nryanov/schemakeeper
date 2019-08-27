@@ -2,6 +2,7 @@ package schemakeeper.avro.compatibility
 
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.scalatest.{Matchers, WordSpec}
+import schemakeeper.schema.AvroSchemaCompatibility
 
 class AvroSchemaCompatibilityTest extends WordSpec with Matchers {
   "NONE compatibility validator" should {

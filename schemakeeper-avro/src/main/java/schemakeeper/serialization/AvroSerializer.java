@@ -1,4 +1,4 @@
-package schemakeeper.avro;
+package schemakeeper.serialization;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumWriter;
@@ -9,42 +9,59 @@ import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.avro.specific.SpecificRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import schemakeeper.avro.exception.AvroException;
-import schemakeeper.avro.exception.AvroSerializationException;
+import schemakeeper.client.CachedSchemaKeeperClient;
+import schemakeeper.client.SchemaKeeperClient;
+import schemakeeper.exception.AvroSerializationException;
+import schemakeeper.exception.SerializationException;
+import schemakeeper.schema.AvroSchemaUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 
-public class AvroSerializer extends AbstractAvroSerDe {
+public class AvroSerializer extends AbstractSerializer<Object> implements AvroSerDe {
     private static final Logger logger = LoggerFactory.getLogger(AvroSerializer.class);
     private final EncoderFactory encoderFactory;
+    private final SchemaKeeperClient client;
+    private final boolean allowForceSchemaRegister;
 
-    public AvroSerializer(AvroSchemaKeeperClient client, AvroSerDeConfig config) {
-        super(client, config);
+    public AvroSerializer(SchemaKeeperClient client, AvroSerDeConfig config) {
+        this.client = client;
         this.encoderFactory = EncoderFactory.get();
+        this.allowForceSchemaRegister = config.allowForceSchemaRegister();
     }
 
     public AvroSerializer(AvroSerDeConfig config) {
-        this(null, config);
+        this.client = CachedSchemaKeeperClient.apply(config.schemakeeperUrlConfig());
+        this.encoderFactory = EncoderFactory.get();
+        this.allowForceSchemaRegister = config.allowForceSchemaRegister();
     }
 
-    public byte[] serialize(String subject, Object value) throws AvroException {
+    public AvroSerializer(Map<String, Object> config) {
+        this(null, new AvroSerDeConfig(config));
+    }
+
+    public byte[] serialize(String subject, Object value) throws AvroSerializationException {
         if (value == null) {
             return null;
         }
 
         try {
             Schema schema = AvroSchemaUtils.getSchema(value);
-            int id = client.getSchemaId(subject, schema);
+            int id = client.getSchemaId(schema);
 
             if (id == -1) {
-                id = client.registerNewSchema(subject, schema);
+                if (allowForceSchemaRegister) {
+                    id = client.registerNewSchema(subject, schema);
+                } else {
+                    throw new IllegalArgumentException(String.format("Schema %s is not registered in registry and flag 'allowForceSchemaRegister' is false ", schema.toString()));
+                }
             }
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            writeAvroProtocolByte(out);
-            writeAvroSchemaId(out, id);
+            writeProtocolByte(out, AVRO_BYTE);
+            writeSchemaId(out, id);
 
             if (value instanceof byte[]) {
                 out.write((byte[]) value);
@@ -55,7 +72,7 @@ public class AvroSerializer extends AbstractAvroSerDe {
             byte[] bytes = out.toByteArray();
             out.close();
             return bytes;
-        } catch (IOException e) {
+        } catch (IOException | SerializationException e) {
             throw new AvroSerializationException(e);
         }
     }
@@ -63,7 +80,7 @@ public class AvroSerializer extends AbstractAvroSerDe {
     public Optional<byte[]> serializeSafe(String subject, Object value) {
         try {
             return Optional.ofNullable(serialize(subject, value));
-        } catch (AvroException e) {
+        } catch (AvroSerializationException e) {
             logger.warn("Serialization error", e);
             return Optional.empty();
         }

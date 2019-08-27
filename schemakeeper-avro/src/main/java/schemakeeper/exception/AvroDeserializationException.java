@@ -1,6 +1,6 @@
-package schemakeeper.avro.exception;
+package schemakeeper.exception;
 
-public class AvroDeserializationException extends AvroException {
+public class AvroDeserializationException extends DeserializationException {
     public AvroDeserializationException() {
     }
 

@@ -3,6 +3,7 @@ package schemakeeper.avro
 import org.apache.avro.generic.GenericData
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.scalatest.{Matchers, WordSpec}
+import schemakeeper.schema.AvroSchemaUtils
 
 class AvroSchemaUtilsTest extends WordSpec with Matchers {
   "AvroUtils" should {

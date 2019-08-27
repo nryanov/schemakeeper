@@ -1,12 +1,9 @@
-package schemakeeper.avro
-
+package schemakeeper.schema
 
 import org.apache.avro.Schema
 import org.apache.avro.generic.GenericContainer
 
 object AvroSchemaUtils {
-  private val parser = new Schema.Parser()
-
   private val primitiveTypes = Map[Schema.Type, Schema](
     Schema.Type.STRING -> Schema.create(Schema.Type.STRING),
     Schema.Type.BYTES -> Schema.create(Schema.Type.BYTES),
@@ -50,5 +47,8 @@ object AvroSchemaUtils {
 
   def isPrimitive(schema: Schema): Boolean = primitiveTypes.contains(schema.getType)
 
-  def parseSchema(schema: String): Schema = parser.parse(schema)
+  def parseSchema(schema: String): Schema = {
+    val parser = new Schema.Parser()
+    parser.parse(schema)
+  }
 }

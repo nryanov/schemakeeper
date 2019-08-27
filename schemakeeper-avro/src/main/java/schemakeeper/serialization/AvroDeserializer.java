@@ -1,4 +1,4 @@
-package schemakeeper.avro;
+package schemakeeper.serialization;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -10,45 +10,55 @@ import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import schemakeeper.avro.exception.AvroDeserializationException;
-import schemakeeper.avro.exception.AvroException;
+import schemakeeper.client.CachedSchemaKeeperClient;
+import schemakeeper.client.SchemaKeeperClient;
+import schemakeeper.exception.AvroDeserializationException;
+import schemakeeper.schema.AvroSchemaUtils;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class AvroDeserializer extends AbstractAvroSerDe {
+public class AvroDeserializer extends AbstractDeserializer<Object> implements AvroSerDe {
     private static final Logger logger = LoggerFactory.getLogger(AvroDeserializer.class);
     private final DecoderFactory decoderFactory;
+    private final SchemaKeeperClient client;
 
     protected boolean useSpecificReaderSchema;
     protected final Map<String, Schema> readerSchemaCache;
 
-    public AvroDeserializer(AvroSchemaKeeperClient client, AvroSerDeConfig config) {
-        super(client, config);
+    public AvroDeserializer(SchemaKeeperClient client, AvroSerDeConfig config) {
+        this.client = client;
         this.decoderFactory = DecoderFactory.get();
         this.readerSchemaCache = new ConcurrentHashMap<>();
-        this.useSpecificReaderSchema = config.getBooleanOrDefault(AvroSerDeConfig.USE_SPECIFIC_READER_CONFIG, false);
+        this.useSpecificReaderSchema = config.useSpecificReader();
 
-        Map<String, Schema> specificSchemas = (Map<String, Schema>) config.getOrDefault(AvroSerDeConfig.SPECIFIC_READER_SCHEMA_PER_SUBJECT_CONFIG, Collections.EMPTY_MAP);
-        readerSchemaCache.putAll(specificSchemas);
+        readerSchemaCache.putAll(config.specificReaderPerSubjectConfig());
     }
 
     public AvroDeserializer(AvroSerDeConfig config) {
-        this(null, config);
+        this.client = CachedSchemaKeeperClient.apply(config.schemakeeperUrlConfig());
+        this.decoderFactory = DecoderFactory.get();
+        this.readerSchemaCache = new ConcurrentHashMap<>();
+        this.useSpecificReaderSchema = config.useSpecificReader();
+
+        readerSchemaCache.putAll(config.specificReaderPerSubjectConfig());
     }
 
-    public Object deserialize(byte[] data) throws AvroException {
+    public AvroDeserializer(Map<String, Object> config) {
+        this(null, new AvroSerDeConfig(config));
+    }
+
+    public Object deserialize(byte[] data) throws AvroDeserializationException {
         if (data == null) {
             return null;
         }
 
         try {
             ByteBuffer byteBuffer = ByteBuffer.wrap(data);
-            readAvroProtocolByte(byteBuffer);
+            readProtocolByte(byteBuffer);
 
             int id = byteBuffer.getInt();
             Schema schema = client.getSchemaById(id);
@@ -80,7 +90,7 @@ public class AvroDeserializer extends AbstractAvroSerDe {
     public Optional<Object> deserializeSafe(byte[] data) {
         try {
             return Optional.of(deserialize(data));
-        } catch (AvroException e) {
+        } catch (AvroDeserializationException e) {
             logger.warn("Deserialization error", e);
             return Optional.empty();
         }

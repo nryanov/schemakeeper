@@ -1,4 +1,4 @@
-package schemakeeper.avro.compatibility
+package schemakeeper.schema
 
 import java.lang
 
