@@ -1,9 +1,9 @@
 package schemakeeper.server.storage
 
-import schemakeeper.avro.compatibility.CompatibilityType
 import schemakeeper.server.metadata.AvroSchemaMetadata
 import doobie._
 import doobie.implicits._
+import schemakeeper.schema.CompatibilityType
 
 class DatabaseStorage() extends SchemaStorage[ConnectionIO] {
   private implicit val logHandler: LogHandler = LogHandler.jdkLogHandler

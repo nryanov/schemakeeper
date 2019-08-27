@@ -4,7 +4,6 @@ import cats.Applicative
 import cats.free.Free
 import doobie.ConnectionIO
 import doobie.free.connection
-import schemakeeper.avro.compatibility.{AvroSchemaCompatibility, CompatibilityType}
 import schemakeeper.server.Configuration
 import schemakeeper.server.datasource.DataSource
 import schemakeeper.server.metadata.AvroSchemaMetadata
@@ -14,7 +13,7 @@ import schemakeeper.server.util.Utils
 import doobie._
 import doobie.implicits._
 import org.apache.avro.Schema
-import schemakeeper.avro.AvroSchemaUtils
+import schemakeeper.schema.{AvroSchemaCompatibility, AvroSchemaUtils, CompatibilityType}
 
 
 class DBBackedService[F[_]: Applicative](config: Configuration) extends Service[F] {

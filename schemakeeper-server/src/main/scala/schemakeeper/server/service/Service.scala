@@ -1,6 +1,6 @@
 package schemakeeper.server.service
 
-import schemakeeper.avro.compatibility.CompatibilityType
+import schemakeeper.schema.CompatibilityType
 import schemakeeper.server.metadata.AvroSchemaMetadata
 
 trait Service[F[_]] {
