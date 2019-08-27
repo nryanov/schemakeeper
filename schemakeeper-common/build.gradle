@@ -1,0 +1,5 @@
+version '1.0-SNAPSHOT'
+
+dependencies {
+    compile group: 'com.beachape', name: 'enumeratum_2.12', version: '1.5.13'
+}
