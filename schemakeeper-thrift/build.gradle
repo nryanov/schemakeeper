@@ -1,0 +1,24 @@
+plugins {
+    id "org.jruyi.thrift" version "0.4.1"
+}
+
+version '1.0-SNAPSHOT'
+
+dependencies {
+    implementation project(':schemakeeper-common')
+    implementation project(':schemakeeper-avro')
+    implementation project(':schemakeeper-client')
+
+    compile group: 'org.apache.avro', name: 'avro-thrift', version: '1.9.0'
+    compile group: 'org.apache.thrift', name: 'libthrift', version: '0.12.0'
+
+    testCompile project(':schemakeeper-test-utils')
+}
+
+compileThrift {
+    sourceDir "$projectDir/src/test/thrift"
+}
+
+compileTestJava {
+    dependsOn compileThrift
+}
