@@ -1,0 +1,6 @@
+version '1.0-SNAPSHOT'
+
+dependencies {
+    implementation project(':schemakeeper-avro')
+    implementation project(':schemakeeper-client')
+}

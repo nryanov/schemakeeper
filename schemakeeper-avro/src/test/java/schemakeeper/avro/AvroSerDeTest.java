@@ -26,7 +26,7 @@ public class AvroSerDeTest {
 
     @BeforeEach
     public void set() {
-        this.client = new InMemorySchemaKeeperClient();
+        this.client = new InMemorySchemaKeeperClient("none");
         this.config = new AvroSerDeConfig(Collections.emptyMap());
         this.serializer = new AvroSerializer(client, config);
         this.deserializer = new AvroDeserializer(client, config);

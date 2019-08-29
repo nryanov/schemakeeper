@@ -8,7 +8,13 @@ import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 class AvroSchemaCompatibility private(validator: SchemaValidator) {
-  def isCompatible(newSchema: Schema, previousSchema: Schema): Boolean = isCompatible(newSchema, Seq(previousSchema))
+  def isCompatible(newSchema: Schema, previousSchema: Schema): Boolean = {
+    if (previousSchema == null) {
+      true
+    } else {
+      isCompatible(newSchema, Seq(previousSchema))
+    }
+  }
 
   def isCompatible(newSchema: Schema, previousSchemas: Seq[Schema]): Boolean = Try {
     validator.validate(newSchema, previousSchemas.reverse.asJava)

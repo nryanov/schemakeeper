@@ -5,6 +5,15 @@ import org.scalatest.{Matchers, WordSpec}
 import schemakeeper.schema.AvroSchemaCompatibility
 
 class AvroSchemaCompatibilityTest extends WordSpec with Matchers {
+  "Null values" should {
+    val validator = AvroSchemaCompatibility.BACKWARD_VALIDATOR
+
+    "return true if previous schema is null" in {
+      val a = Schema.create(Schema.Type.INT)
+      assert(validator.isCompatible(a, null.asInstanceOf[Schema]))
+    }
+  }
+
   "NONE compatibility validator" should {
     val validator = AvroSchemaCompatibility.NONE_VALIDATOR
 
