@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package examples;
+
+option java_package = "schemakeeper.serialization.protobuf.test";
+option java_outer_classname = "Message";
+
+message ProtoMsgV1 {
+    string f1 = 1;
+    string f2 = 2;
+}
+
+message ProtoMsgV2 {
+    int64 f1 = 1;
+}
+
+message ProtoMsgV3 {
+    string f3 = 3;
+}
+
+message ProtoMsgV4 {
+    string f1 = 1;
+    string f3 = 3;
+    string f4 = 4;
+}
