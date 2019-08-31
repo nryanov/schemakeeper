@@ -13,7 +13,7 @@ public class ProtobufSerDeTest {
     @Test
     public void simpleSerializationTest() throws ProtobufSerializationException, ProtobufDeserializationException {
         InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient("none");
-        ProtobufSerializer<Message.ProtoMsgV1> serializer = new ProtobufSerializer<>(client, Message.ProtoMsgV1.class);
+        ProtobufSerializer serializer = new ProtobufSerializer(client);
         ProtobufDeserializer deserializer = new ProtobufDeserializer(client);
 
         Message.ProtoMsgV1 msgV1 = Message.ProtoMsgV1
@@ -31,8 +31,8 @@ public class ProtobufSerDeTest {
     @Test
     public void throwErrorDueToSchemaIncompatibility() throws ProtobufSerializationException {
         InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient("backward");
-        ProtobufSerializer<Message.ProtoMsgV1> s1 = new ProtobufSerializer<>(client, Message.ProtoMsgV1.class);
-        ProtobufSerializer<Message.ProtoMsgV2> s2 = new ProtobufSerializer<>(client, Message.ProtoMsgV2.class);
+        ProtobufSerializer s1 = new ProtobufSerializer(client);
+        ProtobufSerializer s2 = new ProtobufSerializer(client);
 
         Message.ProtoMsgV1 msgV1 = Message.ProtoMsgV1
                 .newBuilder()
@@ -53,8 +53,8 @@ public class ProtobufSerDeTest {
     @Test
     public void readDataUsingOldSchema() throws ProtobufSerializationException, ProtobufDeserializationException {
         InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient("full");
-        ProtobufSerializer<Message.ProtoMsgV1> s1 = new ProtobufSerializer<>(client, Message.ProtoMsgV1.class);
-        ProtobufSerializer<Message.ProtoMsgV4> s2 = new ProtobufSerializer<>(client, Message.ProtoMsgV4.class);
+        ProtobufSerializer s1 = new ProtobufSerializer(client);
+        ProtobufSerializer s2 = new ProtobufSerializer(client);
         ProtobufDeserializer deserializer = new ProtobufDeserializer(client);
 
         Message.ProtoMsgV1 msgV1 = Message.ProtoMsgV1
@@ -76,5 +76,34 @@ public class ProtobufSerDeTest {
         Object d = deserializer.deserialize(result, Message.ProtoMsgV1.class);
 
         assertEquals(msgV1, d);
+    }
+
+    @Test
+    public void readDataWithoutSpecifiedSchema() throws ProtobufSerializationException, ProtobufDeserializationException {
+        InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient("full");
+        ProtobufSerializer s1 = new ProtobufSerializer(client);
+        ProtobufSerializer s2 = new ProtobufSerializer(client);
+        ProtobufDeserializer deserializer = new ProtobufDeserializer(client);
+
+        Message.ProtoMsgV1 msgV1 = Message.ProtoMsgV1
+                .newBuilder()
+                .setF1("f1")
+                .clearF2() // set as null
+                .build();
+
+        s1.serialize("test", msgV1);
+
+        Message.ProtoMsgV4 msgV4 = Message.ProtoMsgV4
+                .newBuilder()
+                .setF1("f1")
+                .setF3("f3")
+                .setF4("f4")
+                .build();
+        byte[] result = s2.serialize("test", msgV4);
+
+        Object d = deserializer.deserialize(result);
+
+        assertEquals(d.getClass(), Message.ProtoMsgV4.class);
+        assertEquals(msgV4, d);
     }
 }

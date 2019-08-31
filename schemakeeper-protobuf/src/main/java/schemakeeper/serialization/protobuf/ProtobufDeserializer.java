@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-public class ProtobufDeserializer extends AbstractDeserializer<Object> implements ProtobufSerDe {
+public class ProtobufDeserializer extends AbstractDeserializer<com.google.protobuf.GeneratedMessageV3> implements ProtobufSerDe {
     private static final Logger logger = LoggerFactory.getLogger(ProtobufDeserializer.class);
     private final DecoderFactory decoderFactory;
     private final SchemaKeeperClient client;
@@ -37,7 +37,7 @@ public class ProtobufDeserializer extends AbstractDeserializer<Object> implement
     }
 
     @Override
-    public Object deserialize(byte[] data) throws ProtobufDeserializationException {
+    public com.google.protobuf.GeneratedMessageV3 deserialize(byte[] data) throws ProtobufDeserializationException {
         return deserialize(data, null);
     }
 

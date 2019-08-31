@@ -17,46 +17,42 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Map;
 
-public class ProtobufSerializer<T extends com.google.protobuf.GeneratedMessageV3> extends AbstractSerializer<T> implements ProtobufSerDe {
+public class ProtobufSerializer extends AbstractSerializer<com.google.protobuf.GeneratedMessageV3> implements ProtobufSerDe {
     private static final Logger logger = LoggerFactory.getLogger(ProtobufSerializer.class);
     private final EncoderFactory encoderFactory;
     private final SchemaKeeperClient client;
     private final boolean allowForceSchemaRegister;
-    private final Class<T> clazz;
 
-    public ProtobufSerializer(SchemaKeeperClient client, Class<T> clazz) {
+    public ProtobufSerializer(SchemaKeeperClient client) {
         this.client = client;
-        this.clazz = clazz;
         this.allowForceSchemaRegister = true;
         this.encoderFactory = EncoderFactory.get();
     }
 
-    public ProtobufSerializer(SchemaKeeperClient client, ProtobufSerDeConfig config, Class<T> clazz) {
+    public ProtobufSerializer(SchemaKeeperClient client, ProtobufSerDeConfig config) {
         this.client = client;
         this.encoderFactory = EncoderFactory.get();
         this.allowForceSchemaRegister = config.allowForceSchemaRegister();
-        this.clazz = clazz;
     }
 
-    public ProtobufSerializer(ProtobufSerDeConfig config, Class<T> clazz) {
+    public ProtobufSerializer(ProtobufSerDeConfig config) {
         this.client = CachedSchemaKeeperClient.apply(config.schemakeeperUrlConfig());
         this.encoderFactory = EncoderFactory.get();
         this.allowForceSchemaRegister = config.allowForceSchemaRegister();
-        this.clazz = clazz;
     }
 
-    public ProtobufSerializer(Map<String, Object> config, Class<T> clazz) {
-        this(new ProtobufSerDeConfig(config), clazz);
+    public ProtobufSerializer(Map<String, Object> config) {
+        this(new ProtobufSerDeConfig(config));
     }
 
     @Override
-    public byte[] serialize(String subject, T data) throws ProtobufSerializationException {
+    public byte[] serialize(String subject, com.google.protobuf.GeneratedMessageV3 data) throws ProtobufSerializationException {
         if (data == null) {
             return null;
         }
 
         try {
-            Schema schema = ProtobufData.get().getSchema(clazz);
+            Schema schema = ProtobufData.get().getSchema(data.getClass());
             int id = client.getSchemaId(schema);
 
             if (id == -1) {
@@ -71,7 +67,7 @@ public class ProtobufSerializer<T extends com.google.protobuf.GeneratedMessageV3
             writeProtocolByte(out, PROTOBUF_BYTE);
             writeSchemaId(out, id);
             BinaryEncoder encoder = encoderFactory.directBinaryEncoder(out, null);
-            ProtobufDatumWriter<T> writer = new ProtobufDatumWriter<>(schema);
+            ProtobufDatumWriter<com.google.protobuf.GeneratedMessageV3> writer = new ProtobufDatumWriter<>(schema);
             writer.write(data, encoder);
             encoder.flush();
             byte[] bytes = out.toByteArray();
