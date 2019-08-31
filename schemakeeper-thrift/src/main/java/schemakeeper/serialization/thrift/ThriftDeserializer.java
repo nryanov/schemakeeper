@@ -19,58 +19,36 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-public class ThriftDeserializer<T extends TBase<? extends TBase, ? extends TFieldIdEnum>> extends AbstractDeserializer<T> implements ThriftSerDe {
+public class ThriftDeserializer extends AbstractDeserializer<TBase<? extends TBase, ? extends TFieldIdEnum>> implements ThriftSerDe {
     private static final Logger logger = LoggerFactory.getLogger(ThriftDeserializer.class);
     private final DecoderFactory decoderFactory;
     private final SchemaKeeperClient client;
-    private final Class<T> clazz;
 
     public ThriftDeserializer(SchemaKeeperClient client, ThriftSerDeConfig config) {
         this.decoderFactory = DecoderFactory.get();
         this.client = client;
-        this.clazz = null;
     }
 
     public ThriftDeserializer(SchemaKeeperClient client) {
         this.decoderFactory = DecoderFactory.get();
         this.client = client;
-        this.clazz = null;
     }
 
     public ThriftDeserializer(ThriftSerDeConfig config) {
         this.client = CachedSchemaKeeperClient.apply(config.schemakeeperUrlConfig());
         this.decoderFactory = DecoderFactory.get();
-        this.clazz = null;
     }
 
     public ThriftDeserializer(Map<String, Object> config) {
-        this(null, new ThriftSerDeConfig(config));
-    }
-
-    public ThriftDeserializer(SchemaKeeperClient client, ThriftSerDeConfig config, Class<T> clazz) {
-        this.decoderFactory = DecoderFactory.get();
-        this.client = client;
-        this.clazz = clazz;
-    }
-
-    public ThriftDeserializer(ThriftSerDeConfig config, Class<T> clazz) {
-        this.client = CachedSchemaKeeperClient.apply(config.schemakeeperUrlConfig());
-        this.decoderFactory = DecoderFactory.get();
-        this.clazz = clazz;
-    }
-
-    public ThriftDeserializer(SchemaKeeperClient client, Class<T> clazz) {
-        this.decoderFactory = DecoderFactory.get();
-        this.client = client;
-        this.clazz = clazz;
-    }
-
-    public ThriftDeserializer(Map<String, Object> config, Class<T> clazz) {
-        this(null, new ThriftSerDeConfig(config), clazz);
+        this(new ThriftSerDeConfig(config));
     }
 
     @Override
-    public T deserialize(byte[] data) throws ThriftDeserializationException {
+    public TBase<? extends TBase, ? extends TFieldIdEnum> deserialize(byte[] data) throws ThriftDeserializationException {
+        return deserialize(data, null);
+    }
+
+    public <T extends TBase<? extends TBase, ? extends TFieldIdEnum>> T deserialize(byte[] data, Class<T> clazz) throws ThriftDeserializationException {
         if (data == null) {
             return null;
         }
@@ -92,7 +70,7 @@ public class ThriftDeserializer<T extends TBase<? extends TBase, ? extends TFiel
             int dataLength = buffer.limit() - 5;
             int start = buffer.position() + buffer.arrayOffset();
             BinaryDecoder binaryDecoder = decoderFactory.binaryDecoder(buffer.array(), start, dataLength, null);
-            ThriftDatumReader<T> reader = createReader(schema);
+            ThriftDatumReader<T> reader = createReader(schema, clazz);
             T result = reader.read(null, binaryDecoder);
 
             return result;
@@ -101,7 +79,7 @@ public class ThriftDeserializer<T extends TBase<? extends TBase, ? extends TFiel
         }
     }
 
-    private ThriftDatumReader<T> createReader(Schema schema) {
+    private <T extends TBase<? extends TBase, ? extends TFieldIdEnum>> ThriftDatumReader<T> createReader(Schema schema, Class<T> clazz) {
         if (clazz == null) {
             return new ThriftDatumReader<>(schema);
         } else {

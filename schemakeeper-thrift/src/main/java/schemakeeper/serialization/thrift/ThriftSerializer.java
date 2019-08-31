@@ -19,41 +19,36 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Map;
 
-//todo: allow to use only NONE and FULL compatibility types
-public class ThriftSerializer<T extends TBase<? extends TBase, ? extends TFieldIdEnum>> extends AbstractSerializer<T> implements ThriftSerDe {
+public class ThriftSerializer extends AbstractSerializer<TBase<? extends TBase, ? extends TFieldIdEnum>> implements ThriftSerDe {
     private static final Logger logger = LoggerFactory.getLogger(ThriftSerializer.class);
     private final EncoderFactory encoderFactory;
     private final SchemaKeeperClient client;
     private final boolean allowForceSchemaRegister;
-    private final Class<T> clazz;
 
-    public ThriftSerializer(SchemaKeeperClient client, Class<T> clazz) {
+    public ThriftSerializer(SchemaKeeperClient client) {
         this.client = client;
         this.encoderFactory = EncoderFactory.get();
         this.allowForceSchemaRegister = true;
-        this.clazz = clazz;
     }
 
-    public ThriftSerializer(SchemaKeeperClient client, ThriftSerDeConfig config, Class<T> clazz) {
+    public ThriftSerializer(SchemaKeeperClient client, ThriftSerDeConfig config) {
         this.client = client;
         this.encoderFactory = EncoderFactory.get();
         this.allowForceSchemaRegister = config.allowForceSchemaRegister();
-        this.clazz = clazz;
     }
 
-    public ThriftSerializer(ThriftSerDeConfig config, Class<T> clazz) {
+    public ThriftSerializer(ThriftSerDeConfig config) {
         this.client = CachedSchemaKeeperClient.apply(config.schemakeeperUrlConfig());
         this.encoderFactory = EncoderFactory.get();
         this.allowForceSchemaRegister = config.allowForceSchemaRegister();
-        this.clazz = clazz;
     }
 
-    public ThriftSerializer(Map<String, Object> config, Class<T> clazz) {
-        this(null, new ThriftSerDeConfig(config), clazz);
+    public ThriftSerializer(Map<String, Object> config) {
+        this(new ThriftSerDeConfig(config));
     }
 
     @Override
-    public byte[] serialize(String subject, T data) throws ThriftSerializationException {
+    public byte[] serialize(String subject, TBase<? extends TBase, ? extends TFieldIdEnum> data) throws ThriftSerializationException {
         if (data == null) {
             return null;
         }
@@ -61,7 +56,7 @@ public class ThriftSerializer<T extends TBase<? extends TBase, ? extends TFieldI
         ByteArrayOutputStream out;
 
         try {
-            Schema schema = SchemaKeeperThriftData.get().getSchema(clazz);
+            Schema schema = SchemaKeeperThriftData.get().getSchema(data.getClass());
             int id = client.getSchemaId(schema);
 
             if (id == -1) {
@@ -77,7 +72,7 @@ public class ThriftSerializer<T extends TBase<? extends TBase, ? extends TFieldI
             writeSchemaId(out, id);
 
             BinaryEncoder encoder = encoderFactory.directBinaryEncoder(out, null);
-            ThriftDatumWriter<T> writer = new ThriftDatumWriter<>(schema);
+            ThriftDatumWriter<TBase<? extends TBase, ? extends TFieldIdEnum>> writer = new ThriftDatumWriter<>(schema);
             writer.write(data, encoder);
             encoder.flush();
             byte[] bytes = out.toByteArray();
