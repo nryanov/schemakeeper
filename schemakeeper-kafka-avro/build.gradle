@@ -1,0 +1,6 @@
+version '1.0-SNAPSHOT'
+
+dependencies {
+    compile project(':schemakeeper-avro')
+    compile project(':schemakeeper-kafka-common')
+}
