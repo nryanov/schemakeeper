@@ -1,6 +1,6 @@
 package schemakeeper.exception;
 
-public class SchemaKeeperException extends Exception {
+public class SchemaKeeperException extends RuntimeException {
     public SchemaKeeperException() {
     }
 

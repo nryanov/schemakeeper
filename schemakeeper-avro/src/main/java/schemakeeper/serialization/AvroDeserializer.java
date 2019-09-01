@@ -26,8 +26,8 @@ public class AvroDeserializer extends AbstractDeserializer<Object> implements Av
     private final DecoderFactory decoderFactory;
     private final SchemaKeeperClient client;
 
-    protected boolean useSpecificReaderSchema;
-    protected final Map<String, Schema> readerSchemaCache;
+    private boolean useSpecificReaderSchema;
+    private final Map<String, Schema> readerSchemaCache;
 
     public AvroDeserializer(SchemaKeeperClient client, AvroSerDeConfig config) {
         this.client = client;
@@ -48,7 +48,7 @@ public class AvroDeserializer extends AbstractDeserializer<Object> implements Av
     }
 
     public AvroDeserializer(Map<String, Object> config) {
-        this(null, new AvroSerDeConfig(config));
+        this(new AvroSerDeConfig(config));
     }
 
     public Object deserialize(byte[] data) throws AvroDeserializationException {
@@ -58,7 +58,7 @@ public class AvroDeserializer extends AbstractDeserializer<Object> implements Av
 
         try {
             ByteBuffer byteBuffer = ByteBuffer.wrap(data);
-            readProtocolByte(byteBuffer);
+            readProtocolByte(byteBuffer); // todo: check protocol byte
 
             int id = byteBuffer.getInt();
             Schema schema = client.getSchemaById(id);
@@ -94,6 +94,11 @@ public class AvroDeserializer extends AbstractDeserializer<Object> implements Av
             logger.warn("Deserialization error", e);
             return Optional.empty();
         }
+    }
+
+    @Override
+    public void close() {
+        client.close();
     }
 
     private Object handleByteArray(ByteBuffer byteBuffer, int dataLength) {

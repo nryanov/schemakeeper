@@ -73,6 +73,11 @@ public class ProtobufDeserializer extends AbstractDeserializer<com.google.protob
         }
     }
 
+    @Override
+    public void close() {
+        client.close();
+    }
+
     private <T extends com.google.protobuf.GeneratedMessageV3> ProtobufDatumReader<T> createReader(Schema schema, Class<T> clazz) {
         if (clazz == null) {
             return new ProtobufDatumReader<>(schema);

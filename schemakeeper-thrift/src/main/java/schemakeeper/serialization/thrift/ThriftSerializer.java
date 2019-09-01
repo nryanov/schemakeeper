@@ -82,4 +82,9 @@ public class ThriftSerializer extends AbstractSerializer<TBase<? extends TBase, 
             throw new ThriftSerializationException(e);
         }
     }
+
+    @Override
+    public void close() {
+        client.close();
+    }
 }

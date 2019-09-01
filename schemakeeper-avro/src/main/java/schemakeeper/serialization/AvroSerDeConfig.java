@@ -5,7 +5,7 @@ import org.apache.avro.Schema;
 import java.util.Collections;
 import java.util.Map;
 
-public final class AvroSerDeConfig extends SerDeConfig {
+public class AvroSerDeConfig extends SerDeConfig {
     public static final String USE_SPECIFIC_READER_CONFIG = "use_specific_reader";
     public static final String SPECIFIC_READER_SCHEMA_PER_SUBJECT_CONFIG = "specific_reader_schema_per_subject";
 

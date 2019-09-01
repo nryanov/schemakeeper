@@ -79,6 +79,11 @@ public class ThriftDeserializer extends AbstractDeserializer<TBase<? extends TBa
         }
     }
 
+    @Override
+    public void close() {
+        client.close();
+    }
+
     private <T extends TBase<? extends TBase, ? extends TFieldIdEnum>> ThriftDatumReader<T> createReader(Schema schema, Class<T> clazz) {
         if (clazz == null) {
             return new ThriftDatumReader<>(schema);

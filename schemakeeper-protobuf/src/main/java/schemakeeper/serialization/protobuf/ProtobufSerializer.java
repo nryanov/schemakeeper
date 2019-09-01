@@ -78,4 +78,9 @@ public class ProtobufSerializer extends AbstractSerializer<com.google.protobuf.G
             throw new ProtobufSerializationException(e);
         }
     }
+
+    @Override
+    public void close() {
+        client.close();
+    }
 }

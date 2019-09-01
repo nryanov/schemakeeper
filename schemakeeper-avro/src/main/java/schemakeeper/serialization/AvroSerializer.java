@@ -39,7 +39,7 @@ public class AvroSerializer extends AbstractSerializer<Object> implements AvroSe
     }
 
     public AvroSerializer(Map<String, Object> config) {
-        this(null, new AvroSerDeConfig(config));
+        this(new AvroSerDeConfig(config));
     }
 
     public byte[] serialize(String subject, Object value) throws AvroSerializationException {
@@ -84,6 +84,11 @@ public class AvroSerializer extends AbstractSerializer<Object> implements AvroSe
             logger.warn("Serialization error", e);
             return Optional.empty();
         }
+    }
+
+    @Override
+    public void close() {
+        client.close();
     }
 
     private void handleGeneric(ByteArrayOutputStream out, Object value, Schema schema) throws IOException {
