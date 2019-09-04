@@ -9,9 +9,11 @@ import org.junit.jupiter.api.Test;
 import schemakeeper.avro.test.Message;
 import schemakeeper.client.InMemorySchemaKeeperClient;
 import schemakeeper.exception.SchemaKeeperException;
+import schemakeeper.schema.CompatibilityType;
 import schemakeeper.serialization.AvroDeserializer;
 import schemakeeper.serialization.AvroSerDeConfig;
 import schemakeeper.serialization.AvroSerializer;
+import schemakeeper.serialization.SerDeConfig;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -26,7 +28,7 @@ public class AvroSerDeTest {
 
     @BeforeEach
     public void set() {
-        this.client = new InMemorySchemaKeeperClient("none");
+        this.client = new InMemorySchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.NONE);
         this.config = new AvroSerDeConfig(Collections.emptyMap());
         this.serializer = new AvroSerializer(client, config);
         this.deserializer = new AvroDeserializer(client, config);

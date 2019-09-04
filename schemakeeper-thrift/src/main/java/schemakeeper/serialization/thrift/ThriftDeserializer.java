@@ -35,7 +35,7 @@ public class ThriftDeserializer extends AbstractDeserializer<TBase<? extends TBa
     }
 
     public ThriftDeserializer(ThriftSerDeConfig config) {
-        this.client = CachedSchemaKeeperClient.apply(config.schemakeeperUrlConfig());
+        this.client = new CachedSchemaKeeperClient(config);
         this.decoderFactory = DecoderFactory.get();
     }
 

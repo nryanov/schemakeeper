@@ -11,23 +11,8 @@ buildscript {
 apply plugin: "com.commercehub.gradle.plugin.avro"
 
 dependencies {
-    implementation project(':schemakeeper-common')
-    implementation project(':schemakeeper-client')
-
-    compile group: 'com.typesafe', name: 'config', version: '1.3.4'
-
-    testCompile project(':schemakeeper-client').sourceSets.test.output
-}
-
-sourceSets {
-    main {
-        scala {
-            srcDirs = ['src/main/scala', 'src/main/java']
-        }
-        java {
-            srcDirs = []
-        }
-    }
+    compile project(':schemakeeper-common')
+    compile project(':schemakeeper-client')
 }
 
 generateAvroProtocol.enabled = false

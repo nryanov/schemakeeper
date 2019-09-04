@@ -4,7 +4,11 @@ import org.junit.jupiter.api.Test;
 import schemakeeper.client.InMemorySchemaKeeperClient;
 import schemakeeper.exception.ProtobufDeserializationException;
 import schemakeeper.exception.ProtobufSerializationException;
+import schemakeeper.schema.CompatibilityType;
+import schemakeeper.serialization.SerDeConfig;
 import schemakeeper.serialization.protobuf.test.Message;
+
+import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -12,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class ProtobufSerDeTest {
     @Test
     public void simpleSerializationTest() throws ProtobufSerializationException, ProtobufDeserializationException {
-        InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient("none");
+        InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.NONE);
         ProtobufSerializer serializer = new ProtobufSerializer(client);
         ProtobufDeserializer deserializer = new ProtobufDeserializer(client);
 
@@ -30,7 +34,7 @@ public class ProtobufSerDeTest {
 
     @Test
     public void throwErrorDueToSchemaIncompatibility() throws ProtobufSerializationException {
-        InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient("backward");
+        InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.BACKWARD);
         ProtobufSerializer s1 = new ProtobufSerializer(client);
         ProtobufSerializer s2 = new ProtobufSerializer(client);
 
@@ -52,7 +56,7 @@ public class ProtobufSerDeTest {
 
     @Test
     public void readDataUsingOldSchema() throws ProtobufSerializationException, ProtobufDeserializationException {
-        InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient("full");
+        InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.FULL);
         ProtobufSerializer s1 = new ProtobufSerializer(client);
         ProtobufSerializer s2 = new ProtobufSerializer(client);
         ProtobufDeserializer deserializer = new ProtobufDeserializer(client);
@@ -80,7 +84,7 @@ public class ProtobufSerDeTest {
 
     @Test
     public void readDataWithoutSpecifiedSchema() throws ProtobufSerializationException, ProtobufDeserializationException {
-        InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient("full");
+        InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.FULL);
         ProtobufSerializer s1 = new ProtobufSerializer(client);
         ProtobufSerializer s2 = new ProtobufSerializer(client);
         ProtobufDeserializer deserializer = new ProtobufDeserializer(client);

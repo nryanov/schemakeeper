@@ -36,7 +36,7 @@ public class ProtobufSerializer extends AbstractSerializer<com.google.protobuf.G
     }
 
     public ProtobufSerializer(ProtobufSerDeConfig config) {
-        this.client = CachedSchemaKeeperClient.apply(config.schemakeeperUrlConfig());
+        this.client = new CachedSchemaKeeperClient(config);
         this.encoderFactory = EncoderFactory.get();
         this.allowForceSchemaRegister = config.allowForceSchemaRegister();
     }

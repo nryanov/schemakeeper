@@ -1,6 +1,6 @@
 package schemakeeper.exception;
 
-public class ThriftDeserializationException extends AvroDeserializationException {
+public class ThriftDeserializationException extends DeserializationException {
     public ThriftDeserializationException() {
     }
 

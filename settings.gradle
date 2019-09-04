@@ -8,6 +8,5 @@ include 'schemakeeper-protobuf'
 include 'schemakeeper-thrift'
 include 'schemakeeper-kafka-protobuf'
 include 'schemakeeper-kafka-thrift'
-include 'schemakeeper-api'
-include 'schemakeeper-test-utils'
+include 'schemakeeper-kafka-common'
 

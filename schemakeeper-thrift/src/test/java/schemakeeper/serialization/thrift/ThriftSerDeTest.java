@@ -5,16 +5,20 @@ import org.junit.jupiter.api.Test;
 import schemakeeper.client.InMemorySchemaKeeperClient;
 import schemakeeper.exception.ThriftDeserializationException;
 import schemakeeper.exception.ThriftSerializationException;
+import schemakeeper.schema.CompatibilityType;
+import schemakeeper.serialization.SerDeConfig;
 import schemakeeper.serialization.thrift.test.ThriftMsgV1;
 import schemakeeper.serialization.thrift.test.ThriftMsgV2;
 import schemakeeper.serialization.thrift.test.ThriftMsgV5;
+
+import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ThriftSerDeTest {
     @Test
     public void simpleSerializationTest() throws ThriftSerializationException, ThriftDeserializationException {
-        InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient("none");
+        InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.NONE);
         ThriftSerializer serializer = new ThriftSerializer(client);
         ThriftDeserializer deserializer = new ThriftDeserializer(client);
 
@@ -27,7 +31,7 @@ public class ThriftSerDeTest {
 
     @Test
     public void throwErrorDueToSchemaIncompatibility() throws ThriftSerializationException {
-        InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient("backward");
+        InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.BACKWARD);
         ThriftSerializer s1 = new ThriftSerializer(client);
         ThriftSerializer s2 = new ThriftSerializer(client);
 
@@ -41,7 +45,7 @@ public class ThriftSerDeTest {
 
     @Test
     public void readDataUsingOldSchema() throws ThriftSerializationException, ThriftDeserializationException {
-        InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient("full");
+        InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.FULL);
         ThriftSerializer s1 = new ThriftSerializer(client);
         ThriftSerializer s2 = new ThriftSerializer(client);
         ThriftDeserializer deserializer = new ThriftDeserializer(client);
@@ -59,7 +63,7 @@ public class ThriftSerDeTest {
 
     @Test
     public void readDataWithoutSpecifiedSchema() throws ThriftSerializationException, ThriftDeserializationException {
-        InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient("full");
+        InMemorySchemaKeeperClient client = new InMemorySchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.FULL);
         ThriftSerializer s1 = new ThriftSerializer(client);
         ThriftSerializer s2 = new ThriftSerializer(client);
         ThriftDeserializer deserializer = new ThriftDeserializer(client);

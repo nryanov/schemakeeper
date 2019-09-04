@@ -6,18 +6,23 @@ plugins {
 version '1.0-SNAPSHOT'
 
 dependencies {
-    implementation project(':schemakeeper-common')
-    implementation project(':schemakeeper-avro')
-    implementation project(':schemakeeper-client')
+    compile project(':schemakeeper-common')
+    compile project(':schemakeeper-client')
 
     compile group: 'org.apache.avro', name: 'avro-protobuf', version: '1.9.0'
     compile group: 'com.google.protobuf', name: 'protobuf-java', version: '3.6.1'
-
-    testCompile project(':schemakeeper-test-utils')
 }
 
 tasks.whenTaskAdded {task ->
     if(task.name.contains("generateProto")) {
         task.enabled = false
+    }
+}
+
+sourceSets {
+    test {
+        java {
+            srcDirs = ["src/test/java", "$projectDir/generated"]
+        }
     }
 }

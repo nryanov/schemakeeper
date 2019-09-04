@@ -23,7 +23,7 @@ public class ProtobufDeserializer extends AbstractDeserializer<com.google.protob
 
 
     public ProtobufDeserializer(ProtobufSerDeConfig config) {
-        this.client = CachedSchemaKeeperClient.apply(config.schemakeeperUrlConfig());
+        this.client = new CachedSchemaKeeperClient(config);
         this.decoderFactory = DecoderFactory.get();
     }
 

@@ -39,7 +39,7 @@ public class AvroDeserializer extends AbstractDeserializer<Object> implements Av
     }
 
     public AvroDeserializer(AvroSerDeConfig config) {
-        this.client = CachedSchemaKeeperClient.apply(config.schemakeeperUrlConfig());
+        this.client = new CachedSchemaKeeperClient(config);
         this.decoderFactory = DecoderFactory.get();
         this.readerSchemaCache = new ConcurrentHashMap<>();
         this.useSpecificReaderSchema = config.useSpecificReader();

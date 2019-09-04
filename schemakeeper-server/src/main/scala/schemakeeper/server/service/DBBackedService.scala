@@ -14,6 +14,7 @@ import doobie._
 import doobie.implicits._
 import org.apache.avro.Schema
 import schemakeeper.schema.{AvroSchemaCompatibility, AvroSchemaUtils, CompatibilityType}
+import scala.collection.JavaConverters._
 
 
 class DBBackedService[F[_]: Applicative](config: Configuration) extends Service[F] {
@@ -84,13 +85,13 @@ class DBBackedService[F[_]: Applicative](config: Configuration) extends Service[
   }
 
   private def isSchemaCompatible(subject: String, newSchema: Schema, compatibilityType: CompatibilityType): ConnectionIO[Boolean] = compatibilityType match {
-    case CompatibilityType.None => Free.pure[connection.ConnectionOp, Boolean](true)
-    case CompatibilityType.Backward => getLastSchemaParsed(subject).map(_.forall(previousSchema => AvroSchemaCompatibility.BACKWARD_VALIDATOR.isCompatible(newSchema, previousSchema)))
-    case CompatibilityType.Forward => getLastSchemaParsed(subject).map(_.forall(previousSchema => AvroSchemaCompatibility.FORWARD_VALIDATOR.isCompatible(newSchema, previousSchema)))
-    case CompatibilityType.Full => getLastSchemaParsed(subject).map(_.forall(previousSchema => AvroSchemaCompatibility.FULL_VALIDATOR.isCompatible(newSchema, previousSchema)))
-    case CompatibilityType.BackwardTransitive => getLastSchemasParsed(subject).map(previousSchemas => AvroSchemaCompatibility.BACKWARD_TRANSITIVE_VALIDATOR.isCompatible(newSchema, previousSchemas))
-    case CompatibilityType.ForwardTransitive => getLastSchemasParsed(subject).map(previousSchemas => AvroSchemaCompatibility.FORWARD_TRANSITIVE_VALIDATOR.isCompatible(newSchema, previousSchemas))
-    case CompatibilityType.FullTransitive => getLastSchemasParsed(subject).map(previousSchemas => AvroSchemaCompatibility.FULL_TRANSITIVE_VALIDATOR.isCompatible(newSchema, previousSchemas))
+    case CompatibilityType.NONE => Free.pure[connection.ConnectionOp, Boolean](true)
+    case CompatibilityType.BACKWARD => getLastSchemaParsed(subject).map(_.forall(previousSchema => AvroSchemaCompatibility.BACKWARD_VALIDATOR.isCompatible(newSchema, previousSchema)))
+    case CompatibilityType.FORWARD => getLastSchemaParsed(subject).map(_.forall(previousSchema => AvroSchemaCompatibility.FORWARD_VALIDATOR.isCompatible(newSchema, previousSchema)))
+    case CompatibilityType.FULL => getLastSchemaParsed(subject).map(_.forall(previousSchema => AvroSchemaCompatibility.FULL_VALIDATOR.isCompatible(newSchema, previousSchema)))
+    case CompatibilityType.BACKWARD_TRANSITIVE => getLastSchemasParsed(subject).map(previousSchemas => AvroSchemaCompatibility.BACKWARD_TRANSITIVE_VALIDATOR.isCompatible(newSchema, previousSchemas.asJava))
+    case CompatibilityType.FORWARD_TRANSITIVE => getLastSchemasParsed(subject).map(previousSchemas => AvroSchemaCompatibility.FORWARD_TRANSITIVE_VALIDATOR.isCompatible(newSchema, previousSchemas.asJava))
+    case CompatibilityType.FULL_TRANSITIVE => getLastSchemasParsed(subject).map(previousSchemas => AvroSchemaCompatibility.FULL_TRANSITIVE_VALIDATOR.isCompatible(newSchema, previousSchemas.asJava))
   }
 
   private def getLastSchemaParsed(subject: String): ConnectionIO[Option[Schema]] = storage.getLastSchema(subject).map(_.map(AvroSchemaUtils.parseSchema))

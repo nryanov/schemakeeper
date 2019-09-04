@@ -8,7 +8,7 @@ import com.dimafeng.testcontainers.{ForAllTestContainer, MySQLContainer}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, WordSpec}
-import schemakeeper.avro.compatibility.CompatibilityType
+import schemakeeper.schema.CompatibilityType
 import schemakeeper.server.Configuration
 import schemakeeper.server.service.DBBackedService
 
@@ -89,7 +89,7 @@ class MySQLStorageTest extends WordSpec with ForAllTestContainer with BeforeAndA
         .endRecord()
 
       schemaStorage.registerNewSubjectSchema("test", schema.toString)
-      schemaStorage.updateSubjectCompatibility("test", CompatibilityType.Full)
+      schemaStorage.updateSubjectCompatibility("test", CompatibilityType.FULL)
       Try {
         schemaStorage.registerNewSubjectSchema("test", updatedSchema.toString)
       }
@@ -114,7 +114,7 @@ class MySQLStorageTest extends WordSpec with ForAllTestContainer with BeforeAndA
         .endRecord()
 
       schemaStorage.registerNewSubjectSchema("test", schema.toString)
-      schemaStorage.updateSubjectCompatibility("test", CompatibilityType.Backward)
+      schemaStorage.updateSubjectCompatibility("test", CompatibilityType.BACKWARD)
       schemaStorage.registerNewSubjectSchema("test", updatedSchema.toString)
 
       assert(schemaStorage.getLastSchemas("test").length == 2)
@@ -123,7 +123,7 @@ class MySQLStorageTest extends WordSpec with ForAllTestContainer with BeforeAndA
 
     "delete specific subject schema version" in {
       schemaStorage.registerNewSubjectSchema("test", Schema.create(Schema.Type.STRING).toString)
-      schemaStorage.updateSubjectCompatibility("test", CompatibilityType.None)
+      schemaStorage.updateSubjectCompatibility("test", CompatibilityType.NONE)
       schemaStorage.registerNewSubjectSchema("test", Schema.create(Schema.Type.INT).toString)
 
       assert(schemaStorage.getLastSchemas("test").length == 2)
@@ -133,7 +133,7 @@ class MySQLStorageTest extends WordSpec with ForAllTestContainer with BeforeAndA
 
     "delete subject" in {
       schemaStorage.registerNewSubjectSchema("test", Schema.create(Schema.Type.STRING).toString)
-      schemaStorage.updateSubjectCompatibility("test", CompatibilityType.None)
+      schemaStorage.updateSubjectCompatibility("test", CompatibilityType.NONE)
       schemaStorage.registerNewSubjectSchema("test", Schema.create(Schema.Type.INT).toString)
 
       assert(schemaStorage.getLastSchemas("test").length == 2)

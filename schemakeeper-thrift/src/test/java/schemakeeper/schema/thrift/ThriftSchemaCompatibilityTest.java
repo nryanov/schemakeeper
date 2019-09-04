@@ -15,7 +15,7 @@ public class ThriftSchemaCompatibilityTest {
         Schema s2 = SchemaKeeperThriftData.get().getSchema(ThriftMsgV2.class);
 
         //always true
-        assertTrue(AvroSchemaCompatibility.NONE_VALIDATOR().isCompatible(s2, s1));
+        assertTrue(AvroSchemaCompatibility.NONE_VALIDATOR.isCompatible(s2, s1));
     }
 
     @Test
@@ -23,7 +23,7 @@ public class ThriftSchemaCompatibilityTest {
         Schema s1 = SchemaKeeperThriftData.get().getSchema(ThriftMsgV1.class);
         Schema s2 = SchemaKeeperThriftData.get().getSchema(ThriftMsgV3.class);
 
-        assertTrue(AvroSchemaCompatibility.BACKWARD_VALIDATOR().isCompatible(s2, s1));
+        assertTrue(AvroSchemaCompatibility.BACKWARD_VALIDATOR.isCompatible(s2, s1));
     }
 
     @Test
@@ -31,7 +31,7 @@ public class ThriftSchemaCompatibilityTest {
         Schema s1 = SchemaKeeperThriftData.get().getSchema(ThriftMsgV1.class);
         Schema s2 = SchemaKeeperThriftData.get().getSchema(ThriftMsgV2.class);
 
-        assertFalse(AvroSchemaCompatibility.BACKWARD_VALIDATOR().isCompatible(s2, s1));
+        assertFalse(AvroSchemaCompatibility.BACKWARD_VALIDATOR.isCompatible(s2, s1));
     }
 
     @Test
@@ -39,7 +39,7 @@ public class ThriftSchemaCompatibilityTest {
         Schema s1 = SchemaKeeperThriftData.get().getSchema(ThriftMsgV3.class);
         Schema s2 = SchemaKeeperThriftData.get().getSchema(ThriftMsgV4.class);
 
-        assertTrue(AvroSchemaCompatibility.FORWARD_VALIDATOR().isCompatible(s2, s1));
+        assertTrue(AvroSchemaCompatibility.FORWARD_VALIDATOR.isCompatible(s2, s1));
     }
 
     @Test
@@ -47,7 +47,7 @@ public class ThriftSchemaCompatibilityTest {
         Schema s1 = SchemaKeeperThriftData.get().getSchema(ThriftMsgV1.class);
         Schema s2 = SchemaKeeperThriftData.get().getSchema(ThriftMsgV2.class);
 
-        assertFalse(AvroSchemaCompatibility.FORWARD_VALIDATOR().isCompatible(s2, s1));
+        assertFalse(AvroSchemaCompatibility.FORWARD_VALIDATOR.isCompatible(s2, s1));
     }
 
 
@@ -56,7 +56,7 @@ public class ThriftSchemaCompatibilityTest {
         Schema s1 = SchemaKeeperThriftData.get().getSchema(ThriftMsgV1.class);
         Schema s2 = SchemaKeeperThriftData.get().getSchema(ThriftMsgV5.class);
 
-        assertTrue(AvroSchemaCompatibility.FULL_VALIDATOR().isCompatible(s2, s1));
+        assertTrue(AvroSchemaCompatibility.FULL_VALIDATOR.isCompatible(s2, s1));
     }
 
     @Test
@@ -64,6 +64,6 @@ public class ThriftSchemaCompatibilityTest {
         Schema s1 = SchemaKeeperThriftData.get().getSchema(ThriftMsgV1.class);
         Schema s2 = SchemaKeeperThriftData.get().getSchema(ThriftMsgV2.class);
 
-        assertFalse(AvroSchemaCompatibility.FULL_VALIDATOR().isCompatible(s2, s1));
+        assertFalse(AvroSchemaCompatibility.FULL_VALIDATOR.isCompatible(s2, s1));
     }
 }

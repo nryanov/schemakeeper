@@ -18,7 +18,7 @@ public class ProtobufSchemaCompatibilityTest {
         Schema s2 = ProtobufData.get().getSchema(Message.ProtoMsgV2.class);
 
         //always true
-        assertTrue(AvroSchemaCompatibility.NONE_VALIDATOR().isCompatible(s2, s1));
+        assertTrue(AvroSchemaCompatibility.NONE_VALIDATOR.isCompatible(s2, s1));
     }
 
     @Test
@@ -26,7 +26,7 @@ public class ProtobufSchemaCompatibilityTest {
         Schema s1 = ProtobufData.get().getSchema(Message.ProtoMsgV1.class);
         Schema s2 = ProtobufData.get().getSchema(Message.ProtoMsgV3.class);
 
-        assertTrue(AvroSchemaCompatibility.BACKWARD_VALIDATOR().isCompatible(s2, s1));
+        assertTrue(AvroSchemaCompatibility.BACKWARD_VALIDATOR.isCompatible(s2, s1));
     }
 
     @Test
@@ -34,7 +34,7 @@ public class ProtobufSchemaCompatibilityTest {
         Schema s1 = ProtobufData.get().getSchema(Message.ProtoMsgV1.class);
         Schema s2 = ProtobufData.get().getSchema(Message.ProtoMsgV2.class);
 
-        assertFalse(AvroSchemaCompatibility.BACKWARD_VALIDATOR().isCompatible(s2, s1));
+        assertFalse(AvroSchemaCompatibility.BACKWARD_VALIDATOR.isCompatible(s2, s1));
     }
 
     @Test
@@ -42,7 +42,7 @@ public class ProtobufSchemaCompatibilityTest {
         Schema s1 = ProtobufData.get().getSchema(Message.ProtoMsgV3.class);
         Schema s2 = ProtobufData.get().getSchema(Message.ProtoMsgV4.class);
 
-        assertTrue(AvroSchemaCompatibility.FORWARD_VALIDATOR().isCompatible(s2, s1));
+        assertTrue(AvroSchemaCompatibility.FORWARD_VALIDATOR.isCompatible(s2, s1));
     }
 
     @Test
@@ -50,16 +50,15 @@ public class ProtobufSchemaCompatibilityTest {
         Schema s1 = ProtobufData.get().getSchema(Message.ProtoMsgV1.class);
         Schema s2 = ProtobufData.get().getSchema(Message.ProtoMsgV2.class);
 
-        assertFalse(AvroSchemaCompatibility.FORWARD_VALIDATOR().isCompatible(s2, s1));
+        assertFalse(AvroSchemaCompatibility.FORWARD_VALIDATOR.isCompatible(s2, s1));
     }
-
-
+    
     @Test
     public void fullCompatibilityTrue() {
         Schema s1 = ProtobufData.get().getSchema(Message.ProtoMsgV1.class);
         Schema s2 = ProtobufData.get().getSchema(Message.ProtoMsgV4.class);
 
-        assertTrue(AvroSchemaCompatibility.FULL_VALIDATOR().isCompatible(s2, s1));
+        assertTrue(AvroSchemaCompatibility.FULL_VALIDATOR.isCompatible(s2, s1));
     }
 
     @Test
@@ -67,6 +66,6 @@ public class ProtobufSchemaCompatibilityTest {
         Schema s1 = ProtobufData.get().getSchema(Message.ProtoMsgV1.class);
         Schema s2 = ProtobufData.get().getSchema(Message.ProtoMsgV2.class);
 
-        assertFalse(AvroSchemaCompatibility.FULL_VALIDATOR().isCompatible(s2, s1));
+        assertFalse(AvroSchemaCompatibility.FULL_VALIDATOR.isCompatible(s2, s1));
     }
 }

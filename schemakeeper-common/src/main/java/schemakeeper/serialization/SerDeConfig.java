@@ -3,8 +3,8 @@ package schemakeeper.serialization;
 import java.util.Map;
 
 public class SerDeConfig {
-    public static final String SCHEMAKEEPER_URL_CONFIG = "schemakeeper_url";
-    public static final String ALLOW_FORCE_SCHEMA_REGISTER_CONFIG = "allow_force_schema_register";
+    public static final String SCHEMAKEEPER_URL_CONFIG = "schemakeeper.url";
+    public static final String ALLOW_FORCE_SCHEMA_REGISTER_CONFIG = "allow.force.schema.register";
 
     protected final Map<String, Object> config;
 

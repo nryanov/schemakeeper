@@ -38,7 +38,7 @@ public class ThriftSerializer extends AbstractSerializer<TBase<? extends TBase, 
     }
 
     public ThriftSerializer(ThriftSerDeConfig config) {
-        this.client = CachedSchemaKeeperClient.apply(config.schemakeeperUrlConfig());
+        this.client = new CachedSchemaKeeperClient(config);
         this.encoderFactory = EncoderFactory.get();
         this.allowForceSchemaRegister = config.allowForceSchemaRegister();
     }

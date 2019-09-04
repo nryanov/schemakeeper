@@ -33,7 +33,7 @@ public class AvroSerializer extends AbstractSerializer<Object> implements AvroSe
     }
 
     public AvroSerializer(AvroSerDeConfig config) {
-        this.client = CachedSchemaKeeperClient.apply(config.schemakeeperUrlConfig());
+        this.client = new CachedSchemaKeeperClient(config);
         this.encoderFactory = EncoderFactory.get();
         this.allowForceSchemaRegister = config.allowForceSchemaRegister();
     }

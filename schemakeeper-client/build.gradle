@@ -1,11 +1,8 @@
 version '1.0-SNAPSHOT'
 
 dependencies {
-    implementation project(':schemakeeper-common')
-
-    compile group: 'com.github.finagle', name: 'finch-core_2.12', version: '0.29.0'
-    compile group: 'com.github.finagle', name: 'finch-circe_2.12', version: '0.29.0'
-    compile group: 'io.circe', name: 'circe-generic_2.12', version: '0.11.1'
+    compile project(':schemakeeper-common')
+    compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.9'
 
     testCompile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
 }
