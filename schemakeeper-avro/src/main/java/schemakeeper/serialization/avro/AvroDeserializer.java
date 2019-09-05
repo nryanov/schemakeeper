@@ -1,4 +1,4 @@
-package schemakeeper.serialization;
+package schemakeeper.serialization.avro;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -14,6 +14,7 @@ import schemakeeper.client.CachedSchemaKeeperClient;
 import schemakeeper.client.SchemaKeeperClient;
 import schemakeeper.exception.AvroDeserializationException;
 import schemakeeper.schema.AvroSchemaUtils;
+import schemakeeper.serialization.AbstractDeserializer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

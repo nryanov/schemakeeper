@@ -7,12 +7,12 @@ import org.apache.avro.generic.GenericRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import schemakeeper.avro.test.Message;
-import schemakeeper.client.InMemorySchemaKeeperClient;
+import schemakeeper.client.MockSchemaKeeperClient;
 import schemakeeper.exception.SchemaKeeperException;
 import schemakeeper.schema.CompatibilityType;
-import schemakeeper.serialization.AvroDeserializer;
-import schemakeeper.serialization.AvroSerDeConfig;
-import schemakeeper.serialization.AvroSerializer;
+import schemakeeper.serialization.avro.AvroDeserializer;
+import schemakeeper.serialization.avro.AvroSerDeConfig;
+import schemakeeper.serialization.avro.AvroSerializer;
 import schemakeeper.serialization.SerDeConfig;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -21,14 +21,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
 public class AvroSerDeTest {
-    private InMemorySchemaKeeperClient client;
+    private MockSchemaKeeperClient client;
     private AvroSerializer serializer;
     private AvroDeserializer deserializer;
     private AvroSerDeConfig config;
 
     @BeforeEach
     public void set() {
-        this.client = new InMemorySchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.NONE);
+        this.client = new MockSchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.NONE);
         this.config = new AvroSerDeConfig(Collections.emptyMap());
         this.serializer = new AvroSerializer(client, config);
         this.deserializer = new AvroDeserializer(client, config);

@@ -1,6 +1,7 @@
-package schemakeeper.serialization;
+package schemakeeper.serialization.avro;
 
 import org.apache.avro.Schema;
+import schemakeeper.serialization.SerDeConfig;
 
 import java.util.Collections;
 import java.util.Map;

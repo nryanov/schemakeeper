@@ -14,8 +14,8 @@ import java.util.Map;
 /**
  * Useful for debug or testing purposes
  */
-public class InMemorySchemaKeeperClient extends SchemaKeeperClient {
-    private static final Logger logger = LoggerFactory.getLogger(InMemorySchemaKeeperClient.class);
+public class MockSchemaKeeperClient extends SchemaKeeperClient {
+    private static final Logger logger = LoggerFactory.getLogger(MockSchemaKeeperClient.class);
 
     private AvroSchemaCompatibility avroSchemaCompatibility;
 
@@ -24,13 +24,11 @@ public class InMemorySchemaKeeperClient extends SchemaKeeperClient {
     private Map<Integer, Schema> idSchema;
     private Map<String, Map<Integer, Schema>> subjectSchemas;
 
-
-
-    public InMemorySchemaKeeperClient(SerDeConfig config) {
+    public MockSchemaKeeperClient(SerDeConfig config) {
         this(config, CompatibilityType.NONE);
     }
 
-    public InMemorySchemaKeeperClient(SerDeConfig config, CompatibilityType compatibilityType) {
+    public MockSchemaKeeperClient(SerDeConfig config, CompatibilityType compatibilityType) {
         super(config);
 
         this.id = 0;
@@ -61,6 +59,26 @@ public class InMemorySchemaKeeperClient extends SchemaKeeperClient {
                 this.avroSchemaCompatibility = AvroSchemaCompatibility.FULL_TRANSITIVE_VALIDATOR;
                 break;
         }
+    }
+
+    public AvroSchemaCompatibility getAvroSchemaCompatibility() {
+        return avroSchemaCompatibility;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public Map<Schema, Integer> getSchemaId() {
+        return Collections.unmodifiableMap(schemaId);
+    }
+
+    public Map<Integer, Schema> getIdSchema() {
+        return Collections.unmodifiableMap(idSchema);
+    }
+
+    public Map<String, Map<Integer, Schema>> getSubjectSchemas() {
+        return Collections.unmodifiableMap(subjectSchemas);
     }
 
     @Override
