@@ -1,13 +1,20 @@
 package schemakeeper.kafka.serialization.avro;
 
 import org.apache.kafka.common.serialization.Deserializer;
-import schemakeeper.serialization.AvroDeserializer;
+import schemakeeper.serialization.avro.AvroDeserializer;
 
 import java.util.Map;
 
 public class KafkaAvroDeserializer implements Deserializer<Object> {
     private AvroDeserializer deserializer;
     private boolean isKey;
+
+    public KafkaAvroDeserializer() {
+    }
+
+    public KafkaAvroDeserializer(AvroDeserializer deserializer) {
+        this.deserializer = deserializer;
+    }
 
     @SuppressWarnings("unchecked")
     @Override

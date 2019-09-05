@@ -1,6 +1,11 @@
-version '1.0-SNAPSHOT'
+apply plugin: 'scala'
 
 dependencies {
     compile project(':schemakeeper-thrift')
     compile project(':schemakeeper-kafka-common')
+
+    testImplementation 'org.scala-lang:scala-library:2.12.8'
+    testCompile group: 'org.scalatest', name: 'scalatest_2.12', version: '3.0.8'
+    testCompile 'io.github.embeddedkafka:embedded-kafka_2.12:2.1.0'
+    testCompile project(':schemakeeper-thrift').sourceSets.test.output
 }

@@ -28,6 +28,10 @@ public class ProtobufDeserializer extends AbstractDeserializer<com.google.protob
     }
 
     public ProtobufDeserializer(SchemaKeeperClient client) {
+        this(client, null);
+    }
+
+    public ProtobufDeserializer(SchemaKeeperClient client, ProtobufSerDeConfig config) {
         this.decoderFactory = DecoderFactory.get();
         this.client = client;
     }

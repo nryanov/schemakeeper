@@ -7,21 +7,13 @@ buildscript {
     }
 }
 
-version '1.0-SNAPSHOT'
-
 allprojects {
+    apply plugin: 'java'
     apply plugin: 'idea'
 
     repositories {
         mavenCentral()
     }
-}
-
-subprojects {
-    apply plugin: 'java'
-    apply plugin: 'scala'
-
-    group 'org.schemakeeper'
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
@@ -30,14 +22,16 @@ subprojects {
         options.encoding = 'UTF-8'
     }
 
-    dependencies {
-        implementation 'org.scala-lang:scala-library:2.12.8'
+    group 'org.schemakeeper'
+    version '1.0-SNAPSHOT'
+}
 
+subprojects {
+    dependencies {
         compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
-        compile group: 'org.apache.avro', name: 'avro', version: '1.8.2'
+        compile group: 'org.apache.avro', name: 'avro', version: '1.9.0'
 
         testCompile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
-        testCompile group: 'org.scalatest', name: 'scalatest_2.12', version: '3.0.8'
         testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.5.1'
     }
 }

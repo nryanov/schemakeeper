@@ -3,7 +3,7 @@ package schemakeeper.kafka.serialization.avro;
 import schemakeeper.kafka.DefaultNamingStrategy;
 import schemakeeper.kafka.NamingStrategy;
 import schemakeeper.kafka.serialization.KafkaSerDeConfig;
-import schemakeeper.serialization.AvroSerDeConfig;
+import schemakeeper.serialization.avro.AvroSerDeConfig;
 
 import java.util.Map;
 

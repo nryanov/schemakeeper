@@ -11,6 +11,13 @@ public class KafkaThriftDeserializer implements Deserializer<TBase<? extends TBa
     private ThriftDeserializer deserializer;
     private boolean isKey;
 
+    public KafkaThriftDeserializer() {
+    }
+
+    public KafkaThriftDeserializer(ThriftDeserializer deserializer) {
+        this.deserializer = deserializer;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {

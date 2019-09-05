@@ -10,6 +10,13 @@ public class KafkaProtobufDeserializer implements Deserializer<com.google.protob
     private ProtobufDeserializer deserializer;
     boolean isKey;
 
+    public KafkaProtobufDeserializer() {
+    }
+
+    public KafkaProtobufDeserializer(ProtobufDeserializer deserializer) {
+        this.deserializer = deserializer;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {

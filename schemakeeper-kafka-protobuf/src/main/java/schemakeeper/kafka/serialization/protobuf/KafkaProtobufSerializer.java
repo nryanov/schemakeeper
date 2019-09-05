@@ -2,6 +2,7 @@ package schemakeeper.kafka.serialization.protobuf;
 
 import com.google.protobuf.GeneratedMessageV3;
 import org.apache.kafka.common.serialization.Serializer;
+import schemakeeper.kafka.DefaultNamingStrategy;
 import schemakeeper.kafka.NamingStrategy;
 import schemakeeper.serialization.protobuf.ProtobufSerializer;
 
@@ -11,6 +12,14 @@ public class KafkaProtobufSerializer implements Serializer<com.google.protobuf.G
     private ProtobufSerializer serializer;
     private NamingStrategy namingStrategy;
     private boolean isKey;
+
+    public KafkaProtobufSerializer() {
+    }
+
+    public KafkaProtobufSerializer(ProtobufSerializer serializer) {
+        this.serializer = serializer;
+        this.namingStrategy = DefaultNamingStrategy.INSTANCE;
+    }
 
     @SuppressWarnings("unchecked")
     @Override

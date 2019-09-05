@@ -3,6 +3,7 @@ package schemakeeper.kafka.serialization.thrift;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.thrift.TBase;
 import org.apache.thrift.TFieldIdEnum;
+import schemakeeper.kafka.DefaultNamingStrategy;
 import schemakeeper.kafka.NamingStrategy;
 import schemakeeper.serialization.thrift.ThriftSerializer;
 
@@ -12,6 +13,14 @@ public class KafkaThriftSerializer implements Serializer<TBase<? extends TBase, 
     private ThriftSerializer serializer;
     private NamingStrategy namingStrategy;
     private boolean isKey;
+
+    public KafkaThriftSerializer() {
+    }
+
+    public KafkaThriftSerializer(ThriftSerializer serializer) {
+        this.serializer = serializer;
+        this.namingStrategy = DefaultNamingStrategy.INSTANCE;
+    }
 
     @SuppressWarnings("unchecked")
     @Override
