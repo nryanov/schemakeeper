@@ -1,19 +1,20 @@
 package schemakeeper.server.service
 
 import cats.Applicative
+import cats.data.OptionT
 import cats.free.Free
 import doobie.ConnectionIO
 import doobie.free.connection
 import schemakeeper.server.Configuration
 import schemakeeper.server.datasource.DataSource
-import schemakeeper.server.metadata.AvroSchemaMetadata
 import schemakeeper.server.storage.DatabaseStorage
 import schemakeeper.server.storage.migration.FlywayMigrationTool
 import schemakeeper.server.util.Utils
-import doobie._
 import doobie.implicits._
 import org.apache.avro.Schema
+import schemakeeper.api.SchemaMetadata
 import schemakeeper.schema.{AvroSchemaCompatibility, AvroSchemaUtils, CompatibilityType}
+
 import scala.collection.JavaConverters._
 
 
@@ -27,7 +28,7 @@ class DBBackedService[F[_]: Applicative](config: Configuration) extends Service[
   override def subjectVersions(subject: String): F[List[Int]] =
     transaction(storage.subjectVersions(subject))
 
-  override def subjectSchemaByVersion(subject: String, version: Int): F[Option[AvroSchemaMetadata]] =
+  override def subjectSchemaByVersion(subject: String, version: Int): F[Option[SchemaMetadata]] =
     transaction(storage.subjectSchemaByVersion(subject, version))
 
   override def subjectOnlySchemaByVersion(subject: String, version: Int): F[Option[String]] =
@@ -42,7 +43,7 @@ class DBBackedService[F[_]: Applicative](config: Configuration) extends Service[
   override def deleteSubjectVersion(subject: String, version: Int): F[Boolean] =
     transaction(storage.deleteSubjectVersion(subject, version))
 
-  override def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): F[Boolean] =
+  override def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): F[Option[CompatibilityType]] =
     transaction(storage.updateSubjectCompatibility(subject, compatibilityType))
 
   override def getSubjectCompatibility(subject: String): F[Option[CompatibilityType]] =
@@ -53,6 +54,15 @@ class DBBackedService[F[_]: Applicative](config: Configuration) extends Service[
 
   override def getLastSchemas(subject: String): F[List[String]] =
     transaction(storage.getLastSchemas(subject))
+
+  override def checkSubjectSchemaCompatibility(subject: String, schema: String): F[Boolean] = {
+    val query = for {
+      compatibility <- storage.getSubjectCompatibility(subject)
+      r <- if (compatibility.isDefined) isSchemaCompatible(subject, AvroSchemaUtils.parseSchema(schema), compatibility.get) else Free.pure[connection.ConnectionOp, Boolean](false)
+    } yield r
+
+    transaction(query)
+  }
 
   // todo: lock all subject schemas for update
   override def registerNewSubjectSchema(subject: String, schema: String): F[Int] = {

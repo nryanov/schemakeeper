@@ -1,8 +1,8 @@
 package schemakeeper.server.storage
 
-import schemakeeper.server.metadata.AvroSchemaMetadata
 import doobie._
 import doobie.implicits._
+import schemakeeper.api.SchemaMetadata
 import schemakeeper.schema.CompatibilityType
 
 class DatabaseStorage() extends SchemaStorage[ConnectionIO] {
@@ -23,13 +23,14 @@ class DatabaseStorage() extends SchemaStorage[ConnectionIO] {
       .query[Int]
       .to[List]
 
-  override def subjectSchemaByVersion(subject: String, version: Int): ConnectionIO[Option[AvroSchemaMetadata]] =
+  override def subjectSchemaByVersion(subject: String, version: Int): ConnectionIO[Option[SchemaMetadata]] =
     sql"select subject_name, id, version, schema_text from schemakeeper.schema_info where subject_name = $subject and version = $version"
-      .query[AvroSchemaMetadata]
+      .query[(String, Int, Int, String)]
+      .map(tuple => SchemaMetadata.instance(tuple._1, tuple._2, tuple._3, tuple._4))
       .option
 
   override def subjectOnlySchemaByVersion(subject: String, version: Int): ConnectionIO[Option[String]] =
-    subjectSchemaByVersion(subject, version).map(_.map(_.schema))
+    subjectSchemaByVersion(subject, version).map(_.map(_.getSchemaText))
 
   override def deleteSubject(subject: String): ConnectionIO[Boolean] =
     sql"delete from schemakeeper.subject where subject_name = $subject"
@@ -77,17 +78,18 @@ class DatabaseStorage() extends SchemaStorage[ConnectionIO] {
       .query[String]
       .to[List]
 
-  override def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): ConnectionIO[Boolean] =
-    sql"update schemakeeper.subject set compatibility_type_name = ${compatibilityType.entryName.toLowerCase} where subject_name = $subject"
+  override def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): ConnectionIO[Option[CompatibilityType]] =
+    sql"update schemakeeper.subject set compatibility_type_name = ${compatibilityType.name().toLowerCase} where subject_name = $subject"
       .update
       .run
       .map(_ > 0)
+      .map(f => if (f) Some(compatibilityType) else None)
 
   override def getSubjectCompatibility(subject: String): ConnectionIO[Option[CompatibilityType]] =
     sql"select compatibility_type_name from schemakeeper.subject where subject_name = $subject"
       .query[String]
       .option
-      .map(_.flatMap(CompatibilityType.withNameInsensitiveOption))
+      .map(_.flatMap(v => Option(CompatibilityType.valueOf(v))))
 }
 
 object DatabaseStorage {

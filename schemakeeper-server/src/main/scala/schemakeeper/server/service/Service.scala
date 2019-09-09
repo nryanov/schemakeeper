@@ -1,14 +1,14 @@
 package schemakeeper.server.service
 
+import schemakeeper.api.SchemaMetadata
 import schemakeeper.schema.CompatibilityType
-import schemakeeper.server.metadata.AvroSchemaMetadata
 
 trait Service[F[_]] {
   def subjects(): F[List[String]]
 
   def subjectVersions(subject: String): F[List[Int]]
 
-  def subjectSchemaByVersion(subject: String, version: Int): F[Option[AvroSchemaMetadata]]
+  def subjectSchemaByVersion(subject: String, version: Int): F[Option[SchemaMetadata]]
 
   def subjectOnlySchemaByVersion(subject: String, version: Int): F[Option[String]]
 
@@ -16,9 +16,11 @@ trait Service[F[_]] {
 
   def deleteSubject(subject: String): F[Boolean]
 
+  def checkSubjectSchemaCompatibility(subject: String, schema: String): F[Boolean]
+
   def deleteSubjectVersion(subject: String, version: Int): F[Boolean]
 
-  def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): F[Boolean]
+  def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): F[Option[CompatibilityType]]
 
   def getSubjectCompatibility(subject: String): F[Option[CompatibilityType]]
 

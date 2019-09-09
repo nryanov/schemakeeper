@@ -1,7 +1,7 @@
 package schemakeeper.server.storage
 
+import schemakeeper.api.SchemaMetadata
 import schemakeeper.schema.CompatibilityType
-import schemakeeper.server.metadata.AvroSchemaMetadata
 
 
 trait SchemaStorage[F[_]] {
@@ -9,7 +9,7 @@ trait SchemaStorage[F[_]] {
 
   def subjectVersions(subject: String): F[List[Int]]
 
-  def subjectSchemaByVersion(subject: String, version: Int): F[Option[AvroSchemaMetadata]]
+  def subjectSchemaByVersion(subject: String, version: Int): F[Option[SchemaMetadata]]
 
   def subjectOnlySchemaByVersion(subject: String, version: Int): F[Option[String]]
 
@@ -19,7 +19,7 @@ trait SchemaStorage[F[_]] {
 
   def deleteSubjectVersion(subject: String, version: Int): F[Boolean]
 
-  def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): F[Boolean]
+  def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): F[Option[CompatibilityType]]
 
   def getSubjectCompatibility(subject: String): F[Option[CompatibilityType]]
 
