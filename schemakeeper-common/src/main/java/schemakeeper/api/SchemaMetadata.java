@@ -1,4 +1,4 @@
-package schemakeeper.schema;
+package schemakeeper.api;
 
 import java.util.Objects;
 
@@ -7,6 +7,10 @@ public class SchemaMetadata {
     private int id;
     private int version;
     private String schemaText;
+
+    public static SchemaMetadata instance(String subject, int id, int version, String schemaText) {
+        return new SchemaMetadata(subject, id, version, schemaText);
+    }
 
     public SchemaMetadata() {
     }
