@@ -1,4 +1,4 @@
-package schemakeeper.server.storage.migration
+package schemakeeper.server.datasource.migration
 
 import enumeratum._
 
@@ -12,4 +12,6 @@ object SupportedDatabaseProvider extends Enum[SupportedDatabaseProvider] {
   case object PostgreSQL extends SupportedDatabaseProvider
 
   case object MySQL extends SupportedDatabaseProvider
+
+  case object H2 extends SupportedDatabaseProvider
 }

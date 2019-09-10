@@ -100,6 +100,7 @@ class MockService(data: InitialData) extends Service[Id] {
     case CompatibilityType.BACKWARD => AvroSchemaCompatibility.BACKWARD_VALIDATOR.isCompatible(newSchema, previousSchema)
     case CompatibilityType.FORWARD => AvroSchemaCompatibility.FORWARD_VALIDATOR.isCompatible(newSchema, previousSchema)
     case CompatibilityType.FULL => AvroSchemaCompatibility.FULL_VALIDATOR.isCompatible(newSchema, previousSchema)
+    case _ => false // do not check transitive compatibility types here
   }
 }
 

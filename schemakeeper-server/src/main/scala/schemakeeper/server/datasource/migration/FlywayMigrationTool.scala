@@ -1,8 +1,9 @@
-package schemakeeper.server.storage.migration
+package schemakeeper.server.datasource.migration
 
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.internal.configuration.ConfigUtils
 import schemakeeper.server.Configuration
+import schemakeeper.server.datasource.DataSourceUtils
 
 import scala.collection.JavaConverters._
 
@@ -12,8 +13,9 @@ object FlywayMigrationTool {
       .configure()
       .configuration(
         Map(
-          ConfigUtils.LOCATIONS -> getMigrationLocation(detectDatabaseProvider(configuration.databaseConnectionString)),
-          ConfigUtils.SCHEMAS -> "schemakeeper"
+          ConfigUtils.LOCATIONS -> getMigrationLocation(DataSourceUtils.detectDatabaseProvider(configuration.databaseConnectionString)),
+          ConfigUtils.SCHEMAS -> configuration.databaseSchema,
+          s"${ConfigUtils.PLACEHOLDERS_PROPERTY_PREFIX}schemakeeper_schema" -> configuration.databaseSchema
         ).asJava
       )
       .dataSource(configuration.databaseConnectionString, configuration.databaseUsername, configuration.databasePassword)
@@ -22,14 +24,9 @@ object FlywayMigrationTool {
     flyway.migrate()
   }
 
-  private def detectDatabaseProvider(connectionString: String): SupportedDatabaseProvider = connectionString match {
-    case cs if cs.startsWith("jdbc:postgresql") => SupportedDatabaseProvider.PostgreSQL
-    case cs if cs.startsWith("jdbc:mysql") => SupportedDatabaseProvider.MySQL
-    case _ => throw new RuntimeException("Unsupported database provider")
-  }
-
   private def getMigrationLocation(provider: SupportedDatabaseProvider): String = provider match {
     case SupportedDatabaseProvider.PostgreSQL => "db/migration/postgresql"
     case SupportedDatabaseProvider.MySQL => "db/migration/mysql"
+    case SupportedDatabaseProvider.H2 => "db/migration/h2"
   }
 }

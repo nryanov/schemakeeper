@@ -4,7 +4,6 @@ import java.sql.DriverManager
 import java.util
 
 import cats.Id
-import com.dimafeng.testcontainers.{ForAllTestContainer, MySQLContainer}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, WordSpec}
@@ -14,31 +13,31 @@ import schemakeeper.server.service.DBBackedService
 
 import scala.util.Try
 
-class MySQLStorageTest extends WordSpec with ForAllTestContainer with BeforeAndAfterEach with BeforeAndAfterAll {
-  override val container: MySQLContainer = MySQLContainer(mysqlImageVersion = "mysql:latest", databaseName = "schemakeeper")
-
-  lazy val schemaStorage = {
+class H2StorageTest extends WordSpec with BeforeAndAfterEach with BeforeAndAfterAll {
+  lazy val schemaStorage: DBBackedService[Id] = {
     val map: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]
-    map.put("schemakeeper.storage.username", container.username)
-    map.put("schemakeeper.storage.password", container.password)
+    map.put("schemakeeper.storage.username", "")
+    map.put("schemakeeper.storage.password", "")
     map.put("schemakeeper.storage.schema", "schemakeeper")
-    map.put("schemakeeper.storage.driver", container.driverClassName)
-    map.put("schemakeeper.storage.url", container.jdbcUrl)
+    map.put("schemakeeper.storage.driver", "org.h2.Driver")
+    map.put("schemakeeper.storage.maxConnections", "1")
+    map.put("schemakeeper.storage.url", "jdbc:h2:mem:schemakeeper;DB_CLOSE_DELAY=-1")
 
     val config: Config = ConfigFactory.parseMap(map)
     DBBackedService.apply[Id](Configuration.apply(config))
   }
 
   lazy val connection = {
-    Class.forName(container.driverClassName)
-    val connection = DriverManager.getConnection(container.jdbcUrl, container.username, container.password)
+    Class.forName("org.h2.Driver")
+    val connection = DriverManager.getConnection("jdbc:h2:mem:schemakeeper;DB_CLOSE_DELAY=-1", "", "")
+    connection.setSchema("schemakeeper")
     connection.setAutoCommit(false)
     connection
   }
 
   override protected def afterEach(): Unit = {
-    connection.createStatement().execute("delete from schemakeeper.schema_info")
-    connection.createStatement().execute("delete from schemakeeper.subject")
+    connection.createStatement().execute("delete from schema_info")
+    connection.createStatement().execute("delete from subject")
     connection.commit()
   }
 
@@ -46,7 +45,7 @@ class MySQLStorageTest extends WordSpec with ForAllTestContainer with BeforeAndA
     connection.close()
   }
 
-  "MySQL backend for schema storage" should {
+  "H2 backend for schema storage" should {
     "return empty results" when {
       "database is empty" in {
         assert(schemaStorage.subjects().isEmpty)

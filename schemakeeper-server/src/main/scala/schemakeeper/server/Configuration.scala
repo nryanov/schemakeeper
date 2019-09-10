@@ -20,6 +20,8 @@ class Configuration(config: Config) {
   } else {
     Runtime.getRuntime.availableProcessors()
   }
+
+  def databaseSchema: String = config.getString("schemakeeper.storage.schema")
 }
 
 object Configuration {

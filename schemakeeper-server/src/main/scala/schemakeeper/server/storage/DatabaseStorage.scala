@@ -1,97 +1,128 @@
 package schemakeeper.server.storage
 
 import doobie._
-import doobie.implicits._
+import doobie.quill.DoobieContext
+import io.getquill.SnakeCase
 import schemakeeper.api.SchemaMetadata
 import schemakeeper.schema.CompatibilityType
+import schemakeeper.server.Configuration
+import schemakeeper.server.datasource.DataSourceUtils
+import schemakeeper.server.datasource.migration.SupportedDatabaseProvider
+import schemakeeper.server.storage.model.{SchemaInfo, Subject}
+import schemakeeper.server.storage.model.Converters._
+import schemakeeper.server.util.Utils
 
-class DatabaseStorage() extends SchemaStorage[ConnectionIO] {
+class DatabaseStorage(configuration: Configuration) extends SchemaStorage[ConnectionIO] {
   private implicit val logHandler: LogHandler = LogHandler.jdkLogHandler
+  private val dc = DatabaseStorage.context(configuration)
 
-  override def schemaById(id: Int): ConnectionIO[Option[String]] =
-    sql"select schema_text from schemakeeper.schema_info where id = $id"
-      .query[String]
-      .option
+  import dc._
 
-  override def subjects(): ConnectionIO[List[String]] =
-    sql"select subject_name from schemakeeper.subject"
-      .query[String]
-      .to[List]
+  implicit private val schemaInfoInsertMeta = insertMeta[SchemaInfo](_.id)
 
-  override def subjectVersions(subject: String): ConnectionIO[List[Int]] =
-    sql"select version from schemakeeper.schema_info where subject_name = $subject order by version asc"
-      .query[Int]
-      .to[List]
+  override def schemaById(id: Int): ConnectionIO[Option[String]] = dc.run(quote {
+    query[SchemaInfo]
+      .filter(_.id == lift(id))
+      .map(_.schemaText)
+  }).map(_.headOption)
 
-  override def subjectSchemaByVersion(subject: String, version: Int): ConnectionIO[Option[SchemaMetadata]] =
-    sql"select subject_name, id, version, schema_text from schemakeeper.schema_info where subject_name = $subject and version = $version"
-      .query[(String, Int, Int, String)]
-      .map(tuple => SchemaMetadata.instance(tuple._1, tuple._2, tuple._3, tuple._4))
-      .option
+  override def subjects(): ConnectionIO[List[String]] = dc.run(quote {
+    query[Subject]
+      .map(_.subjectName)
+  })
+
+  override def subjectVersions(subject: String): ConnectionIO[List[Int]] = dc.run(quote {
+    query[SchemaInfo]
+      .filter(_.subjectName == lift(subject))
+      .sortBy(_.version)(Ord.asc)
+      .map(_.version)
+  })
+
+  override def subjectSchemaByVersion(subject: String, version: Int): ConnectionIO[Option[SchemaMetadata]] = dc.run(quote {
+    query[SchemaInfo]
+      .filter(_.subjectName == lift(subject))
+      .filter(_.version == lift(version))
+  }).map(_.headOption.map(schemaInfoToSchemaMetadata))
 
   override def subjectOnlySchemaByVersion(subject: String, version: Int): ConnectionIO[Option[String]] =
-    subjectSchemaByVersion(subject, version).map(_.map(_.getSchemaText))
+    subjectSchemaByVersion(subject, version)
+      .map(_.map(_.getSchemaText))
 
-  override def deleteSubject(subject: String): ConnectionIO[Boolean] =
-    sql"delete from schemakeeper.subject where subject_name = $subject"
-      .update
-      .run
-      .map(_ > 0)
+  override def deleteSubject(subject: String): ConnectionIO[Boolean] = dc.run(quote {
+    query[Subject]
+      .filter(_.subjectName == lift(subject))
+      .delete
+  }).map(_ > 0)
 
-  override def deleteSubjectVersion(subject: String, version: Int): ConnectionIO[Boolean] =
-    sql"delete from schemakeeper.schema_info where subject_name = $subject and version = $version"
-      .update
-      .run
-      .map(_ > 0)
+  override def deleteSubjectVersion(subject: String, version: Int): ConnectionIO[Boolean] = dc.run(quote {
+    query[SchemaInfo]
+      .filter(_.subjectName == lift(subject))
+      .filter(_.version == lift(version))
+      .delete
+  }).map(_ > 0)
 
-  override def registerNewSubjectSchema(subject: String, schema: String, version: Int, schemaHash: String): ConnectionIO[Int] =
-    sql"""insert into schemakeeper.schema_info(version, schema_type_name, subject_name, schema_text, schema_hash)
-         |values ($version, 'avro', $subject, $schema, $schemaHash)"""
-      .stripMargin
-      .update
-      .withUniqueGeneratedKeys[Int]("id")
+  //todo: pass schema format type explicitly
+  override def registerNewSubjectSchema(subject: String, schema: String, version: Int, schemaHash: String): ConnectionIO[Int] = dc.run(quote {
+    query[SchemaInfo]
+      .insert(lift(SchemaInfo(0, version, "avro", subject, schema, schemaHash)))
+      .returning(_.id)
+  })
 
-  override def checkSubjectExistence(subject: String): ConnectionIO[Boolean] =
-    sql"select exists (select 1 from schemakeeper.subject where subject_name = $subject)"
-      .query[Boolean]
-      .unique
+  override def checkSubjectExistence(subject: String): ConnectionIO[Boolean] = dc.run(quote {
+    query[Subject]
+      .filter(_.subjectName == lift(subject))
+      .nonEmpty
+  })
 
   //todo: get compatibility type from global config
-  override def registerNewSubject(subject: String): ConnectionIO[Int] =
-    sql"insert into schemakeeper.subject(subject_name, schema_type_name, compatibility_type_name) values ($subject, 'avro', 'backward')"
-      .update
-      .run
+  //todo: pass schema format type explicitly
+  override def registerNewSubject(subject: String): ConnectionIO[Int] = dc.run(quote {
+    query[Subject]
+      .insert(lift(Subject(subject, "avro", CompatibilityType.BACKWARD.name().toLowerCase)))
+  }).map(_.toInt)
 
-  override def getNextVersionNumber(subject: String): ConnectionIO[Int] =
-    sql"select max(version) from schemakeeper.schema_info where subject_name = $subject"
-      .query[Option[Int]]
-      .unique
-      .map(_.map(_ + 1).getOrElse(1))
+  override def getNextVersionNumber(subject: String): ConnectionIO[Int] = dc.run(quote {
+    query[SchemaInfo]
+      .filter(_.subjectName == lift(subject))
+      .sortBy(_.version)(Ord.desc)
+      .map(_.version)
+  }).map(_.headOption).map(_.map(_ + 1).getOrElse(1))
 
-  override def getLastSchema(subject: String): ConnectionIO[Option[String]] =
-    sql"select schema_text from schemakeeper.schema_info where subject_name = $subject limit 1"
-      .query[String]
-      .option
+  override def getLastSchema(subject: String): ConnectionIO[Option[String]] = dc.run(quote {
+    query[SchemaInfo]
+      .filter(_.subjectName == lift(subject))
+      .sortBy(_.version)(Ord.desc)
+      .map(_.schemaText)
+  }).map(_.headOption)
 
-  override def getLastSchemas(subject: String): ConnectionIO[List[String]] =
-    sql"select schema_text from schemakeeper.schema_info where subject_name = $subject"
-      .query[String]
-      .to[List]
+  override def getLastSchemas(subject: String): ConnectionIO[List[String]] = dc.run(quote {
+    query[SchemaInfo]
+      .filter(_.subjectName == lift(subject))
+      .sortBy(_.version)(Ord.desc)
+      .map(_.schemaText)
+  })
 
-  override def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): ConnectionIO[Option[CompatibilityType]] =
-    sql"update schemakeeper.subject set compatibility_type_name = ${compatibilityType.name().toLowerCase} where subject_name = $subject"
-      .update
-      .run
-      .map(_ > 0)
-      .map(f => if (f) Some(compatibilityType) else None)
+  override def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): ConnectionIO[Option[CompatibilityType]] = dc.run(quote {
+    query[Subject]
+      .filter(_.subjectName == lift(subject))
+      .update(_.compatibilityTypeName -> lift(compatibilityType.name().toLowerCase))
+  }).map(_ > 0)
+    .map(f => if (f) Some(compatibilityType) else None)
 
-  override def getSubjectCompatibility(subject: String): ConnectionIO[Option[CompatibilityType]] =
-    sql"select compatibility_type_name from schemakeeper.subject where subject_name = $subject"
-      .query[String]
-      .option
-      .map(_.flatMap(v => Option(CompatibilityType.valueOf(v))))
+  override def getSubjectCompatibility(subject: String): ConnectionIO[Option[CompatibilityType]] = dc.run(quote {
+    query[Subject]
+      .filter(_.subjectName == lift(subject))
+      .map(_.compatibilityTypeName)
+  }).map(_.headOption)
+    .map(_.map(Utils.compatibilityTypeFromStringUnsafe))
 }
 
 object DatabaseStorage {
-  def apply(): DatabaseStorage = new DatabaseStorage()
+  def apply(configuration: Configuration): DatabaseStorage = new DatabaseStorage(configuration)
+
+  def context(configuration: Configuration) = DataSourceUtils.detectDatabaseProvider(configuration.databaseConnectionString) match {
+    case SupportedDatabaseProvider.PostgreSQL => new DoobieContext.Postgres(SnakeCase)
+    case SupportedDatabaseProvider.MySQL => new DoobieContext.MySQL(SnakeCase)
+    case SupportedDatabaseProvider.H2 => new DoobieContext.H2(SnakeCase)
+  }
 }

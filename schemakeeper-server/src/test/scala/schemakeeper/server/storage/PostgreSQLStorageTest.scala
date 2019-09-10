@@ -21,6 +21,7 @@ class PostgreSQLStorageTest extends WordSpec with ForAllTestContainer with Befor
     val map: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]
     map.put("schemakeeper.storage.username", container.username)
     map.put("schemakeeper.storage.password", container.password)
+    map.put("schemakeeper.storage.schema", "schemakeeper")
     map.put("schemakeeper.storage.driver", container.driverClassName)
     map.put("schemakeeper.storage.url", container.jdbcUrl)
 

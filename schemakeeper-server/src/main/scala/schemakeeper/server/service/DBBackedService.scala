@@ -1,61 +1,86 @@
 package schemakeeper.server.service
 
 import cats.Applicative
-import cats.data.OptionT
 import cats.free.Free
 import doobie.ConnectionIO
 import doobie.free.connection
 import schemakeeper.server.Configuration
 import schemakeeper.server.datasource.DataSource
 import schemakeeper.server.storage.DatabaseStorage
-import schemakeeper.server.storage.migration.FlywayMigrationTool
+import schemakeeper.server.datasource.migration.FlywayMigrationTool
 import schemakeeper.server.util.Utils
 import doobie.implicits._
 import org.apache.avro.Schema
+import org.slf4j.LoggerFactory
 import schemakeeper.api.SchemaMetadata
 import schemakeeper.schema.{AvroSchemaCompatibility, AvroSchemaUtils, CompatibilityType}
 
 import scala.collection.JavaConverters._
+import DBBackedService._
 
 
 class DBBackedService[F[_]: Applicative](config: Configuration) extends Service[F] {
   val datasource = DataSource.build(config)
-  val storage = DatabaseStorage()
+  val storage = DatabaseStorage(config)
 
-  override def subjects(): F[List[String]] =
+  override def subjects(): F[List[String]] = {
+    logger.info("Select subject list")
     transaction(storage.subjects())
+  }
 
-  override def subjectVersions(subject: String): F[List[Int]] =
+  override def subjectVersions(subject: String): F[List[Int]] = {
+    logger.info(s"Select subject versions: $subject")
     transaction(storage.subjectVersions(subject))
+  }
 
-  override def subjectSchemaByVersion(subject: String, version: Int): F[Option[SchemaMetadata]] =
+  override def subjectSchemaByVersion(subject: String, version: Int): F[Option[SchemaMetadata]] = {
+    logger.info(s"Select subject schema metadata by version: $subject:$version")
     transaction(storage.subjectSchemaByVersion(subject, version))
+  }
 
-  override def subjectOnlySchemaByVersion(subject: String, version: Int): F[Option[String]] =
+  override def subjectOnlySchemaByVersion(subject: String, version: Int): F[Option[String]] = {
+    logger.info(s"Select subject schema by version: $subject:$version")
     transaction(storage.subjectOnlySchemaByVersion(subject, version))
+  }
 
-  override def schemaById(id: Int): F[Option[String]] =
+  override def schemaById(id: Int): F[Option[String]] = {
+    logger.info(s"Select schema by id: $id")
     transaction(storage.schemaById(id))
+  }
 
-  override def deleteSubject(subject: String): F[Boolean] =
+  override def deleteSubject(subject: String): F[Boolean] = {
+    logger.info(s"Delete subject: $subject")
     transaction(storage.deleteSubject(subject))
+  }
 
-  override def deleteSubjectVersion(subject: String, version: Int): F[Boolean] =
+  override def deleteSubjectVersion(subject: String, version: Int): F[Boolean] = {
+    logger.info(s"Delete subject version: $subject:$version")
     transaction(storage.deleteSubjectVersion(subject, version))
+  }
 
-  override def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): F[Option[CompatibilityType]] =
+  override def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): F[Option[CompatibilityType]] = {
+    logger.info(s"Update subject compatibility: $subject - ${compatibilityType.name()}")
     transaction(storage.updateSubjectCompatibility(subject, compatibilityType))
+  }
 
-  override def getSubjectCompatibility(subject: String): F[Option[CompatibilityType]] =
+  override def getSubjectCompatibility(subject: String): F[Option[CompatibilityType]] = {
+    logger.info(s"Get subject compatibility: $subject")
     transaction(storage.getSubjectCompatibility(subject))
+  }
 
-  override def getLastSchema(subject: String): F[Option[String]] =
+  override def getLastSchema(subject: String): F[Option[String]] = {
+    logger.info(s"Get subject last schema: $subject")
     transaction(storage.getLastSchema(subject))
+  }
 
-  override def getLastSchemas(subject: String): F[List[String]] =
+  override def getLastSchemas(subject: String): F[List[String]] = {
+    logger.info(s"Get subject last schemas: $subject")
     transaction(storage.getLastSchemas(subject))
+  }
 
   override def checkSubjectSchemaCompatibility(subject: String, schema: String): F[Boolean] = {
+    logger.info(s"Check subject schema compatibility: $subject - $schema")
+
     val query = for {
       compatibility <- storage.getSubjectCompatibility(subject)
       r <- if (compatibility.isDefined) isSchemaCompatible(subject, AvroSchemaUtils.parseSchema(schema), compatibility.get) else Free.pure[connection.ConnectionOp, Boolean](false)
@@ -66,6 +91,8 @@ class DBBackedService[F[_]: Applicative](config: Configuration) extends Service[
 
   // todo: lock all subject schemas for update
   override def registerNewSubjectSchema(subject: String, schema: String): F[Int] = {
+    logger.info(s"Register new subject schema: $subject - $schema")
+
     val query = storage.checkSubjectExistence(subject)
       .flatMap(isExist => {
         if (isExist) {
@@ -110,6 +137,8 @@ class DBBackedService[F[_]: Applicative](config: Configuration) extends Service[
 }
 
 object DBBackedService {
+  private val logger = LoggerFactory.getLogger(DBBackedService.getClass)
+
   def apply[F[_]: Applicative](config: Configuration): DBBackedService[F] = {
     FlywayMigrationTool.migrate(config)
     new DBBackedService[F](config)

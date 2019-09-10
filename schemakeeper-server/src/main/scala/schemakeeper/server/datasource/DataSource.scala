@@ -19,6 +19,7 @@ object DataSource {
     cfg.setJdbcUrl(config.databaseConnectionString)
     cfg.setUsername(config.databaseUsername)
     cfg.setPassword(config.databasePassword)
+    cfg.setSchema(config.databaseSchema)
     cfg.setMinimumIdle(1)
 
     for {
