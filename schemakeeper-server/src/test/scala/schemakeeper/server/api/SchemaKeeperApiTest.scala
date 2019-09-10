@@ -5,7 +5,7 @@ import io.finch.{Application, Input, NoContent, Ok, Output, Text}
 import io.finch.circe._
 import org.apache.avro.Schema
 import org.scalatest.{Matchers, WordSpec}
-import schemakeeper.api.{CompatibilityTypeMetadata, SchemaMetadata}
+import schemakeeper.api._
 import schemakeeper.schema.CompatibilityType
 import schemakeeper.server.service.{InitialDataGenerator, MockService}
 import schemakeeper.server.api.protocol.JsonProtocol._
@@ -16,20 +16,20 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
       "there is no schema with such id" in {
         val service = MockService(InitialDataGenerator())
         val api = SchemaKeeperApi(service)
-        val result: Option[Output[String]] = api.schema(Input.get("/v1/schema/1")).awaitOutputUnsafe()
+        val result: Option[Output[SchemaResponse]] = api.schema(Input.get("/v1/schema/1")).awaitOutputUnsafe()
 
         assert(result.isDefined)
-        assertResult(result.get)(NoContent[String])
+        assertResult(result.get)(NoContent[SchemaResponse])
       }
     }
 
     "return Schema" in {
       val service = MockService(InitialDataGenerator(Seq(("A1", "S1"))))
       val api = SchemaKeeperApi(service)
-      val result: Option[Output[String]] = api.schema(Input.get("/v1/schema/1")).awaitOutputUnsafe()
+      val result: Option[Output[SchemaResponse]] = api.schema(Input.get("/v1/schema/1")).awaitOutputUnsafe()
 
       assert(result.isDefined)
-      assertResult(result.get)(Ok[String]("S1"))
+      assertResult(result.get)(Ok[SchemaResponse](SchemaResponse.instance("S1")))
     }
 
     "return error" when {
@@ -127,7 +127,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
       val api = SchemaKeeperApi(service)
       val result = api.subjectOnlySchemaByVersion(Input.get("/v1/subjects/A1/versions/1/schema")).awaitValueUnsafe()
 
-      assertResult(result.get)("S1")
+      assertResult(result.get)(SchemaResponse.instance("S1"))
     }
 
     "return error" when {
@@ -193,9 +193,10 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
     "return next schema id" in {
       val service = MockService(InitialDataGenerator())
       val api = SchemaKeeperApi(service)
-      val result = api.registerNewSubjectSchema(Input.post("/v1/subjects/A1").withBody[Text.Plain]("SCHEMA")).awaitValueUnsafe()
+      val body = SchemaRequest.instance("SCHEMA")
+      val result = api.registerNewSubjectSchema(Input.post("/v1/subjects/A1").withBody[Application.Json](body)).awaitValueUnsafe()
 
-      assertResult(1)(result.get)
+      assertResult(SchemaId.instance(1))(result.get)
     }
 
     "return error" when {
@@ -216,7 +217,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
         val body = CompatibilityTypeMetadata.instance(CompatibilityType.BACKWARD)
         val result = api.updateSubjectCompatibilityConfig(Input.put("/v1/compatibility/A1").withBody[Application.Json](body)).awaitOutputUnsafe()
 
-        assertResult(result.get)(NoContent[CompatibilityType])
+        assertResult(result.get)(NoContent[CompatibilityTypeMetadata])
       }
     }
 
@@ -226,7 +227,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
       val body = CompatibilityTypeMetadata.instance(CompatibilityType.BACKWARD)
       val result = api.updateSubjectCompatibilityConfig(Input.put("/v1/compatibility/A1").withBody[Application.Json](body)).awaitValueUnsafe()
 
-      assertResult(CompatibilityType.BACKWARD)(result.get)
+      assertResult(CompatibilityTypeMetadata.instance(CompatibilityType.BACKWARD))(result.get)
     }
   }
 
@@ -237,7 +238,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
         val api = SchemaKeeperApi(service)
         val result = api.getSubjectCompatibilityConfig(Input.get("/v1/compatibility/A1")).awaitOutputUnsafe()
 
-        assertResult(result.get)(NoContent[CompatibilityType])
+        assertResult(result.get)(NoContent[CompatibilityTypeMetadata])
       }
     }
 
@@ -246,7 +247,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
       val api = SchemaKeeperApi(service)
       val result = api.getSubjectCompatibilityConfig(Input.get("/v1/compatibility/A1")).awaitValueUnsafe()
 
-      assertResult(CompatibilityType.NONE)(result.get)
+      assertResult(CompatibilityTypeMetadata.instance(CompatibilityType.NONE))(result.get)
     }
   }
 
@@ -255,8 +256,8 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
       "there is not registered subjects with specified name" in {
         val service = MockService(InitialDataGenerator())
         val api = SchemaKeeperApi(service)
-        val body = Schema.create(Schema.Type.INT).toString
-        val result = api.checkSubjectSchemaCompatibility(Input.post("/v1/compatibility/A1").withBody[Text.Plain](body)).awaitValueUnsafe()
+        val body = SchemaRequest.instance(Schema.create(Schema.Type.INT))
+        val result = api.checkSubjectSchemaCompatibility(Input.post("/v1/compatibility/A1").withBody[Application.Json](body)).awaitValueUnsafe()
 
         assertResult(false)(result.get)
       }
@@ -268,8 +269,8 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
         val compatibility = CompatibilityTypeMetadata.instance(CompatibilityType.BACKWARD)
         api.updateSubjectCompatibilityConfig(Input.put("/v1/compatibility/A1").withBody[Application.Json](compatibility)).awaitValueUnsafe()
 
-        val body = Schema.create(Schema.Type.INT).toString
-        val result = api.checkSubjectSchemaCompatibility(Input.post("/v1/compatibility/A1").withBody[Text.Plain](body)).awaitValueUnsafe()
+        val body = SchemaRequest.instance(Schema.create(Schema.Type.INT))
+        val result = api.checkSubjectSchemaCompatibility(Input.post("/v1/compatibility/A1").withBody[Application.Json](body)).awaitValueUnsafe()
 
         assertResult(false)(result.get)
       }
@@ -283,8 +284,8 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
         val compatibility = CompatibilityTypeMetadata.instance(CompatibilityType.BACKWARD)
         api.updateSubjectCompatibilityConfig(Input.put("/v1/compatibility/A1").withBody[Application.Json](compatibility)).awaitValueUnsafe()
 
-        val body = Schema.create(Schema.Type.LONG).toString
-        val result = api.checkSubjectSchemaCompatibility(Input.post("/v1/compatibility/A1").withBody[Text.Plain](body)).awaitValueUnsafe()
+        val body = SchemaRequest.instance(Schema.create(Schema.Type.LONG))
+        val result = api.checkSubjectSchemaCompatibility(Input.post("/v1/compatibility/A1").withBody[Application.Json](body)).awaitValueUnsafe()
 
         assertResult(true)(result.get)
       }

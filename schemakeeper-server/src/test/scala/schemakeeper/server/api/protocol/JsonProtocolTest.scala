@@ -1,7 +1,7 @@
 package schemakeeper.server.api.protocol
 
 import org.scalatest.{Matchers, WordSpec}
-import schemakeeper.api.{CompatibilityTypeMetadata, SchemaMetadata, SubjectMetadata}
+import schemakeeper.api._
 import io.circe.syntax._
 import JsonProtocol._
 import schemakeeper.schema.CompatibilityType
@@ -24,7 +24,7 @@ class JsonProtocolTest extends WordSpec with Matchers {
       assert(json.as[CompatibilityTypeMetadata].contains(meta))
     }
 
-    "error because of not existing compatibility type" in {
+    "return error because of not existing compatibility type" in {
       val json = """{ "compatibilityType": "unknown" }""".asJson
 
       assert(json.as[CompatibilityTypeMetadata].isLeft)
@@ -39,10 +39,37 @@ class JsonProtocolTest extends WordSpec with Matchers {
       assert(json.as[SubjectMetadata].contains(meta))
     }
 
-    "error because of not existing compatibility type" in {
+    "return error because of not existing compatibility type" in {
       val json = """{ "subject": "a", "compatibilityType": "unknown", "format": "b"}""".asJson
 
       assert(json.as[SubjectMetadata].isLeft)
+    }
+  }
+
+  "SchemaResponse" should {
+    "be encoded and decoded correctly" in {
+      val meta = SchemaResponse.instance("schema")
+      val json = meta.asJson
+
+      assert(json.as[SchemaResponse].contains(meta))
+    }
+  }
+
+  "SchemaRequest" should {
+    "be encoded and decoded correctly" in {
+      val meta = SchemaRequest.instance("schema")
+      val json = meta.asJson
+
+      assert(json.as[SchemaRequest].contains(meta))
+    }
+  }
+
+  "SchemaId" should {
+    "be encoded and decoded correctly" in {
+      val meta = SchemaId.instance(1)
+      val json = meta.asJson
+
+      assert(json.as[SchemaId].contains(meta))
     }
   }
 }

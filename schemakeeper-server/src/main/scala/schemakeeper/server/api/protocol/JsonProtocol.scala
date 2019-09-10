@@ -2,7 +2,7 @@ package schemakeeper.server.api.protocol
 
 import io.circe.Decoder.Result
 import io.circe.{Decoder, Encoder, HCursor, Json}
-import schemakeeper.api.{CompatibilityTypeMetadata, SchemaMetadata, SubjectMetadata}
+import schemakeeper.api._
 import schemakeeper.server.util.Utils
 
 object JsonProtocol {
@@ -47,5 +47,38 @@ object JsonProtocol {
       compatibilityType <- c.downField("compatibilityType").as[String]
       format <- c.downField("format").as[String]
     } yield SubjectMetadata.instance(subject, Utils.compatibilityTypeFromStringUnsafe(compatibilityType), format)
+  }
+
+  implicit val schemaRequestEncoder: Encoder[SchemaRequest] = new Encoder[SchemaRequest] {
+    override def apply(a: SchemaRequest): Json = Json.obj(
+      ("schema", Json.fromString(a.getSchemaText))
+    )
+  }
+  implicit val schemaRequestDecoder: Decoder[SchemaRequest] = new Decoder[SchemaRequest] {
+    override def apply(c: HCursor): Result[SchemaRequest] = for {
+      schema <- c.downField("schema").as[String]
+    } yield SchemaRequest.instance(schema)
+  }
+
+  implicit val schemaResponseEncoder: Encoder[SchemaResponse] = new Encoder[SchemaResponse] {
+    override def apply(a: SchemaResponse): Json = Json.obj(
+      ("schema", Json.fromString(a.getSchemaText))
+    )
+  }
+  implicit val schemaResponseDecoder: Decoder[SchemaResponse] = new Decoder[SchemaResponse] {
+    override def apply(c: HCursor): Result[SchemaResponse] = for {
+      schema <- c.downField("schema").as[String]
+    } yield SchemaResponse.instance(schema)
+  }
+
+  implicit val schemaIdEncoder: Encoder[SchemaId] = new Encoder[SchemaId] {
+    override def apply(a: SchemaId): Json = Json.obj(
+      ("id", Json.fromInt(a.getId))
+    )
+  }
+  implicit val schemaIdDecoder: Decoder[SchemaId] = new Decoder[SchemaId] {
+    override def apply(c: HCursor): Result[SchemaId] = for {
+      id <- c.downField("id").as[Int]
+    } yield SchemaId.instance(id)
   }
 }

@@ -22,6 +22,8 @@ class Configuration(config: Config) {
   }
 
   def databaseSchema: String = config.getString("schemakeeper.storage.schema")
+
+  def listeningPort: Int = config.getInt("schemakeeper.server.port")
 }
 
 object Configuration {
