@@ -1,5 +1,6 @@
 package schemakeeper.server.api
 
+import cats.effect.IO
 import io.finch.Error.{NotPresent, NotValid}
 import io.finch.{Application, Input, NoContent, Ok, Output, Text}
 import io.finch.circe._
@@ -10,11 +11,15 @@ import schemakeeper.schema.CompatibilityType
 import schemakeeper.server.service.{InitialDataGenerator, MockService}
 import schemakeeper.server.api.protocol.JsonProtocol._
 
+import scala.concurrent.ExecutionContext
+
 class SchemaKeeperApiTest extends WordSpec with Matchers {
+  implicit val ctx = IO.contextShift(ExecutionContext.global)
+
   "Schema by id endpoint" should {
     "return NoContent" when {
       "there is no schema with such id" in {
-        val service = MockService(InitialDataGenerator())
+        val service = MockService[IO](InitialDataGenerator())
         val api = SchemaKeeperApi(service)
         val result: Option[Output[SchemaResponse]] = api.schema(Input.get("/v1/schema/1")).awaitOutputUnsafe()
 
@@ -24,7 +29,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
     }
 
     "return Schema" in {
-      val service = MockService(InitialDataGenerator(Seq(("A1", "S1"))))
+      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
       val api = SchemaKeeperApi(service)
       val result: Option[Output[SchemaResponse]] = api.schema(Input.get("/v1/schema/1")).awaitOutputUnsafe()
 
@@ -34,7 +39,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
 
     "return error" when {
       "schema id is not positive" in {
-        val service = MockService(InitialDataGenerator(Seq(("A1", "S1"))))
+        val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
         val api = SchemaKeeperApi(service)
 
         assertThrows[NotValid](api.schema(Input.get("/v1/schema/-1")).awaitOutputUnsafe())
@@ -45,7 +50,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
   "Subjects endpoint" should {
     "return empty list" when {
       "there is no registered subjects" in {
-        val service = MockService(InitialDataGenerator())
+        val service = MockService[IO](InitialDataGenerator())
         val api = SchemaKeeperApi(service)
         val result = api.subjects(Input.get("/v1/subjects")).awaitValueUnsafe()
 
@@ -54,7 +59,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
     }
 
     "return not empty list" in {
-      val service = MockService(InitialDataGenerator(Seq(("A1", "S1"))))
+      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
       val api = SchemaKeeperApi(service)
       val result = api.subjects(Input.get("/v1/subjects")).awaitValueUnsafe()
 
@@ -65,7 +70,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
   "Subject versions endpoint" should {
     "return NoContent" when {
       "there is no registered subject with such name" in {
-        val service = MockService(InitialDataGenerator())
+        val service = MockService[IO](InitialDataGenerator())
         val api = SchemaKeeperApi(service)
         val result = api.subjectVersions(Input.get("/v1/subjects/A1/versions")).awaitOutputUnsafe()
 
@@ -74,7 +79,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
     }
 
     "return list of subject versions" in {
-      val service = MockService(InitialDataGenerator(Seq(("A1", "S1"), ("A1", "S2"))))
+      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"), ("A1", "S2"))))
       val api = SchemaKeeperApi(service)
       val result = api.subjectVersions(Input.get("/v1/subjects/A1/versions")).awaitValueUnsafe()
 
@@ -85,7 +90,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
   "Subject schema metadata by version endpoint" should {
     "return NoContent" when {
       "there is no registered subject with specified version id" in {
-        val service = MockService(InitialDataGenerator())
+        val service = MockService[IO](InitialDataGenerator())
         val api = SchemaKeeperApi(service)
         val result = api.subjectSchemaByVersion(Input.get("/v1/subjects/A1/versions/1")).awaitOutputUnsafe()
 
@@ -94,7 +99,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
     }
 
     "return schema by version" in {
-      val service = MockService(InitialDataGenerator(Seq(("A1", "S1"))))
+      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
       val api = SchemaKeeperApi(service)
       val result = api.subjectSchemaByVersion(Input.get("/v1/subjects/A1/versions/1")).awaitValueUnsafe()
 
@@ -103,7 +108,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
 
     "return error" when {
       "schema id is not positive" in {
-        val service = MockService(InitialDataGenerator(Seq(("A1", "S1"))))
+        val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
         val api = SchemaKeeperApi(service)
 
         assertThrows[NotValid](api.subjectSchemaByVersion(Input.get("/v1/subjects/A1/versions/-1")).awaitOutputUnsafe())
@@ -114,7 +119,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
   "Subject schema by version endpoint" should {
     "return NoContent" when {
       "there is no registered subject with specified version id" in {
-        val service = MockService(InitialDataGenerator())
+        val service = MockService[IO](InitialDataGenerator())
         val api = SchemaKeeperApi(service)
         val result = api.subjectOnlySchemaByVersion(Input.get("/v1/subjects/A1/versions/1/schema")).awaitOutputUnsafe()
 
@@ -123,7 +128,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
     }
 
     "return schema by version" in {
-      val service = MockService(InitialDataGenerator(Seq(("A1", "S1"))))
+      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
       val api = SchemaKeeperApi(service)
       val result = api.subjectOnlySchemaByVersion(Input.get("/v1/subjects/A1/versions/1/schema")).awaitValueUnsafe()
 
@@ -132,7 +137,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
 
     "return error" when {
       "schema id is not positive" in {
-        val service = MockService(InitialDataGenerator(Seq(("A1", "S1"))))
+        val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
         val api = SchemaKeeperApi(service)
 
         assertThrows[NotValid](api.subjectOnlySchemaByVersion(Input.get("/v1/subjects/A1/versions/-1/schema")).awaitOutputUnsafe())
@@ -143,7 +148,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
   "Delete subject endpoint" should {
     "return false" when {
       "there is no registered subject with such name" in {
-        val service = MockService(InitialDataGenerator())
+        val service = MockService[IO](InitialDataGenerator())
         val api = SchemaKeeperApi(service)
         val result = api.deleteSubject(Input.delete("/v1/subjects/A1")).awaitValueUnsafe()
 
@@ -152,7 +157,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
     }
 
     "return true" in {
-      val service = MockService(InitialDataGenerator(Seq(("A1", "S1"))))
+      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
       val api = SchemaKeeperApi(service)
       val result = api.deleteSubject(Input.delete("/v1/subjects/A1")).awaitValueUnsafe()
 
@@ -163,7 +168,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
   "Delete subject verion endpoint" should {
     "return false" when {
       "there is no registered subject with such name or version" in {
-        val service = MockService(InitialDataGenerator())
+        val service = MockService[IO](InitialDataGenerator())
         val api = SchemaKeeperApi(service)
         val result = api.deleteSubjectVersion(Input.delete("/v1/subjects/A1/versions/1")).awaitValueUnsafe()
 
@@ -172,7 +177,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
     }
 
     "return true" in {
-      val service = MockService(InitialDataGenerator(Seq(("A1", "S1"))))
+      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
       val api = SchemaKeeperApi(service)
       val result = api.deleteSubjectVersion(Input.delete("/v1/subjects/A1/versions/1")).awaitValueUnsafe()
 
@@ -181,7 +186,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
 
     "return error" when {
       "version id is not positive" in {
-        val service = MockService(InitialDataGenerator(Seq(("A1", "S1"))))
+        val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
         val api = SchemaKeeperApi(service)
 
         assertThrows[NotValid](api.deleteSubjectVersion(Input.delete("/v1/subjects/A1/versions/-1")).awaitOutputUnsafe())
@@ -191,7 +196,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
 
   "Register new subject endpoint" should {
     "return next schema id" in {
-      val service = MockService(InitialDataGenerator())
+      val service = MockService[IO](InitialDataGenerator())
       val api = SchemaKeeperApi(service)
       val body = SchemaRequest.instance("SCHEMA")
       val result = api.registerNewSubjectSchema(Input.post("/v1/subjects/A1").withBody[Application.Json](body)).awaitValueUnsafe()
@@ -201,7 +206,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
 
     "return error" when {
       "body is empty" in {
-        val service = MockService(InitialDataGenerator())
+        val service = MockService[IO](InitialDataGenerator())
         val api = SchemaKeeperApi(service)
 
         assertThrows[NotPresent](api.registerNewSubjectSchema(Input.post("/v1/subjects/A1").withBody[Text.Plain]("")).awaitOutputUnsafe())
@@ -212,7 +217,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
   "Update Subject Compatibility Config endpoint" should {
     "return None" when {
       "there is no registered subjects" in {
-        val service = MockService(InitialDataGenerator())
+        val service = MockService[IO](InitialDataGenerator())
         val api = SchemaKeeperApi(service)
         val body = CompatibilityTypeMetadata.instance(CompatibilityType.BACKWARD)
         val result = api.updateSubjectCompatibilityConfig(Input.put("/v1/compatibility/A1").withBody[Application.Json](body)).awaitOutputUnsafe()
@@ -222,7 +227,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
     }
 
     "return new compatibility type" in {
-      val service = MockService(InitialDataGenerator(Seq(("A1", "S1"))))
+      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
       val api = SchemaKeeperApi(service)
       val body = CompatibilityTypeMetadata.instance(CompatibilityType.BACKWARD)
       val result = api.updateSubjectCompatibilityConfig(Input.put("/v1/compatibility/A1").withBody[Application.Json](body)).awaitValueUnsafe()
@@ -234,7 +239,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
   "Get Subject Compatibility Config endpoint" should {
     "return None" when {
       "there is no registered subjects" in {
-        val service = MockService(InitialDataGenerator())
+        val service = MockService[IO](InitialDataGenerator())
         val api = SchemaKeeperApi(service)
         val result = api.getSubjectCompatibilityConfig(Input.get("/v1/compatibility/A1")).awaitOutputUnsafe()
 
@@ -243,7 +248,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
     }
 
     "return current compatibility type" in {
-      val service = MockService(InitialDataGenerator(Seq(("A1", "S1"))))
+      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
       val api = SchemaKeeperApi(service)
       val result = api.getSubjectCompatibilityConfig(Input.get("/v1/compatibility/A1")).awaitValueUnsafe()
 
@@ -254,7 +259,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
   "Check subject compatibility" should {
     "return false" when {
       "there is not registered subjects with specified name" in {
-        val service = MockService(InitialDataGenerator())
+        val service = MockService[IO](InitialDataGenerator())
         val api = SchemaKeeperApi(service)
         val body = SchemaRequest.instance(Schema.create(Schema.Type.INT))
         val result = api.checkSubjectSchemaCompatibility(Input.post("/v1/compatibility/A1").withBody[Application.Json](body)).awaitValueUnsafe()
@@ -263,7 +268,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
       }
 
       "schema is not compatible" in {
-        val service = MockService(InitialDataGenerator(Seq(("A1", Schema.create(Schema.Type.STRING).toString))))
+        val service = MockService[IO](InitialDataGenerator(Seq(("A1", Schema.create(Schema.Type.STRING).toString))))
         val api = SchemaKeeperApi(service)
 
         val compatibility = CompatibilityTypeMetadata.instance(CompatibilityType.BACKWARD)
@@ -278,7 +283,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
 
     "return true" when {
       "schema is compatible" in {
-        val service = MockService(InitialDataGenerator(Seq(("A1", Schema.create(Schema.Type.INT).toString))))
+        val service = MockService[IO](InitialDataGenerator(Seq(("A1", Schema.create(Schema.Type.INT).toString))))
         val api = SchemaKeeperApi(service)
 
         val compatibility = CompatibilityTypeMetadata.instance(CompatibilityType.BACKWARD)

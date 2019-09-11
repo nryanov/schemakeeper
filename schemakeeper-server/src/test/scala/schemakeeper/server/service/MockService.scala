@@ -1,6 +1,6 @@
 package schemakeeper.server.service
 
-import cats.Id
+import cats.Applicative
 import javax.annotation.concurrent.NotThreadSafe
 import org.apache.avro.Schema
 import schemakeeper.api.{SchemaMetadata, SubjectMetadata}
@@ -17,23 +17,23 @@ case class InitialData(
                       )
 
 @NotThreadSafe
-class MockService(data: InitialData) extends Service[Id] {
-  override def subjects(): Id[List[String]] =
-    data.subjectSchemaVersion.keys.toList
+class MockService[F[_] : Applicative](data: InitialData) extends Service[F] {
+  override def subjects(): F[List[String]] =
+    Applicative[F].pure(data.subjectSchemaVersion.keys.toList)
 
-  override def subjectVersions(subject: String): Id[List[Int]] =
-    data.subjectSchemaVersion.get(subject).map(_.keys.toList).getOrElse(List.empty[Int])
+  override def subjectVersions(subject: String): F[List[Int]] =
+    Applicative[F].pure(data.subjectSchemaVersion.get(subject).map(_.keys.toList).getOrElse(List.empty[Int]))
 
-  override def subjectSchemaByVersion(subject: String, version: Int): Id[Option[SchemaMetadata]] =
-    data.subjectSchemaVersion.get(subject).flatMap(_.get(version))
+  override def subjectSchemaByVersion(subject: String, version: Int): F[Option[SchemaMetadata]] =
+    Applicative[F].pure(data.subjectSchemaVersion.get(subject).flatMap(_.get(version)))
 
-  override def subjectOnlySchemaByVersion(subject: String, version: Int): Id[Option[String]] =
-    data.subjectSchemaVersion.get(subject).flatMap(_.get(version).map(_.getSchemaText))
+  override def subjectOnlySchemaByVersion(subject: String, version: Int): F[Option[String]] =
+    Applicative[F].pure(data.subjectSchemaVersion.get(subject).flatMap(_.get(version).map(_.getSchemaText)))
 
-  override def schemaById(id: Int): Id[Option[String]] =
-    data.idSchema.get(id).map(_.getSchemaText)
+  override def schemaById(id: Int): F[Option[String]] =
+    Applicative[F].pure(data.idSchema.get(id).map(_.getSchemaText))
 
-  override def deleteSubject(subject: String): Id[Boolean] = {
+  override def deleteSubject(subject: String): F[Boolean] = Applicative[F].pure {
     data.subjectSchemaVersion.get(subject)
       .map(_.values)
       .getOrElse(Iterable.empty)
@@ -45,7 +45,7 @@ class MockService(data: InitialData) extends Service[Id] {
     data.subjectSchemaVersion.remove(subject).isDefined
   }
 
-  override def deleteSubjectVersion(subject: String, version: Int): Id[Boolean] = {
+  override def deleteSubjectVersion(subject: String, version: Int): F[Boolean] = Applicative[F].pure {
     val s = data.subjectSchemaVersion.get(subject).flatMap(_.find {
       case (v, _) => v == version
     })
@@ -60,30 +60,30 @@ class MockService(data: InitialData) extends Service[Id] {
     s.isDefined
   }
 
-  override def checkSubjectSchemaCompatibility(subject: String, schema: String): Id[Boolean] = (for {
+  override def checkSubjectSchemaCompatibility(subject: String, schema: String): F[Boolean] = Applicative[F].pure((for {
     lastSchemaMeta <- data.subjectSchemaVersion.get(subject).flatMap(_.values.lastOption)
     compatibilityType <- data.subjectMetadata.get(subject).map(_.getCompatibilityType)
     currentSchema = AvroSchemaUtils.parseSchema(lastSchemaMeta.getSchemaText)
     newSchema = AvroSchemaUtils.parseSchema(schema)
-  } yield isSchemaCompatible(newSchema, currentSchema, compatibilityType)).getOrElse(false)
+  } yield isSchemaCompatible(newSchema, currentSchema, compatibilityType)).getOrElse(false))
 
-  override def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): Id[Option[CompatibilityType]] =
-    data.subjectMetadata.get(subject).flatMap(meta => {
+  override def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): F[Option[CompatibilityType]] =
+    Applicative[F].pure(data.subjectMetadata.get(subject).flatMap(meta => {
       meta.setCompatibilityType(compatibilityType)
       data.subjectMetadata.update(subject, meta)
       Some(compatibilityType)
-    })
+    }))
 
-  override def getSubjectCompatibility(subject: String): Id[Option[CompatibilityType]] =
-    data.subjectMetadata.get(subject).map(_.getCompatibilityType)
+  override def getSubjectCompatibility(subject: String): F[Option[CompatibilityType]] =
+    Applicative[F].pure(data.subjectMetadata.get(subject).map(_.getCompatibilityType))
 
-  override def getLastSchema(subject: String): Id[Option[String]] =
-    data.subjectSchemaVersion.get(subject).flatMap(_.lastOption.map(_._2.getSchemaText))
+  override def getLastSchema(subject: String): F[Option[String]] =
+    Applicative[F].pure(data.subjectSchemaVersion.get(subject).flatMap(_.lastOption.map(_._2.getSchemaText)))
 
-  override def getLastSchemas(subject: String): Id[List[String]] =
-    data.subjectSchemaVersion.get(subject).map(_.map(_._2.getSchemaText).toList).getOrElse(List.empty)
+  override def getLastSchemas(subject: String): F[List[String]] =
+    Applicative[F].pure(data.subjectSchemaVersion.get(subject).map(_.map(_._2.getSchemaText).toList).getOrElse(List.empty))
 
-  override def registerNewSubjectSchema(subject: String, schema: String): Id[Int] = {
+  override def registerNewSubjectSchema(subject: String, schema: String): F[Int] = Applicative[F].pure {
     val nextId = data.idSchema.keys.lastOption.getOrElse(0) + 1
     val nextVersion = data.subjectSchemaVersion.getOrElse(subject, Map.empty[Int, SchemaMetadata]).keys.lastOption.getOrElse(0) + 1
 
@@ -105,7 +105,7 @@ class MockService(data: InitialData) extends Service[Id] {
 }
 
 object MockService {
-  def apply(data: InitialData): MockService = new MockService(data)
+  def apply[F[_] : Applicative](data: InitialData): MockService[F] = new MockService[F](data)
 }
 
 object InitialDataGenerator {

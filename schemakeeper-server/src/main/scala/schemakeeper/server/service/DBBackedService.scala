@@ -1,6 +1,5 @@
 package schemakeeper.server.service
 
-import cats.Applicative
 import cats.free.Free
 import doobie.ConnectionIO
 import doobie.free.connection
@@ -17,6 +16,7 @@ import schemakeeper.schema.{AvroSchemaCompatibility, AvroSchemaUtils, Compatibil
 
 import scala.collection.JavaConverters._
 import DBBackedService._
+import cats.Applicative
 
 
 class DBBackedService[F[_]: Applicative](config: Configuration) extends Service[F] {
