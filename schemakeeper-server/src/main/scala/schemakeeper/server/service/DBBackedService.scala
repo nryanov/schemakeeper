@@ -11,7 +11,7 @@ import schemakeeper.server.util.Utils
 import doobie.implicits._
 import org.apache.avro.Schema
 import org.slf4j.LoggerFactory
-import schemakeeper.api.SchemaMetadata
+import schemakeeper.api.{SchemaMetadata, SubjectMetadata}
 import schemakeeper.schema.{AvroSchemaCompatibility, AvroSchemaUtils, CompatibilityType, SchemaType}
 
 import scala.collection.JavaConverters._
@@ -19,7 +19,7 @@ import DBBackedService._
 import cats.Applicative
 
 
-class DBBackedService[F[_]: Applicative](config: Configuration) extends Service[F] {
+class DBBackedService[F[_] : Applicative](config: Configuration) extends Service[F] {
   val datasource = DataSource.build(config)
   val storage = DatabaseStorage(config)
 
@@ -117,6 +117,20 @@ class DBBackedService[F[_]: Applicative](config: Configuration) extends Service[
     transaction(query)
   }
 
+  //todo: refactor
+  override def getSubjectMetadata(subject: String): F[Option[SubjectMetadata]] = {
+    logger.info(s"Getting subject metadata: $subject")
+    val query = storage.getSubject(subject)
+      .flatMap(subjectMeta => storage.subjectVersions(subject)
+        .map(versions => subjectMeta
+          .map(meta => {
+            meta.setVersions(versions.toArray)
+            meta
+          })))
+
+    transaction(query)
+  }
+
   override def getGlobalCompatibility(): F[Option[CompatibilityType]] = {
     logger.info("Get global compatibility type")
     transaction(storage.getGlobalCompatibility())
@@ -151,7 +165,7 @@ class DBBackedService[F[_]: Applicative](config: Configuration) extends Service[
 object DBBackedService {
   private val logger = LoggerFactory.getLogger(DBBackedService.getClass)
 
-  def apply[F[_]: Applicative](config: Configuration): DBBackedService[F] = {
+  def apply[F[_] : Applicative](config: Configuration): DBBackedService[F] = {
     FlywayMigrationTool.migrate(config)
     new DBBackedService[F](config)
   }

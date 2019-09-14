@@ -1,6 +1,6 @@
 package schemakeeper.server.service
 
-import schemakeeper.api.SchemaMetadata
+import schemakeeper.api.{SchemaMetadata, SubjectMetadata}
 import schemakeeper.schema.{CompatibilityType, SchemaType}
 
 trait Service[F[_]] {
@@ -23,6 +23,8 @@ trait Service[F[_]] {
   def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): F[Option[CompatibilityType]]
 
   def getSubjectCompatibility(subject: String): F[Option[CompatibilityType]]
+
+  def getSubjectMetadata(subject: String): F[Option[SubjectMetadata]]
 
   def getLastSchema(subject: String): F[Option[String]]
 

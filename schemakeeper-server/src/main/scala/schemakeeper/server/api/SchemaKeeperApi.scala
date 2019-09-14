@@ -31,6 +31,16 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     storage.subjects().map(Ok)
   }
 
+  final val getSubjectMetadata: Endpoint[IO, SubjectMetadata] = get(apiVersion
+    :: "subjects"
+    :: path[String]) { subject: String =>
+    logger.info(s"Get subject metadata: $subject")
+    storage.getSubjectMetadata(subject).map {
+      case Some(v) => Ok(v)
+      case None => NoContent[SubjectMetadata]
+    }
+  }
+
   final val subjectVersions: Endpoint[IO, List[Int]] = get(apiVersion
     :: "subjects"
     :: path[String]

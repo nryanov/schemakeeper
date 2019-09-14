@@ -53,13 +53,15 @@ object JsonProtocol {
 
   implicit val schemaTextEncoder: Encoder[SchemaText] = new Encoder[SchemaText] {
     override def apply(a: SchemaText): Json = Json.obj(
-      ("schema", Json.fromString(a.getSchemaText))
+        ("schema", Json.fromString(a.getSchemaText)),
+        ("schemaType", Json.fromString(a.getSchemaType.identifier))
     )
   }
   implicit val schemaTextDecoder: Decoder[SchemaText] = new Decoder[SchemaText] {
     override def apply(c: HCursor): Result[SchemaText] = for {
       schema <- c.downField("schema").as[String]
-    } yield SchemaText.instance(schema)
+      schemaType <- c.downField("schemaType").as[String]
+    } yield SchemaText.instance(schema, SchemaType.findByName(schemaType))
   }
 
   implicit val schemaIdEncoder: Encoder[SchemaId] = new Encoder[SchemaId] {

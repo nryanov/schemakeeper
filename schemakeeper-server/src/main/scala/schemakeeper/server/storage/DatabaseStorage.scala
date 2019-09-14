@@ -3,7 +3,7 @@ package schemakeeper.server.storage
 import doobie._
 import doobie.quill.DoobieContext
 import io.getquill.SnakeCase
-import schemakeeper.api.SchemaMetadata
+import schemakeeper.api.{SchemaMetadata, SubjectMetadata}
 import schemakeeper.schema.{CompatibilityType, SchemaType}
 import schemakeeper.server.Configuration
 import schemakeeper.server.datasource.DataSourceUtils
@@ -59,6 +59,13 @@ class DatabaseStorage(configuration: Configuration) extends SchemaStorage[Connec
       .filter(_.version == lift(version))
       .delete
   }).map(_ > 0)
+
+  //todo: refactor
+  override def getSubject(subject: String): doobie.ConnectionIO[Option[SubjectMetadata]] = dc.run(quote {
+    query[Subject]
+      .filter(_.subjectName == lift(subject))
+  }).map(_.headOption)
+    .map(_.map(subjectInfoToSubjectMetadata))
 
   override def registerNewSubjectSchema(subject: String, schema: String, schemaType: SchemaType, version: Int, schemaHash: String): ConnectionIO[Int] = dc.run(quote {
     query[SchemaInfo]

@@ -10,7 +10,6 @@ public class SubjectMetadata {
     private String subject;
     private CompatibilityType compatibilityType;
     private SchemaType schemaType;
-    //todo: Remove versions
     private int[] versions;
 
     public static SubjectMetadata instance(String subject, CompatibilityType compatibilityType, SchemaType schemaType) {

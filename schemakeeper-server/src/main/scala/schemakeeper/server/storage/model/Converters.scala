@@ -9,4 +9,7 @@ object Converters {
 
   def subjectInfoToSubjectMetadata(subject: Subject): SubjectMetadata =
     SubjectMetadata.instance(subject.subjectName, CompatibilityType.findByName(subject.compatibilityTypeName), SchemaType.findByName(subject.schemaTypeName))
+
+  def subjectInfoToSubjectMetadata(subject: Subject, versions: Array[Int]): SubjectMetadata =
+    SubjectMetadata.instance(subject.subjectName, CompatibilityType.findByName(subject.compatibilityTypeName), SchemaType.findByName(subject.schemaTypeName), versions)
 }

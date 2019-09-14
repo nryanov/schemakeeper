@@ -31,6 +31,7 @@ object SchemaKeeper extends TwitterServer {
       .serve[Application.Json](api.subjectSchemaByVersion)
       .serve[Application.Json](api.schema)
       .serve[Application.Json](api.subjects)
+      .serve[Application.Json](api.subjects :+: api.getSubjectMetadata)
       .serve[Application.Json](api.subjectOnlySchemaByVersion)
       .serve[Application.Json](api.registerNewSubjectSchema)
       .serve[Application.Json](api.getSubjectCompatibilityConfig :+: api.updateSubjectCompatibilityConfig)

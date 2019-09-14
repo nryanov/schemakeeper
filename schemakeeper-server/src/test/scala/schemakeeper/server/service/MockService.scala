@@ -21,6 +21,16 @@ class MockService[F[_] : Applicative](data: InitialData) extends Service[F] {
   override def subjects(): F[List[String]] =
     Applicative[F].pure(data.subjectSchemaVersion.keys.toList)
 
+
+  override def getSubjectMetadata(subject: String): F[Option[SubjectMetadata]] = Applicative[F].pure {
+    data.subjectMetadata.get(subject).flatMap(meta => {
+      data.subjectSchemaVersion.get(subject).map(_.keys).map(versions => {
+        meta.setVersions(versions.toArray)
+        meta
+      })
+    })
+  }
+
   override def subjectVersions(subject: String): F[List[Int]] =
     Applicative[F].pure(data.subjectSchemaVersion.get(subject).map(_.keys.toList).getOrElse(List.empty[Int]))
 

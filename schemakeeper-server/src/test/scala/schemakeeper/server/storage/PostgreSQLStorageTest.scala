@@ -8,6 +8,7 @@ import com.dimafeng.testcontainers.{ForAllTestContainer, PostgreSQLContainer}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, WordSpec}
+import schemakeeper.api.SubjectMetadata
 import schemakeeper.schema.{CompatibilityType, SchemaType}
 import schemakeeper.server.Configuration
 import schemakeeper.server.service.DBBackedService
@@ -148,6 +149,22 @@ class PostgreSQLStorageTest extends WordSpec with ForAllTestContainer with Befor
 
     "update compatibility type" in {
       assertResult(CompatibilityType.FORWARD)(schemaStorage.updateGlobalCompatibility(CompatibilityType.FORWARD).get)
+    }
+
+    "return None" when {
+      "get subject meta for not existing subject" in {
+        val meta = schemaStorage.getSubjectMetadata("A1")
+
+        assert(meta.isEmpty)
+      }
+    }
+
+    "return subject metadata" in {
+      schemaStorage.registerNewSubjectSchema("test", Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
+      val meta = schemaStorage.getSubjectMetadata("test")
+      val expected = SubjectMetadata.instance("test", CompatibilityType.BACKWARD, SchemaType.AVRO, Array(1))
+
+      assertResult(expected)(meta.get)
     }
   }
 }

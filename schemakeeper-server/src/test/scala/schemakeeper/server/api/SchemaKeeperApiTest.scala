@@ -7,7 +7,7 @@ import io.finch.circe._
 import org.apache.avro.Schema
 import org.scalatest.{Matchers, WordSpec}
 import schemakeeper.api._
-import schemakeeper.schema.CompatibilityType
+import schemakeeper.schema.{CompatibilityType, SchemaType}
 import schemakeeper.server.service.{InitialDataGenerator, MockService}
 import schemakeeper.server.api.protocol.JsonProtocol._
 
@@ -316,6 +316,27 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
       val result = api.updateGlobalCompatibilityConfig(Input.put("/v1/compatibility").withBody[Application.Json](body)).awaitValueUnsafe()
 
       assertResult(result.get)(body)
+    }
+  }
+
+  "Get subject meta" should {
+    "return no content" when {
+      "there is not registered subject with such name" in {
+        val service = MockService[IO](InitialDataGenerator())
+        val api = SchemaKeeperApi(service)
+        val result = api.getSubjectMetadata(Input.get("/v1/subjects/A1")).awaitOutputUnsafe()
+
+        assertResult(result.get)(NoContent[SubjectMetadata])
+      }
+    }
+
+    "return subject metadata" in {
+      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
+      val api = SchemaKeeperApi(service)
+      val result = api.getSubjectMetadata(Input.get("/v1/subjects/A1")).awaitValueUnsafe()
+      val expected = SubjectMetadata.instance("A1", CompatibilityType.NONE, SchemaType.AVRO, Array(1))
+
+      assertResult(result.get)(expected)
     }
   }
 }
