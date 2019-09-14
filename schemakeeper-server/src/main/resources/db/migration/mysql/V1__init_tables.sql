@@ -10,6 +10,12 @@ create table if not exists ${schemakeeper_schema}.compatibility_type (
   constraint compatibility_type_pk primary key (compatibility_type_name)
 );
 
+create table if not exists ${schemakeeper_schema}.config (
+  config_name varchar(255) not null,
+  config_value text not null,
+  constraint configs_pk primary key (config_name)
+);
+
 create table if not exists ${schemakeeper_schema}.subject (
   subject_name varchar(255) not null,
   schema_type_name varchar(255) not null,
@@ -34,6 +40,8 @@ create table if not exists ${schemakeeper_schema}.schema_info (
 
 alter table ${schemakeeper_schema}.schema_info add index (subject_name);
 alter table ${schemakeeper_schema}.schema_info add index (schema_type_name, subject_name, version);
+
+insert into ${schemakeeper_schema}.config(config_name, config_value) values('default.compatibility', 'backward');
 
 insert into ${schemakeeper_schema}.schema_type(schema_type_name) values ('avro');
 insert into ${schemakeeper_schema}.schema_type(schema_type_name) values ('thrift');

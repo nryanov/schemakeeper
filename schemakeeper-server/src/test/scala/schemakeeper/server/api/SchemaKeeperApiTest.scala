@@ -296,4 +296,26 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
       }
     }
   }
+
+  "Get global compatibility config" should {
+    "return config" in {
+      val service = MockService[IO](InitialDataGenerator())
+      val api = SchemaKeeperApi(service)
+      val result = api.getGlobalCompatibilityConfig(Input.get("/v1/compatibility")).awaitValueUnsafe()
+
+      // default value
+      assertResult(result.get)(CompatibilityTypeMetadata.instance(CompatibilityType.BACKWARD))
+    }
+  }
+
+  "Update global compatibility config" should {
+    "update config" in {
+      val service = MockService[IO](InitialDataGenerator())
+      val api = SchemaKeeperApi(service)
+      val body = CompatibilityTypeMetadata.instance(CompatibilityType.FORWARD)
+      val result = api.updateGlobalCompatibilityConfig(Input.put("/v1/compatibility").withBody[Application.Json](body)).awaitValueUnsafe()
+
+      assertResult(result.get)(body)
+    }
+  }
 }

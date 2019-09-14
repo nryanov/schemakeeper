@@ -95,6 +95,10 @@ class MockService[F[_] : Applicative](data: InitialData) extends Service[F] {
     nextId
   }
 
+  override def getGlobalCompatibility(): F[Option[CompatibilityType]] = Applicative[F].pure(Some(CompatibilityType.BACKWARD))
+
+  override def updateGlobalCompatibility(compatibilityType: CompatibilityType): F[Option[CompatibilityType]] = Applicative[F].pure(Some(compatibilityType))
+
   private def isSchemaCompatible(newSchema: Schema, previousSchema: Schema, compatibilityType: CompatibilityType): Boolean = compatibilityType match {
     case CompatibilityType.NONE => true
     case CompatibilityType.BACKWARD => AvroSchemaCompatibility.BACKWARD_VALIDATOR.isCompatible(newSchema, previousSchema)

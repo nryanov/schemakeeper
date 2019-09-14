@@ -121,6 +121,27 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
         case None => NoContent[CompatibilityTypeMetadata]
       }
   }
+
+  final val getGlobalCompatibilityConfig: Endpoint[IO, CompatibilityTypeMetadata] = get(apiVersion
+    :: "compatibility") {
+    logger.info("Get global compatibility config")
+    storage.getGlobalCompatibility()
+      .map {
+        case Some(v) => Ok(CompatibilityTypeMetadata.instance(v))
+        case None => NoContent[CompatibilityTypeMetadata]
+      }
+  }
+
+  final val updateGlobalCompatibilityConfig: Endpoint[IO, CompatibilityTypeMetadata] = put(apiVersion
+    :: "compatibility"
+    :: jsonBody[CompatibilityTypeMetadata]) { compatibility: CompatibilityTypeMetadata =>
+    logger.info(s"Update global compatibility config: ${compatibility.getCompatibilityType.identifier}")
+    storage.updateGlobalCompatibility(compatibility.getCompatibilityType)
+      .map {
+        case Some(v) => Ok(CompatibilityTypeMetadata.instance(v))
+        case None => NoContent[CompatibilityTypeMetadata]
+      }
+  }
 }
 
 object SchemaKeeperApi {

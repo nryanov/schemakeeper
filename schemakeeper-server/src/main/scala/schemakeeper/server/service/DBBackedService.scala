@@ -115,6 +115,16 @@ class DBBackedService[F[_]: Applicative](config: Configuration) extends Service[
     transaction(query)
   }
 
+  override def getGlobalCompatibility(): F[Option[CompatibilityType]] = {
+    logger.info("Get global compatibility type")
+    transaction(storage.getGlobalCompatibility())
+  }
+
+  override def updateGlobalCompatibility(compatibilityType: CompatibilityType): F[Option[CompatibilityType]] = {
+    logger.info(s"Update global compatibility type to: ${compatibilityType.identifier}")
+    transaction(storage.updateGlobalCompatibility(compatibilityType))
+  }
+
   private def transaction[A](query: ConnectionIO[A]): F[A] = Applicative[F].pure {
     datasource.use {
       xa => query.transact(xa)

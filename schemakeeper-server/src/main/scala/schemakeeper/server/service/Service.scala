@@ -29,4 +29,8 @@ trait Service[F[_]] {
   def getLastSchemas(subject: String): F[List[String]]
 
   def registerNewSubjectSchema(subject: String, schema: String): F[Int]
+
+  def getGlobalCompatibility(): F[Option[CompatibilityType]]
+
+  def updateGlobalCompatibility(compatibilityType: CompatibilityType): F[Option[CompatibilityType]]
 }

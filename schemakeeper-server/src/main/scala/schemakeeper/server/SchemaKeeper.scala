@@ -34,6 +34,7 @@ object SchemaKeeper extends TwitterServer {
       .serve[Application.Json](api.subjectOnlySchemaByVersion)
       .serve[Application.Json](api.registerNewSubjectSchema)
       .serve[Application.Json](api.getSubjectCompatibilityConfig :+: api.updateSubjectCompatibilityConfig)
+      .serve[Application.Json](api.getGlobalCompatibilityConfig :+: api.updateGlobalCompatibilityConfig)
       .toService
 
     val server = Http.server

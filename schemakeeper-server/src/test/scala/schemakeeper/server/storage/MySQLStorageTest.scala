@@ -141,5 +141,13 @@ class MySQLStorageTest extends WordSpec with ForAllTestContainer with BeforeAndA
       schemaStorage.deleteSubject("test")
       assert(schemaStorage.getLastSchemas("test").isEmpty)
     }
+
+    "return default compatibility type" in {
+      assertResult(CompatibilityType.BACKWARD)(schemaStorage.getGlobalCompatibility().get)
+    }
+
+    "update compatibility type" in {
+      assertResult(CompatibilityType.FORWARD)(schemaStorage.updateGlobalCompatibility(CompatibilityType.FORWARD).get)
+    }
   }
 }

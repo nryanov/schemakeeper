@@ -8,6 +8,12 @@ create table if not exists compatibility_type (
   constraint compatibility_type_pk primary key (compatibility_type_name)
 );
 
+create table if not exists config (
+  config_name varchar(255) not null,
+  config_value text not null,
+  constraint configs_pk primary key (config_name)
+);
+
 create table if not exists subject (
   subject_name varchar(255) not null,
   schema_type_name varchar(255) not null,
@@ -32,6 +38,8 @@ create table if not exists schema_info (
 
 create index if not exists schema_info_subject_name_idx on schema_info(subject_name);
 create index if not exists schema_info_meta_idx on schema_info(schema_type_name, subject_name, version);
+
+insert into config(config_name, config_value) values('default.compatibility', 'backward');
 
 insert into schema_type(schema_type_name) values ('avro');
 insert into schema_type(schema_type_name) values ('thrift');

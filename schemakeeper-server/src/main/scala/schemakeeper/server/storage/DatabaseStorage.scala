@@ -115,6 +115,20 @@ class DatabaseStorage(configuration: Configuration) extends SchemaStorage[Connec
       .map(_.compatibilityTypeName)
   }).map(_.headOption)
     .map(_.map(Utils.compatibilityTypeFromStringUnsafe))
+
+  override def getGlobalCompatibility(): ConnectionIO[Option[CompatibilityType]] = dc.run(quote {
+    query[Config]
+      .filter(_.configName == "default.compatibility")
+      .map(_.configName)
+  }).map(_.headOption)
+    .map(_.map(CompatibilityType.findByName))
+
+  override def updateGlobalCompatibility(compatibilityType: CompatibilityType): ConnectionIO[Option[CompatibilityType]] = dc.run(quote {
+    query[Config]
+      .filter(_.configName == "default.compatibility")
+      .update(_.configValue -> lift(compatibilityType.identifier))
+  }).map(_ > 0)
+    .map(f => if (f) Some(compatibilityType) else None)
 }
 
 object DatabaseStorage {

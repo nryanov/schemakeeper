@@ -1,7 +1,6 @@
 package schemakeeper.server.storage
 
 import schemakeeper.api.SchemaMetadata
-import schemakeeper.schema.CompatibilityType
 
 
 trait SchemaStorage[F[_]] {
@@ -34,4 +33,8 @@ trait SchemaStorage[F[_]] {
   def registerNewSubject(subject: String): F[Int]
 
   def getNextVersionNumber(subject: String): F[Int]
+
+  def getGlobalCompatibility(): F[Option[CompatibilityType]]
+
+  def updateGlobalCompatibility(compatibilityType: CompatibilityType): F[Option[CompatibilityType]]
 }
