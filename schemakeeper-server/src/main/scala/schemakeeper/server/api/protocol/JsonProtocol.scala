@@ -78,7 +78,7 @@ object JsonProtocol {
   implicit val newSubjectRequestEncoder: Encoder[NewSubjectRequest] = new Encoder[NewSubjectRequest] {
     override def apply(a: NewSubjectRequest): Json = Json.obj(
       ("schemaType", Json.fromString(a.getSchemaType.identifier)),
-      ("compatibilityType", Json.fromString(a.getCompatibilityType.name())),
+      ("compatibilityType", Json.fromString(a.getCompatibilityType.identifier)),
       ("schema", Json.fromString(a.getSchemaText))
     )
   }
