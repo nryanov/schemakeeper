@@ -4,13 +4,12 @@ import doobie._
 import doobie.quill.DoobieContext
 import io.getquill.SnakeCase
 import schemakeeper.api.SchemaMetadata
-import schemakeeper.schema.CompatibilityType
+import schemakeeper.schema.{CompatibilityType, SchemaType}
 import schemakeeper.server.Configuration
 import schemakeeper.server.datasource.DataSourceUtils
 import schemakeeper.server.datasource.migration.SupportedDatabaseProvider
-import schemakeeper.server.storage.model.{SchemaInfo, Subject}
+import schemakeeper.server.storage.model.{Config, SchemaInfo, Subject}
 import schemakeeper.server.storage.model.Converters._
-import schemakeeper.server.util.Utils
 
 class DatabaseStorage(configuration: Configuration) extends SchemaStorage[ConnectionIO] {
   private implicit val logHandler: LogHandler = LogHandler.jdkLogHandler
@@ -61,10 +60,9 @@ class DatabaseStorage(configuration: Configuration) extends SchemaStorage[Connec
       .delete
   }).map(_ > 0)
 
-  //todo: pass schema format type explicitly
-  override def registerNewSubjectSchema(subject: String, schema: String, version: Int, schemaHash: String): ConnectionIO[Int] = dc.run(quote {
+  override def registerNewSubjectSchema(subject: String, schema: String, schemaType: SchemaType, version: Int, schemaHash: String): ConnectionIO[Int] = dc.run(quote {
     query[SchemaInfo]
-      .insert(lift(SchemaInfo(0, version, "avro", subject, schema, schemaHash)))
+      .insert(lift(SchemaInfo(0, version, schemaType.identifier, subject, schema, schemaHash)))
       .returning(_.id)
   })
 
@@ -74,11 +72,9 @@ class DatabaseStorage(configuration: Configuration) extends SchemaStorage[Connec
       .nonEmpty
   })
 
-  //todo: get compatibility type from global config
-  //todo: pass schema format type explicitly
-  override def registerNewSubject(subject: String): ConnectionIO[Int] = dc.run(quote {
+  override def registerNewSubject(subject: String, schemaType: SchemaType, compatibilityType: CompatibilityType): ConnectionIO[Int] = dc.run(quote {
     query[Subject]
-      .insert(lift(Subject(subject, "avro", CompatibilityType.BACKWARD.name().toLowerCase)))
+      .insert(lift(Subject(subject, schemaType.identifier, compatibilityType.identifier)))
   }).map(_.toInt)
 
   override def getNextVersionNumber(subject: String): ConnectionIO[Int] = dc.run(quote {
@@ -105,7 +101,7 @@ class DatabaseStorage(configuration: Configuration) extends SchemaStorage[Connec
   override def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): ConnectionIO[Option[CompatibilityType]] = dc.run(quote {
     query[Subject]
       .filter(_.subjectName == lift(subject))
-      .update(_.compatibilityTypeName -> lift(compatibilityType.name().toLowerCase))
+      .update(_.compatibilityTypeName -> lift(compatibilityType.identifier))
   }).map(_ > 0)
     .map(f => if (f) Some(compatibilityType) else None)
 
@@ -114,7 +110,7 @@ class DatabaseStorage(configuration: Configuration) extends SchemaStorage[Connec
       .filter(_.subjectName == lift(subject))
       .map(_.compatibilityTypeName)
   }).map(_.headOption)
-    .map(_.map(Utils.compatibilityTypeFromStringUnsafe))
+    .map(_.map(CompatibilityType.findByName))
 
   override def getGlobalCompatibility(): ConnectionIO[Option[CompatibilityType]] = dc.run(quote {
     query[Config]

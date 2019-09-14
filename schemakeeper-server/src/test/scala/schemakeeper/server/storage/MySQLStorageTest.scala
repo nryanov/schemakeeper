@@ -8,7 +8,7 @@ import com.dimafeng.testcontainers.{ForAllTestContainer, MySQLContainer}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, WordSpec}
-import schemakeeper.schema.CompatibilityType
+import schemakeeper.schema.{CompatibilityType, SchemaType}
 import schemakeeper.server.Configuration
 import schemakeeper.server.service.DBBackedService
 
@@ -37,6 +37,7 @@ class MySQLStorageTest extends WordSpec with ForAllTestContainer with BeforeAndA
   }
 
   override protected def afterEach(): Unit = {
+    connection.createStatement().execute("update schemakeeper.config set config_value = 'backward' where config_name = 'default.compatibility'")
     connection.createStatement().execute("delete from schemakeeper.schema_info")
     connection.createStatement().execute("delete from schemakeeper.subject")
     connection.commit()
@@ -66,7 +67,7 @@ class MySQLStorageTest extends WordSpec with ForAllTestContainer with BeforeAndA
         .requiredString("f1")
         .endRecord()
 
-      val id = schemaStorage.registerNewSubjectSchema("test", schema.toString)
+      val id = schemaStorage.registerNewSubjectSchema("test", schema.toString, SchemaType.AVRO)
 
       assert(id > 0)
       assertResult(schemaStorage.getLastSchema("test").get)(schema.toString())
@@ -89,10 +90,10 @@ class MySQLStorageTest extends WordSpec with ForAllTestContainer with BeforeAndA
         .requiredString("some_name") // replace required field by another field
         .endRecord()
 
-      schemaStorage.registerNewSubjectSchema("test", schema.toString)
+      schemaStorage.registerNewSubjectSchema("test", schema.toString, SchemaType.AVRO)
       schemaStorage.updateSubjectCompatibility("test", CompatibilityType.FULL)
       Try {
-        schemaStorage.registerNewSubjectSchema("test", updatedSchema.toString)
+        schemaStorage.registerNewSubjectSchema("test", updatedSchema.toString, SchemaType.AVRO)
       }
 
       assert(schemaStorage.getLastSchemas("test").length == 1)
@@ -114,18 +115,18 @@ class MySQLStorageTest extends WordSpec with ForAllTestContainer with BeforeAndA
         .optionalString("f2")
         .endRecord()
 
-      schemaStorage.registerNewSubjectSchema("test", schema.toString)
+      schemaStorage.registerNewSubjectSchema("test", schema.toString, SchemaType.AVRO)
       schemaStorage.updateSubjectCompatibility("test", CompatibilityType.BACKWARD)
-      schemaStorage.registerNewSubjectSchema("test", updatedSchema.toString)
+      schemaStorage.registerNewSubjectSchema("test", updatedSchema.toString, SchemaType.AVRO)
 
       assert(schemaStorage.getLastSchemas("test").length == 2)
       assertResult(List(1, 2))(schemaStorage.subjectVersions("test"))
     }
 
     "delete specific subject schema version" in {
-      schemaStorage.registerNewSubjectSchema("test", Schema.create(Schema.Type.STRING).toString)
+      schemaStorage.registerNewSubjectSchema("test", Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
       schemaStorage.updateSubjectCompatibility("test", CompatibilityType.NONE)
-      schemaStorage.registerNewSubjectSchema("test", Schema.create(Schema.Type.INT).toString)
+      schemaStorage.registerNewSubjectSchema("test", Schema.create(Schema.Type.INT).toString, SchemaType.AVRO)
 
       assert(schemaStorage.getLastSchemas("test").length == 2)
       assert(schemaStorage.deleteSubjectVersion("test", 2))
@@ -133,9 +134,9 @@ class MySQLStorageTest extends WordSpec with ForAllTestContainer with BeforeAndA
     }
 
     "delete subject" in {
-      schemaStorage.registerNewSubjectSchema("test", Schema.create(Schema.Type.STRING).toString)
+      schemaStorage.registerNewSubjectSchema("test", Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
       schemaStorage.updateSubjectCompatibility("test", CompatibilityType.NONE)
-      schemaStorage.registerNewSubjectSchema("test", Schema.create(Schema.Type.INT).toString)
+      schemaStorage.registerNewSubjectSchema("test", Schema.create(Schema.Type.INT).toString, SchemaType.AVRO)
 
       assert(schemaStorage.getLastSchemas("test").length == 2)
       schemaStorage.deleteSubject("test")

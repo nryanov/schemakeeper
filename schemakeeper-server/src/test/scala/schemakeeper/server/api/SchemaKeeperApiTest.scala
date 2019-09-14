@@ -21,20 +21,20 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
       "there is no schema with such id" in {
         val service = MockService[IO](InitialDataGenerator())
         val api = SchemaKeeperApi(service)
-        val result: Option[Output[SchemaResponse]] = api.schema(Input.get("/v1/schema/1")).awaitOutputUnsafe()
+        val result: Option[Output[SchemaText]] = api.schema(Input.get("/v1/schema/1")).awaitOutputUnsafe()
 
         assert(result.isDefined)
-        assertResult(result.get)(NoContent[SchemaResponse])
+        assertResult(result.get)(NoContent[SchemaText])
       }
     }
 
     "return Schema" in {
       val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
       val api = SchemaKeeperApi(service)
-      val result: Option[Output[SchemaResponse]] = api.schema(Input.get("/v1/schema/1")).awaitOutputUnsafe()
+      val result: Option[Output[SchemaText]] = api.schema(Input.get("/v1/schema/1")).awaitOutputUnsafe()
 
       assert(result.isDefined)
-      assertResult(result.get)(Ok[SchemaResponse](SchemaResponse.instance("S1")))
+      assertResult(result.get)(Ok[SchemaText](SchemaText.instance("S1")))
     }
 
     "return error" when {
@@ -132,7 +132,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
       val api = SchemaKeeperApi(service)
       val result = api.subjectOnlySchemaByVersion(Input.get("/v1/subjects/A1/versions/1/schema")).awaitValueUnsafe()
 
-      assertResult(result.get)(SchemaResponse.instance("S1"))
+      assertResult(result.get)(SchemaText.instance("S1"))
     }
 
     "return error" when {
@@ -198,7 +198,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
     "return next schema id" in {
       val service = MockService[IO](InitialDataGenerator())
       val api = SchemaKeeperApi(service)
-      val body = SchemaRequest.instance("SCHEMA")
+      val body = SchemaText.instance("SCHEMA")
       val result = api.registerNewSubjectSchema(Input.post("/v1/subjects/A1").withBody[Application.Json](body)).awaitValueUnsafe()
 
       assertResult(SchemaId.instance(1))(result.get)
@@ -261,7 +261,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
       "there is not registered subjects with specified name" in {
         val service = MockService[IO](InitialDataGenerator())
         val api = SchemaKeeperApi(service)
-        val body = SchemaRequest.instance(Schema.create(Schema.Type.INT))
+        val body = SchemaText.instance(Schema.create(Schema.Type.INT))
         val result = api.checkSubjectSchemaCompatibility(Input.post("/v1/compatibility/A1").withBody[Application.Json](body)).awaitValueUnsafe()
 
         assertResult(false)(result.get)
@@ -274,7 +274,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
         val compatibility = CompatibilityTypeMetadata.instance(CompatibilityType.BACKWARD)
         api.updateSubjectCompatibilityConfig(Input.put("/v1/compatibility/A1").withBody[Application.Json](compatibility)).awaitValueUnsafe()
 
-        val body = SchemaRequest.instance(Schema.create(Schema.Type.INT))
+        val body = SchemaText.instance(Schema.create(Schema.Type.INT))
         val result = api.checkSubjectSchemaCompatibility(Input.post("/v1/compatibility/A1").withBody[Application.Json](body)).awaitValueUnsafe()
 
         assertResult(false)(result.get)
@@ -289,7 +289,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
         val compatibility = CompatibilityTypeMetadata.instance(CompatibilityType.BACKWARD)
         api.updateSubjectCompatibilityConfig(Input.put("/v1/compatibility/A1").withBody[Application.Json](compatibility)).awaitValueUnsafe()
 
-        val body = SchemaRequest.instance(Schema.create(Schema.Type.LONG))
+        val body = SchemaText.instance(Schema.create(Schema.Type.LONG))
         val result = api.checkSubjectSchemaCompatibility(Input.post("/v1/compatibility/A1").withBody[Application.Json](body)).awaitValueUnsafe()
 
         assertResult(true)(result.get)

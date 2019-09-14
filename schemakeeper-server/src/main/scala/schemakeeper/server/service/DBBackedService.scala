@@ -12,7 +12,7 @@ import doobie.implicits._
 import org.apache.avro.Schema
 import org.slf4j.LoggerFactory
 import schemakeeper.api.SchemaMetadata
-import schemakeeper.schema.{AvroSchemaCompatibility, AvroSchemaUtils, CompatibilityType}
+import schemakeeper.schema.{AvroSchemaCompatibility, AvroSchemaUtils, CompatibilityType, SchemaType}
 
 import scala.collection.JavaConverters._
 import DBBackedService._
@@ -90,7 +90,7 @@ class DBBackedService[F[_]: Applicative](config: Configuration) extends Service[
   }
 
   // todo: lock all subject schemas for update
-  override def registerNewSubjectSchema(subject: String, schema: String): F[Int] = {
+  override def registerNewSubjectSchema(subject: String, schema: String, schemaType: SchemaType): F[Int] = {
     logger.info(s"Register new subject schema: $subject - $schema")
 
     val query = storage.checkSubjectExistence(subject)
@@ -98,7 +98,9 @@ class DBBackedService[F[_]: Applicative](config: Configuration) extends Service[
         if (isExist) {
           Free.pure[connection.ConnectionOp, Int](0)
         } else {
-          storage.registerNewSubject(subject)
+          storage.getGlobalCompatibility().flatMap(globalCompatibilityType =>
+            storage.registerNewSubject(subject, schemaType, globalCompatibilityType.getOrElse(CompatibilityType.BACKWARD))
+          )
         }
       })
       .flatMap(_ => storage.getSubjectCompatibility(subject))
@@ -110,7 +112,7 @@ class DBBackedService[F[_]: Applicative](config: Configuration) extends Service[
         }
       })
       .flatMap(_ => storage.getNextVersionNumber(subject))
-      .flatMap(nextVersion => storage.registerNewSubjectSchema(subject, schema, nextVersion, Utils.toMD5Hex(schema)))
+      .flatMap(nextVersion => storage.registerNewSubjectSchema(subject, schema, schemaType, nextVersion, Utils.toMD5Hex(schema)))
 
     transaction(query)
   }

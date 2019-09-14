@@ -6,7 +6,6 @@ import cats.effect.{ContextShift, IO}
 import io.circe.generic.auto._
 import org.slf4j.LoggerFactory
 import Validation._
-import SchemaKeeperApi._
 import schemakeeper.api._
 import schemakeeper.server.service.Service
 import schemakeeper.server.api.protocol.JsonProtocol._
@@ -14,13 +13,15 @@ import schemakeeper.server.api.protocol.JsonProtocol._
 
 class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extends Endpoint.Module[IO] {
 
-  final val schema: Endpoint[IO, SchemaResponse] = get(apiVersion
+  import SchemaKeeperApi._
+
+  final val schema: Endpoint[IO, SchemaText] = get(apiVersion
     :: "schema"
     :: path[Int].should(positiveSchemaId)) { id: Int =>
     logger.info("Getting schema by id: {}", id)
     storage.schemaById(id).map {
-      case Some(s) => Ok(SchemaResponse.instance(s))
-      case None => NoContent[SchemaResponse]
+      case Some(s) => Ok(SchemaText.instance(s))
+      case None => NoContent[SchemaText]
     }
   }
 
@@ -53,7 +54,7 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     }
   }
 
-  final val subjectOnlySchemaByVersion: Endpoint[IO, SchemaResponse] = get(apiVersion
+  final val subjectOnlySchemaByVersion: Endpoint[IO, SchemaText] = get(apiVersion
     :: "subjects"
     :: path[String]
     :: "versions"
@@ -61,8 +62,8 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: "schema") { (subjectName: String, version: Int) =>
     logger.info("Getting only subject schema by version: {}:{}", subjectName, version)
     storage.subjectOnlySchemaByVersion(subjectName, version).map {
-      case Some(meta) => Ok(SchemaResponse.instance(meta))
-      case None => NoContent[SchemaResponse]
+      case Some(meta) => Ok(SchemaText.instance(meta))
+      case None => NoContent[SchemaText]
     }
   }
 
@@ -85,9 +86,9 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
   final val registerNewSubjectSchema: Endpoint[IO, SchemaId] = post(apiVersion
     :: "subjects"
     :: path[String]
-    :: jsonBody[SchemaRequest]) { (subjectName: String, schema: SchemaRequest) =>
+    :: jsonBody[SchemaText]) { (subjectName: String, schema: SchemaText) =>
     logger.info(s"Register new subject schema: $subjectName - $schema")
-    storage.registerNewSubjectSchema(subjectName, schema.getSchemaText)
+    storage.registerNewSubjectSchema(subjectName, schema.getSchemaText, schema.getSchemaType)
       .map(SchemaId.instance)
       .map(Ok)
   }
@@ -95,7 +96,7 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
   final val checkSubjectSchemaCompatibility: Endpoint[IO, Boolean] = post(apiVersion
     :: "compatibility"
     :: path[String]
-    :: jsonBody[SchemaRequest]) { (subjectName: String, schema: SchemaRequest) =>
+    :: jsonBody[SchemaText]) { (subjectName: String, schema: SchemaText) =>
     logger.info(s"Check subject schema compatibility: $subjectName - ${schema.getSchemaText}")
     storage.checkSubjectSchemaCompatibility(subjectName, schema.getSchemaText).map(Ok)
   }

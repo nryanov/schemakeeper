@@ -3,7 +3,7 @@ package schemakeeper.server.api.protocol
 import io.circe.Decoder.Result
 import io.circe.{Decoder, Encoder, HCursor, Json}
 import schemakeeper.api._
-import schemakeeper.server.util.Utils
+import schemakeeper.schema.{CompatibilityType, SchemaType}
 
 object JsonProtocol {
   implicit val schemaMetadataEncoder: Encoder[SchemaMetadata] = new Encoder[SchemaMetadata] {
@@ -25,50 +25,41 @@ object JsonProtocol {
 
   implicit val compatibilityTypeMetadataEncoder: Encoder[CompatibilityTypeMetadata] = new Encoder[CompatibilityTypeMetadata] {
     override def apply(a: CompatibilityTypeMetadata): Json = Json.obj(
-      ("compatibilityType", Json.fromString(a.getCompatibilityType.name()))
+      ("compatibilityType", Json.fromString(a.getCompatibilityType.identifier))
     )
   }
   implicit val compatibilityTypeMetadataDecoder: Decoder[CompatibilityTypeMetadata] = new Decoder[CompatibilityTypeMetadata] {
     override def apply(c: HCursor): Result[CompatibilityTypeMetadata] = for {
       name <- c.downField("compatibilityType").as[String]
-    } yield CompatibilityTypeMetadata.instance(Utils.compatibilityTypeFromStringUnsafe(name))
+    } yield CompatibilityTypeMetadata.instance(CompatibilityType.findByName(name))
   }
 
   implicit val subjectMetadataEncoder: Encoder[SubjectMetadata] = new Encoder[SubjectMetadata] {
     override def apply(a: SubjectMetadata): Json = Json.obj(
       ("subject", Json.fromString(a.getSubject)),
-      ("compatibilityType", Json.fromString(a.getCompatibilityType.name())),
-      ("format", Json.fromString(a.getFormatName)),
+      ("compatibilityType", Json.fromString(a.getCompatibilityType.identifier)),
+      ("schemaType", Json.fromString(a.getSchemaType.identifier)),
+      ("versions", Json.fromValues(a.getVersions.map(Json.fromInt))),
     )
   }
   implicit val subjectMetadataDecoder: Decoder[SubjectMetadata] = new Decoder[SubjectMetadata] {
     override def apply(c: HCursor): Result[SubjectMetadata] = for {
       subject <- c.downField("subject").as[String]
       compatibilityType <- c.downField("compatibilityType").as[String]
-      format <- c.downField("format").as[String]
-    } yield SubjectMetadata.instance(subject, Utils.compatibilityTypeFromStringUnsafe(compatibilityType), format)
+      schemaType <- c.downField("schemaType").as[String]
+      versions <- c.downField("versions").as[Iterable[Int]]
+    } yield SubjectMetadata.instance(subject, CompatibilityType.findByName(compatibilityType), SchemaType.findByName(schemaType), versions.toArray)
   }
 
-  implicit val schemaRequestEncoder: Encoder[SchemaRequest] = new Encoder[SchemaRequest] {
-    override def apply(a: SchemaRequest): Json = Json.obj(
+  implicit val schemaTextEncoder: Encoder[SchemaText] = new Encoder[SchemaText] {
+    override def apply(a: SchemaText): Json = Json.obj(
       ("schema", Json.fromString(a.getSchemaText))
     )
   }
-  implicit val schemaRequestDecoder: Decoder[SchemaRequest] = new Decoder[SchemaRequest] {
-    override def apply(c: HCursor): Result[SchemaRequest] = for {
+  implicit val schemaTextDecoder: Decoder[SchemaText] = new Decoder[SchemaText] {
+    override def apply(c: HCursor): Result[SchemaText] = for {
       schema <- c.downField("schema").as[String]
-    } yield SchemaRequest.instance(schema)
-  }
-
-  implicit val schemaResponseEncoder: Encoder[SchemaResponse] = new Encoder[SchemaResponse] {
-    override def apply(a: SchemaResponse): Json = Json.obj(
-      ("schema", Json.fromString(a.getSchemaText))
-    )
-  }
-  implicit val schemaResponseDecoder: Decoder[SchemaResponse] = new Decoder[SchemaResponse] {
-    override def apply(c: HCursor): Result[SchemaResponse] = for {
-      schema <- c.downField("schema").as[String]
-    } yield SchemaResponse.instance(schema)
+    } yield SchemaText.instance(schema)
   }
 
   implicit val schemaIdEncoder: Encoder[SchemaId] = new Encoder[SchemaId] {
@@ -80,5 +71,20 @@ object JsonProtocol {
     override def apply(c: HCursor): Result[SchemaId] = for {
       id <- c.downField("id").as[Int]
     } yield SchemaId.instance(id)
+  }
+
+  implicit val newSubjectRequestEncoder: Encoder[NewSubjectRequest] = new Encoder[NewSubjectRequest] {
+    override def apply(a: NewSubjectRequest): Json = Json.obj(
+      ("schemaType", Json.fromString(a.getSchemaType.identifier)),
+      ("compatibilityType", Json.fromString(a.getCompatibilityType.name())),
+      ("schema", Json.fromString(a.getSchemaText))
+    )
+  }
+  implicit val newSubjectRequestDecoder: Decoder[NewSubjectRequest] = new Decoder[NewSubjectRequest] {
+    override def apply(c: HCursor): Result[NewSubjectRequest] = for {
+      schemaType <- c.downField("schemaType").as[String]
+      compatibilityType <- c.downField("compatibilityType").as[String]
+      schemaText <- c.downField("schema").as[String]
+    } yield NewSubjectRequest.instance(schemaText, SchemaType.findByName(schemaType), CompatibilityType.findByName(compatibilityType))
   }
 }

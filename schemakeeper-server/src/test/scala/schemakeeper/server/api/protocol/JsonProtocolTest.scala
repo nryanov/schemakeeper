@@ -4,7 +4,7 @@ import org.scalatest.{Matchers, WordSpec}
 import schemakeeper.api._
 import io.circe.syntax._
 import JsonProtocol._
-import schemakeeper.schema.CompatibilityType
+import schemakeeper.schema.{CompatibilityType, SchemaType}
 
 class JsonProtocolTest extends WordSpec with Matchers {
   "SchemaMetadata" should {
@@ -33,7 +33,7 @@ class JsonProtocolTest extends WordSpec with Matchers {
 
   "SubjectMetadata" should {
     "be encoded and decoded correctly" in {
-      val meta = SubjectMetadata.instance("a", CompatibilityType.BACKWARD, "b")
+      val meta = SubjectMetadata.instance("a", CompatibilityType.BACKWARD, SchemaType.AVRO)
       val json = meta.asJson
 
       assert(json.as[SubjectMetadata].contains(meta))
@@ -46,21 +46,21 @@ class JsonProtocolTest extends WordSpec with Matchers {
     }
   }
 
-  "SchemaResponse" should {
+  "SchemaText" should {
     "be encoded and decoded correctly" in {
-      val meta = SchemaResponse.instance("schema")
+      val meta = SchemaText.instance("schema")
       val json = meta.asJson
 
-      assert(json.as[SchemaResponse].contains(meta))
+      assert(json.as[SchemaText].contains(meta))
     }
   }
 
-  "SchemaRequest" should {
+  "NewSubjectRequest" should {
     "be encoded and decoded correctly" in {
-      val meta = SchemaRequest.instance("schema")
+      val meta = NewSubjectRequest.instance("schema", SchemaType.AVRO, CompatibilityType.NONE)
       val json = meta.asJson
 
-      assert(json.as[SchemaRequest].contains(meta))
+      assert(json.as[NewSubjectRequest].contains(meta))
     }
   }
 

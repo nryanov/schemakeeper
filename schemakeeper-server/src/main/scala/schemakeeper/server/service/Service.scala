@@ -1,7 +1,7 @@
 package schemakeeper.server.service
 
 import schemakeeper.api.SchemaMetadata
-import schemakeeper.schema.CompatibilityType
+import schemakeeper.schema.{CompatibilityType, SchemaType}
 
 trait Service[F[_]] {
   def subjects(): F[List[String]]
@@ -28,7 +28,7 @@ trait Service[F[_]] {
 
   def getLastSchemas(subject: String): F[List[String]]
 
-  def registerNewSubjectSchema(subject: String, schema: String): F[Int]
+  def registerNewSubjectSchema(subject: String, schema: String, schemaType: SchemaType): F[Int]
 
   def getGlobalCompatibility(): F[Option[CompatibilityType]]
 

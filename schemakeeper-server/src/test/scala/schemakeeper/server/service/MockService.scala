@@ -4,7 +4,7 @@ import cats.Applicative
 import javax.annotation.concurrent.NotThreadSafe
 import org.apache.avro.Schema
 import schemakeeper.api.{SchemaMetadata, SubjectMetadata}
-import schemakeeper.schema.{AvroSchemaCompatibility, AvroSchemaUtils, CompatibilityType}
+import schemakeeper.schema.{AvroSchemaCompatibility, AvroSchemaUtils, CompatibilityType, SchemaType}
 
 import scala.collection.mutable
 
@@ -83,7 +83,7 @@ class MockService[F[_] : Applicative](data: InitialData) extends Service[F] {
   override def getLastSchemas(subject: String): F[List[String]] =
     Applicative[F].pure(data.subjectSchemaVersion.get(subject).map(_.map(_._2.getSchemaText).toList).getOrElse(List.empty))
 
-  override def registerNewSubjectSchema(subject: String, schema: String): F[Int] = Applicative[F].pure {
+  override def registerNewSubjectSchema(subject: String, schema: String, schemaType: SchemaType): F[Int] = Applicative[F].pure {
     val nextId = data.idSchema.keys.lastOption.getOrElse(0) + 1
     val nextVersion = data.subjectSchemaVersion.getOrElse(subject, Map.empty[Int, SchemaMetadata]).keys.lastOption.getOrElse(0) + 1
 
@@ -132,7 +132,7 @@ object InitialDataGenerator {
         subjectSchemaVersion.getOrElseUpdate(subject, new mutable.LinkedHashMap()).put(version, meta)
     }
 
-    s.toMap.keys.foreach(subject => subjectMetadata.put(subject, SubjectMetadata.instance(subject, CompatibilityType.NONE, "avro")))
+    s.toMap.keys.foreach(subject => subjectMetadata.put(subject, SubjectMetadata.instance(subject, CompatibilityType.NONE, SchemaType.AVRO)))
 
     InitialData(schemaId, idSchema, subjectSchemaVersion, subjectMetadata)
   }

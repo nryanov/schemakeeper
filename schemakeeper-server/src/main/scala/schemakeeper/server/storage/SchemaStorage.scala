@@ -1,6 +1,7 @@
 package schemakeeper.server.storage
 
 import schemakeeper.api.SchemaMetadata
+import schemakeeper.schema.{CompatibilityType, SchemaType}
 
 
 trait SchemaStorage[F[_]] {
@@ -26,11 +27,11 @@ trait SchemaStorage[F[_]] {
 
   def getLastSchemas(subject: String): F[List[String]]
 
-  def registerNewSubjectSchema(subject: String, schema: String, version: Int, schemaHash: String): F[Int]
+  def registerNewSubjectSchema(subject: String, schema: String, schemaType: SchemaType, version: Int, schemaHash: String): F[Int]
 
   def checkSubjectExistence(subject: String): F[Boolean]
 
-  def registerNewSubject(subject: String): F[Int]
+  def registerNewSubject(subject: String, schemaType: SchemaType, compatibilityType: CompatibilityType): F[Int]
 
   def getNextVersionNumber(subject: String): F[Int]
 
