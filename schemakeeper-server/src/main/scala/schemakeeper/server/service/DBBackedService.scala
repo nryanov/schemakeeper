@@ -117,6 +117,22 @@ class DBBackedService[F[_] : Applicative](config: Configuration) extends Service
     transaction(query)
   }
 
+  override def registerNewSubject(subject: String, schema: String, schemaType: SchemaType, compatibilityType: CompatibilityType): F[Option[Int]] = {
+    logger.info(s"Register new subject: $subject [${schemaType.identifier}, ${compatibilityType.identifier}]")
+
+    val query = storage.checkSubjectExistence(subject).flatMap(isExist => {
+      if (isExist) {
+        Free.pure[connection.ConnectionOp, Option[Int]](None)
+      } else {
+        storage.registerNewSubject(subject, schemaType, compatibilityType)
+          .flatMap(_ => storage.registerNewSubjectSchema(subject, schema, schemaType, 1, Utils.toMD5Hex(schema)))
+          .map(Option(_))
+      }
+    })
+
+    transaction(query)
+  }
+
   //todo: refactor
   override def getSubjectMetadata(subject: String): F[Option[SubjectMetadata]] = {
     logger.info(s"Getting subject metadata: $subject")

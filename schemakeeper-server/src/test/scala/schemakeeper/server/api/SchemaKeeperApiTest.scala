@@ -194,12 +194,12 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
     }
   }
 
-  "Register new subject endpoint" should {
+  "Register new subject schema endpoint" should {
     "return next schema id" in {
       val service = MockService[IO](InitialDataGenerator())
       val api = SchemaKeeperApi(service)
       val body = SchemaText.instance("SCHEMA")
-      val result = api.registerNewSubjectSchema(Input.post("/v1/subjects/A1").withBody[Application.Json](body)).awaitValueUnsafe()
+      val result = api.registerNewSubjectSchema(Input.post("/v1/subjects/versions/A1").withBody[Application.Json](body)).awaitValueUnsafe()
 
       assertResult(SchemaId.instance(1))(result.get)
     }
@@ -209,7 +209,29 @@ class SchemaKeeperApiTest extends WordSpec with Matchers {
         val service = MockService[IO](InitialDataGenerator())
         val api = SchemaKeeperApi(service)
 
-        assertThrows[NotPresent](api.registerNewSubjectSchema(Input.post("/v1/subjects/A1").withBody[Text.Plain]("")).awaitOutputUnsafe())
+        assertThrows[NotPresent](api.registerNewSubjectSchema(Input.post("/v1/subjects/versions/A1").withBody[Text.Plain]("")).awaitOutputUnsafe())
+      }
+    }
+  }
+
+  "Register new subject endpoint" should {
+    "return new schema id" in {
+      val service = MockService[IO](InitialDataGenerator())
+      val api = SchemaKeeperApi(service)
+      val body = NewSubjectRequest.instance("SCHEMA", SchemaType.AVRO, CompatibilityType.BACKWARD)
+      val result = api.registerNewSubject(Input.post("/v1/subjects/A1").withBody[Application.Json](body)).awaitValueUnsafe()
+
+      assertResult(SchemaId.instance(1))(result.get)
+    }
+
+    "return none" when {
+      "there is already registered subject with such name" in {
+        val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S"))))
+        val api = SchemaKeeperApi(service)
+        val body = NewSubjectRequest.instance("SCHEMA", SchemaType.AVRO, CompatibilityType.BACKWARD)
+        val result = api.registerNewSubject(Input.post("/v1/subjects/A1").withBody[Application.Json](body)).awaitOutputUnsafe()
+
+        assertResult(NoContent[SchemaId])(result.get)
       }
     }
   }

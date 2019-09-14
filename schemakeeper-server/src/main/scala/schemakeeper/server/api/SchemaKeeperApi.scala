@@ -95,12 +95,25 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
 
   final val registerNewSubjectSchema: Endpoint[IO, SchemaId] = post(apiVersion
     :: "subjects"
+    :: "versions"
     :: path[String]
     :: jsonBody[SchemaText]) { (subjectName: String, schema: SchemaText) =>
     logger.info(s"Register new subject schema: $subjectName - $schema")
     storage.registerNewSubjectSchema(subjectName, schema.getSchemaText, schema.getSchemaType)
       .map(SchemaId.instance)
       .map(Ok)
+  }
+
+  final val registerNewSubject: Endpoint[IO, SchemaId] = post(apiVersion
+    :: "subjects"
+    :: path[String]
+    :: jsonBody[NewSubjectRequest]) { (subjectName: String, request: NewSubjectRequest) =>
+    logger.info(s"Register new subject: $subjectName - $request")
+    storage.registerNewSubject(subjectName, request.getSchemaText, request.getSchemaType, request.getCompatibilityType)
+      .map {
+        case Some(v) => Ok(SchemaId.instance(v))
+        case None => NoContent[SchemaId]
+      }
   }
 
   final val checkSubjectSchemaCompatibility: Endpoint[IO, Boolean] = post(apiVersion

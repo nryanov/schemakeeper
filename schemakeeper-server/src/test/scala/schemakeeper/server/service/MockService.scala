@@ -105,6 +105,22 @@ class MockService[F[_] : Applicative](data: InitialData) extends Service[F] {
     nextId
   }
 
+  override def registerNewSubject(subject: String, schema: String, schemaType: SchemaType, compatibilityType: CompatibilityType): F[Option[Int]] = Applicative[F].pure {
+    val nextId = data.idSchema.keys.lastOption.getOrElse(0) + 1
+
+    if (data.subjectMetadata.contains(subject)) {
+      None
+    } else {
+      data.idSchema.put(nextId, SchemaMetadata.instance(subject, nextId, 1, schema))
+      data.schemaId.put(SchemaMetadata.instance(subject, nextId, 1, schema), nextId)
+      data.subjectSchemaVersion.getOrElseUpdate(subject, new mutable.HashMap[Int, SchemaMetadata]())
+        .put(1, SchemaMetadata.instance(subject, nextId, 1, schema))
+      data.subjectMetadata.put(subject, SubjectMetadata.instance(subject, compatibilityType, schemaType))
+
+      Option(nextId)
+    }
+  }
+
   override def getGlobalCompatibility(): F[Option[CompatibilityType]] = Applicative[F].pure(Some(CompatibilityType.BACKWARD))
 
   override def updateGlobalCompatibility(compatibilityType: CompatibilityType): F[Option[CompatibilityType]] = Applicative[F].pure(Some(compatibilityType))
