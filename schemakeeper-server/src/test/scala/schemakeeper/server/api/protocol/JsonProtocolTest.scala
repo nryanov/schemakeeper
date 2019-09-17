@@ -9,25 +9,25 @@ import schemakeeper.schema.{CompatibilityType, SchemaType}
 class JsonProtocolTest extends WordSpec with Matchers {
   "SchemaMetadata" should {
     "be encoded and decoded correctly" in {
-      val meta = SchemaMetadata.instance("a", 1, 1, "b")
+      val meta = SchemaMetadata.instance(1, "b", "c")
       val json = meta.asJson
 
       assert(json.as[SchemaMetadata].contains(meta))
     }
   }
 
-  "CompatibilityTypeMetadata" should {
+  "CompatibilityType" should {
     "be encoded and decoded correctly" in {
-      val meta = CompatibilityTypeMetadata.instance(CompatibilityType.BACKWARD)
+      val meta = CompatibilityType.BACKWARD
       val json = meta.asJson
 
-      assert(json.as[CompatibilityTypeMetadata].contains(meta))
+      assert(json.as[CompatibilityType].contains(meta))
     }
 
     "return error because of not existing compatibility type" in {
       val json = """{ "compatibilityType": "unknown" }""".asJson
 
-      assert(json.as[CompatibilityTypeMetadata].isLeft)
+      assert(json.as[CompatibilityType].isLeft)
     }
   }
 

@@ -1,123 +1,145 @@
 package schemakeeper.server.storage
 
 import doobie._
-import doobie.quill.DoobieContext
-import io.getquill.SnakeCase
-import schemakeeper.api.{SchemaMetadata, SubjectMetadata}
+import doobie.quill.DoobieContextBase
+import io.getquill.context.sql.idiom.SqlIdiom
+import io.getquill._
+import schemakeeper.api.{SchemaMetadata, SchemaText, SubjectMetadata}
 import schemakeeper.schema.{CompatibilityType, SchemaType}
-import schemakeeper.server.Configuration
-import schemakeeper.server.datasource.DataSourceUtils
-import schemakeeper.server.datasource.migration.SupportedDatabaseProvider
-import schemakeeper.server.storage.model.{Config, SchemaInfo, Subject}
+import schemakeeper.server.storage.model.{Config, SchemaInfo, Subject, SubjectSchema}
 import schemakeeper.server.storage.model.Converters._
 
-class DatabaseStorage(configuration: Configuration) extends SchemaStorage[ConnectionIO] {
+class DatabaseStorage(dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy]) extends SchemaStorage[ConnectionIO] {
   private implicit val logHandler: LogHandler = LogHandler.jdkLogHandler
-  private val dc = DatabaseStorage.context(configuration)
 
   import dc._
 
-  implicit private val schemaInfoInsertMeta = insertMeta[SchemaInfo](_.id)
+  implicit private val schemaInfoInsertMeta = insertMeta[SchemaInfo](_.schemaId)
 
-  override def schemaById(id: Int): ConnectionIO[Option[String]] = dc.run(quote {
-    query[SchemaInfo]
-      .filter(_.id == lift(id))
-      .map(_.schemaText)
-  }).map(_.headOption)
-
-  override def subjects(): ConnectionIO[List[String]] = dc.run(quote {
+  override def subjects(): doobie.ConnectionIO[List[String]] = dc.run(quote {
     query[Subject]
       .map(_.subjectName)
   })
 
-  override def subjectVersions(subject: String): ConnectionIO[List[Int]] = dc.run(quote {
-    query[SchemaInfo]
-      .filter(_.subjectName == lift(subject))
-      .sortBy(_.version)(Ord.asc)
-      .map(_.version)
-  })
-
-  override def subjectSchemaByVersion(subject: String, version: Int): ConnectionIO[Option[SchemaMetadata]] = dc.run(quote {
-    query[SchemaInfo]
-      .filter(_.subjectName == lift(subject))
-      .filter(_.version == lift(version))
-  }).map(_.headOption.map(schemaInfoToSchemaMetadata))
-
-  override def subjectOnlySchemaByVersion(subject: String, version: Int): ConnectionIO[Option[String]] =
-    subjectSchemaByVersion(subject, version)
-      .map(_.map(_.getSchemaText))
-
-  override def deleteSubject(subject: String): ConnectionIO[Boolean] = dc.run(quote {
-    query[Subject]
-      .filter(_.subjectName == lift(subject))
-      .delete
-  }).map(_ > 0)
-
-  override def deleteSubjectVersion(subject: String, version: Int): ConnectionIO[Boolean] = dc.run(quote {
-    query[SchemaInfo]
-      .filter(_.subjectName == lift(subject))
-      .filter(_.version == lift(version))
-      .delete
-  }).map(_ > 0)
-
-  //todo: refactor
-  override def getSubject(subject: String): doobie.ConnectionIO[Option[SubjectMetadata]] = dc.run(quote {
+  override def subjectMetadata(subject: String): doobie.ConnectionIO[Option[SubjectMetadata]] = dc.run(quote {
     query[Subject]
       .filter(_.subjectName == lift(subject))
   }).map(_.headOption)
     .map(_.map(subjectInfoToSubjectMetadata))
 
-  override def registerNewSubjectSchema(subject: String, schema: String, schemaType: SchemaType, version: Int, schemaHash: String): ConnectionIO[Int] = dc.run(quote {
-    query[SchemaInfo]
-      .insert(lift(SchemaInfo(0, version, schemaType.identifier, subject, schema, schemaHash)))
-      .returning(_.id)
-  })
-
-  override def checkSubjectExistence(subject: String): ConnectionIO[Boolean] = dc.run(quote {
-    query[Subject]
+  override def subjectVersions(subject: String): doobie.ConnectionIO[List[Int]] = dc.run(quote {
+    query[SubjectSchema]
       .filter(_.subjectName == lift(subject))
-      .nonEmpty
-  })
-
-  override def registerNewSubject(subject: String, schemaType: SchemaType, compatibilityType: CompatibilityType): ConnectionIO[Int] = dc.run(quote {
-    query[Subject]
-      .insert(lift(Subject(subject, schemaType.identifier, compatibilityType.identifier)))
-  }).map(_.toInt)
-
-  override def getNextVersionNumber(subject: String): ConnectionIO[Int] = dc.run(quote {
-    query[SchemaInfo]
-      .filter(_.subjectName == lift(subject))
-      .sortBy(_.version)(Ord.desc)
       .map(_.version)
-  }).map(_.headOption).map(_.map(_ + 1).getOrElse(1))
-
-  override def getLastSchema(subject: String): ConnectionIO[Option[String]] = dc.run(quote {
-    query[SchemaInfo]
-      .filter(_.subjectName == lift(subject))
-      .sortBy(_.version)(Ord.desc)
-      .map(_.schemaText)
-  }).map(_.headOption)
-
-  override def getLastSchemas(subject: String): ConnectionIO[List[String]] = dc.run(quote {
-    query[SchemaInfo]
-      .filter(_.subjectName == lift(subject))
-      .sortBy(_.version)(Ord.desc)
-      .map(_.schemaText)
   })
 
-  override def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): ConnectionIO[Option[CompatibilityType]] = dc.run(quote {
+  override def subjectSchemasMetadata(subject: String): doobie.ConnectionIO[List[SchemaMetadata]] = dc.run(quote {
+    query[SubjectSchema]
+      .join(query[SchemaInfo])
+      .on(_.schemaId == _.schemaId)
+      .filter(_._1.subjectName == lift(subject))
+      .map(_._2)
+  }).map(_.map(schemaInfoToSchemaMetadata))
+
+  override def subjectSchemaByVersion(subject: String, version: Index): doobie.ConnectionIO[Option[SchemaMetadata]] = dc.run(quote {
+    query[SubjectSchema]
+      .join(query[SchemaInfo])
+      .on(_.schemaId == _.schemaId)
+      .filter(_._1.subjectName == lift(subject))
+      .filter(_._1.version == lift(version))
+      .map(_._2)
+  }).map(_.headOption)
+    .map(_.map(schemaInfoToSchemaMetadata))
+
+  override def schemaById(id: Int): doobie.ConnectionIO[Option[SchemaText]] = dc.run(quote {
+    query[SchemaInfo]
+      .filter(_.schemaId == lift(id))
+  }).map(_.headOption)
+    .map(_.map(meta => SchemaText.instance(meta.schemaText, SchemaType.findByName(meta.schemaTypeName))))
+
+  override def schemaByHash(schemaHash: String): doobie.ConnectionIO[Option[SchemaText]] = dc.run(quote {
+    query[SchemaInfo]
+      .filter(_.schemaHash == lift(schemaHash))
+  }).map(_.headOption)
+    .map(_.map(meta => SchemaText.instance(meta.schemaText, SchemaType.findByName(meta.schemaTypeName))))
+
+  override def deleteSubject(subject: String): doobie.ConnectionIO[Boolean] = dc.run(quote {
+    query[Subject]
+      .filter(_.subjectName == lift(subject))
+      .delete
+  }).map(_ > 0)
+
+  override def deleteSubjectSchemaByVersion(subject: String, version: Index): doobie.ConnectionIO[Boolean] = dc.run(quote {
+    query[SubjectSchema]
+      .filter(_.subjectName == lift(subject))
+      .filter(_.version == lift(version))
+      .delete
+  }).map(_ > 0)
+
+  override def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): doobie.ConnectionIO[Boolean] = dc.run(quote {
     query[Subject]
       .filter(_.subjectName == lift(subject))
       .update(_.compatibilityTypeName -> lift(compatibilityType.identifier))
   }).map(_ > 0)
-    .map(f => if (f) Some(compatibilityType) else None)
 
-  override def getSubjectCompatibility(subject: String): ConnectionIO[Option[CompatibilityType]] = dc.run(quote {
+  override def getSubjectCompatibility(subject: String): doobie.ConnectionIO[Option[CompatibilityType]] = dc.run(quote {
     query[Subject]
       .filter(_.subjectName == lift(subject))
       .map(_.compatibilityTypeName)
   }).map(_.headOption)
     .map(_.map(CompatibilityType.findByName))
+
+  override def getLastSubjectSchema(subject: String): doobie.ConnectionIO[Option[SchemaText]] = dc.run(quote {
+    query[SchemaInfo]
+      .filter(schemaInfo => query[SubjectSchema]
+        .filter(_.subjectName == lift(subject))
+        .filter(subjectSchema => query[SubjectSchema]
+          .filter(_.subjectName == lift(subject))
+          .map(_.version)
+          .max
+          .contains(subjectSchema.version))
+        .map(_.schemaId)
+        .contains(schemaInfo.schemaId))
+      .map(_.schemaText)
+  }).map(_.headOption)
+    .map(_.map(SchemaText.instance))
+
+  override def getSubjectSchemas(subject: String): doobie.ConnectionIO[List[SchemaText]] = dc.run(quote {
+    query[SubjectSchema]
+      .join(query[SchemaInfo])
+      .on(_.schemaId == _.schemaId)
+      .filter(_._1.subjectName == lift(subject))
+      .map(_._2.schemaText)
+  }).map(_.map(SchemaText.instance))
+
+  override def registerSchema(schema: String, schemaHash: String, schemaType: SchemaType): doobie.ConnectionIO[Int] = dc.run(quote {
+    query[SchemaInfo]
+      .insert(lift(SchemaInfo(0, schemaType.identifier, schema, schemaHash)))
+      .returning(_.schemaId)
+  })
+
+  override def registerSubject(subject: String, compatibilityType: CompatibilityType, schemaType: SchemaType): doobie.ConnectionIO[Unit] = dc.run(quote {
+    query[Subject]
+      .insert(lift(Subject(subject, schemaType.identifier, compatibilityType.identifier)))
+  }).map(_ => Unit)
+
+  override def addSchemaToSubject(subject: String, schemaId: Index, version: Index): doobie.ConnectionIO[Unit] = dc.run(quote {
+    query[SubjectSchema]
+      .insert(lift(SubjectSchema(subject, schemaId, version)))
+  }).map(_ => Unit)
+
+  override def isSubjectExist(subject: String): doobie.ConnectionIO[Boolean] = dc.run(quote {
+    query[Subject]
+      .filter(_.subjectName == lift(subject))
+      .nonEmpty
+  })
+
+  override def getNextVersionNumber(subject: String): doobie.ConnectionIO[Int] = dc.run(quote {
+    query[SubjectSchema]
+      .filter(_.subjectName == lift(subject))
+      .sortBy(_.version)(Ord.desc)
+      .map(_.version)
+  }).map(_.headOption).map(_.map(_ + 1).getOrElse(1))
 
   override def getGlobalCompatibility(): ConnectionIO[Option[CompatibilityType]] = dc.run(quote {
     query[Config]
@@ -126,20 +148,13 @@ class DatabaseStorage(configuration: Configuration) extends SchemaStorage[Connec
   }).map(_.headOption)
     .map(_.map(CompatibilityType.findByName))
 
-  override def updateGlobalCompatibility(compatibilityType: CompatibilityType): ConnectionIO[Option[CompatibilityType]] = dc.run(quote {
+  override def updateGlobalCompatibility(compatibilityType: CompatibilityType): doobie.ConnectionIO[Boolean] = dc.run(quote {
     query[Config]
       .filter(_.configName == "default.compatibility")
       .update(_.configValue -> lift(compatibilityType.identifier))
   }).map(_ > 0)
-    .map(f => if (f) Some(compatibilityType) else None)
 }
 
 object DatabaseStorage {
-  def apply(configuration: Configuration): DatabaseStorage = new DatabaseStorage(configuration)
-
-  def context(configuration: Configuration) = DataSourceUtils.detectDatabaseProvider(configuration.databaseConnectionString) match {
-    case SupportedDatabaseProvider.PostgreSQL => new DoobieContext.Postgres(SnakeCase)
-    case SupportedDatabaseProvider.MySQL => new DoobieContext.MySQL(SnakeCase)
-    case SupportedDatabaseProvider.H2 => new DoobieContext.H2(SnakeCase)
-  }
+  def apply(dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy]): DatabaseStorage = new DatabaseStorage(dc)
 }

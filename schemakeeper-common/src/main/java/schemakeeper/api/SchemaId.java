@@ -3,44 +3,44 @@ package schemakeeper.api;
 import java.util.Objects;
 
 public class SchemaId {
-    private int id;
+    private int schemaId;
 
-    public static SchemaId instance(int id) {
-        return new SchemaId(id);
+    public static SchemaId instance(int schemaId) {
+        return new SchemaId(schemaId);
     }
 
     public SchemaId() {
     }
 
-    public SchemaId(int id) {
-        this.id = id;
+    public SchemaId(int schemaId) {
+        this.schemaId = schemaId;
     }
 
-    public int getId() {
-        return id;
+    public int getSchemaId() {
+        return schemaId;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public void setSchemaId(int schemaId) {
+        this.schemaId = schemaId;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        SchemaId schemaId = (SchemaId) o;
-        return id == schemaId.id;
+        SchemaId schemaId1 = (SchemaId) o;
+        return schemaId == schemaId1.schemaId;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hash(schemaId);
     }
 
     @Override
     public String toString() {
         return "SchemaId{" +
-                "id=" + id +
+                "schemaId=" + schemaId +
                 '}';
     }
 }

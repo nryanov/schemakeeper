@@ -1,49 +1,43 @@
 package schemakeeper.api;
 
+import schemakeeper.schema.SchemaType;
+
 import java.util.Objects;
 
 public class SchemaMetadata {
-    private String subject;
-    private int id;
-    private int version;
+    private int schemaId;
     private String schemaText;
+    private String schemaHash;
+    private SchemaType schemaType;
 
-    public static SchemaMetadata instance(String subject, int id, int version, String schemaText) {
-        return new SchemaMetadata(subject, id, version, schemaText);
+    public static SchemaMetadata instance(int schemaId, String schemaText, String schemaHash, SchemaType schemaType) {
+        return new SchemaMetadata(schemaId, schemaText, schemaHash, schemaType);
+    }
+
+    public static SchemaMetadata instance(int schemaId, String schemaText, String schemaHash) {
+        return new SchemaMetadata(schemaId, schemaText, schemaHash, SchemaType.AVRO);
     }
 
     public SchemaMetadata() {
     }
 
-    public SchemaMetadata(String subject, int id, int version, String schemaText) {
-        this.subject = subject;
-        this.id = id;
-        this.version = version;
+    public SchemaMetadata(int schemaId, String schemaText, String schemaHash) {
+        this(schemaId, schemaText, schemaHash, SchemaType.AVRO);
+    }
+
+    public SchemaMetadata(int schemaId, String schemaText, String schemaHash, SchemaType schemaType) {
+        this.schemaId = schemaId;
         this.schemaText = schemaText;
+        this.schemaHash = schemaHash;
+        this.schemaType = schemaType;
     }
 
-    public String getSubject() {
-        return subject;
+    public int getSchemaId() {
+        return schemaId;
     }
 
-    public void setSubject(String subject) {
-        this.subject = subject;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public int getVersion() {
-        return version;
-    }
-
-    public void setVersion(int version) {
-        this.version = version;
+    public void setSchemaId(int schemaId) {
+        this.schemaId = schemaId;
     }
 
     public String getSchemaText() {
@@ -54,29 +48,45 @@ public class SchemaMetadata {
         this.schemaText = schemaText;
     }
 
+    public String getSchemaHash() {
+        return schemaHash;
+    }
+
+    public void setSchemaHash(String schemaHash) {
+        this.schemaHash = schemaHash;
+    }
+
+    public SchemaType getSchemaType() {
+        return schemaType;
+    }
+
+    public void setSchemaType(SchemaType schemaType) {
+        this.schemaType = schemaType;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         SchemaMetadata that = (SchemaMetadata) o;
-        return id == that.id &&
-                version == that.version &&
-                Objects.equals(subject, that.subject) &&
-                Objects.equals(schemaText, that.schemaText);
+        return schemaId == that.schemaId &&
+                Objects.equals(schemaText, that.schemaText) &&
+                Objects.equals(schemaHash, that.schemaHash) &&
+                schemaType == that.schemaType;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(subject, id, version, schemaText);
+        return Objects.hash(schemaId, schemaText, schemaHash, schemaType);
     }
 
     @Override
     public String toString() {
         return "SchemaMetadata{" +
-                "subject='" + subject + '\'' +
-                ", id=" + id +
-                ", version=" + version +
+                "schemaId=" + schemaId +
                 ", schemaText='" + schemaText + '\'' +
+                ", schemaHash='" + schemaHash + '\'' +
+                ", schemaType=" + schemaType +
                 '}';
     }
 }
