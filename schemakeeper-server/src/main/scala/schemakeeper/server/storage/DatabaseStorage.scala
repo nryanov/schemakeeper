@@ -4,7 +4,7 @@ import doobie._
 import doobie.quill.DoobieContextBase
 import io.getquill.context.sql.idiom.SqlIdiom
 import io.getquill._
-import schemakeeper.api.{SchemaMetadata, SchemaText, SubjectMetadata}
+import schemakeeper.api.{SchemaMetadata, SubjectMetadata}
 import schemakeeper.schema.{CompatibilityType, SchemaType}
 import schemakeeper.server.storage.model.{Config, SchemaInfo, Subject, SubjectSchema}
 import schemakeeper.server.storage.model.Converters._
@@ -51,17 +51,17 @@ class DatabaseStorage(dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy])
   }).map(_.headOption)
     .map(_.map(schemaInfoToSchemaMetadata))
 
-  override def schemaById(id: Int): doobie.ConnectionIO[Option[SchemaText]] = dc.run(quote {
+  override def schemaById(id: Int): doobie.ConnectionIO[Option[SchemaMetadata]] = dc.run(quote {
     query[SchemaInfo]
       .filter(_.schemaId == lift(id))
   }).map(_.headOption)
-    .map(_.map(meta => SchemaText.instance(meta.schemaText, SchemaType.findByName(meta.schemaTypeName))))
+    .map(_.map(meta => SchemaMetadata.instance(meta.schemaId, meta.schemaText, meta.schemaHash, SchemaType.findByName(meta.schemaTypeName))))
 
-  override def schemaByHash(schemaHash: String): doobie.ConnectionIO[Option[SchemaText]] = dc.run(quote {
+  override def schemaByHash(schemaHash: String): doobie.ConnectionIO[Option[SchemaMetadata]] = dc.run(quote {
     query[SchemaInfo]
       .filter(_.schemaHash == lift(schemaHash))
   }).map(_.headOption)
-    .map(_.map(meta => SchemaText.instance(meta.schemaText, SchemaType.findByName(meta.schemaTypeName))))
+    .map(_.map(meta => SchemaMetadata.instance(meta.schemaId, meta.schemaText, meta.schemaHash, SchemaType.findByName(meta.schemaTypeName))))
 
   override def deleteSubject(subject: String): doobie.ConnectionIO[Boolean] = dc.run(quote {
     query[Subject]
@@ -89,7 +89,7 @@ class DatabaseStorage(dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy])
   }).map(_.headOption)
     .map(_.map(CompatibilityType.findByName))
 
-  override def getLastSubjectSchema(subject: String): doobie.ConnectionIO[Option[SchemaText]] = dc.run(quote {
+  override def getLastSubjectSchema(subject: String): doobie.ConnectionIO[Option[SchemaMetadata]] = dc.run(quote {
     query[SchemaInfo]
       .filter(schemaInfo => query[SubjectSchema]
         .filter(_.subjectName == lift(subject))
@@ -100,17 +100,16 @@ class DatabaseStorage(dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy])
           .contains(subjectSchema.version))
         .map(_.schemaId)
         .contains(schemaInfo.schemaId))
-      .map(_.schemaText)
   }).map(_.headOption)
-    .map(_.map(SchemaText.instance))
+    .map(_.map(meta => SchemaMetadata.instance(meta.schemaId, meta.schemaText, meta.schemaHash, SchemaType.findByName(meta.schemaTypeName))))
 
-  override def getSubjectSchemas(subject: String): doobie.ConnectionIO[List[SchemaText]] = dc.run(quote {
+  override def getSubjectSchemas(subject: String): doobie.ConnectionIO[List[SchemaMetadata]] = dc.run(quote {
     query[SubjectSchema]
       .join(query[SchemaInfo])
       .on(_.schemaId == _.schemaId)
       .filter(_._1.subjectName == lift(subject))
-      .map(_._2.schemaText)
-  }).map(_.map(SchemaText.instance))
+      .map(_._2)
+  }).map(_.map(meta => SchemaMetadata.instance(meta.schemaId, meta.schemaText, meta.schemaHash, SchemaType.findByName(meta.schemaTypeName))))
 
   override def registerSchema(schema: String, schemaHash: String, schemaType: SchemaType): doobie.ConnectionIO[Int] = dc.run(quote {
     query[SchemaInfo]
@@ -131,6 +130,13 @@ class DatabaseStorage(dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy])
   override def isSubjectExist(subject: String): doobie.ConnectionIO[Boolean] = dc.run(quote {
     query[Subject]
       .filter(_.subjectName == lift(subject))
+      .nonEmpty
+  })
+
+  override def isSubjectConnectedToSchema(subject: String, schemaId: Index): doobie.ConnectionIO[Boolean] = dc.run(quote {
+    query[SubjectSchema]
+      .filter(_.subjectName == lift(subject))
+      .filter(_.schemaId == lift(schemaId))
       .nonEmpty
   })
 

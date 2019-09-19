@@ -1,6 +1,6 @@
 package schemakeeper.server.storage
 
-import schemakeeper.api.{SchemaMetadata, SchemaText, SubjectMetadata}
+import schemakeeper.api.{SchemaMetadata, SubjectMetadata}
 import schemakeeper.schema.{CompatibilityType, SchemaType}
 
 
@@ -39,13 +39,13 @@ trait SchemaStorage[F[_]] {
     * @param id - schema id
     * @return - schema or none
     */
-  def schemaById(id: Int): F[Option[SchemaText]]
+  def schemaById(id: Int): F[Option[SchemaMetadata]]
 
   /**
     * @param schemaHash - schema hash
     * @return - schema or none
     */
-  def schemaByHash(schemaHash: String): F[Option[SchemaText]]
+  def schemaByHash(schemaHash: String): F[Option[SchemaMetadata]]
 
   /**
     * @param subject - subject name
@@ -77,13 +77,13 @@ trait SchemaStorage[F[_]] {
     * @param subject - subject name
     * @return - last subject schema or none
     */
-  def getLastSubjectSchema(subject: String): F[Option[SchemaText]]
+  def getLastSubjectSchema(subject: String): F[Option[SchemaMetadata]]
 
   /**
     * @param subject - subject name
     * @return - list of subject schemas or empty list
     */
-  def getSubjectSchemas(subject: String): F[List[SchemaText]]
+  def getSubjectSchemas(subject: String): F[List[SchemaMetadata]]
 
   /**
     * @param schema - schema text
@@ -119,6 +119,14 @@ trait SchemaStorage[F[_]] {
     * @return - next version number
     */
   def getNextVersionNumber(subject: String): F[Int]
+
+  /**
+    * Check if subject already connected with schema with specified id
+    * @param subject - subject name
+    * @param schemaId - schema id
+    * @return - true or false
+    */
+  def isSubjectConnectedToSchema(subject: String, schemaId: Int): F[Boolean]
 
   /**
     * Used as default compatibility type for new subjects

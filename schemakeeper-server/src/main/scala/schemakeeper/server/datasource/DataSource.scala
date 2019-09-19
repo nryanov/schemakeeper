@@ -4,8 +4,12 @@ import cats.effect.{IO, Resource}
 import com.zaxxer.hikari.HikariConfig
 import doobie.ExecutionContexts
 import doobie.hikari.HikariTransactor
+import doobie.quill.{DoobieContext, DoobieContextBase}
 import doobie.util.transactor.Transactor
+import io.getquill.{NamingStrategy, SnakeCase}
+import io.getquill.context.sql.idiom.SqlIdiom
 import schemakeeper.server.Configuration
+import schemakeeper.server.datasource.migration.SupportedDatabaseProvider
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -31,5 +35,11 @@ object DataSource {
         transactionExecutionPool
       )
     } yield xa
+  }
+
+  def context(configuration: Configuration): DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy] = DataSourceUtils.detectDatabaseProvider(configuration.databaseConnectionString) match {
+    case SupportedDatabaseProvider.PostgreSQL => new DoobieContext.Postgres(SnakeCase)
+    case SupportedDatabaseProvider.MySQL => new DoobieContext.MySQL(SnakeCase)
+    case SupportedDatabaseProvider.H2 => new DoobieContext.H2(SnakeCase)
   }
 }
