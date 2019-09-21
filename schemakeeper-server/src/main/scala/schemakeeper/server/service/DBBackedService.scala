@@ -288,7 +288,7 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
           }.flatMap(schemaId => {
             storage.getSubjectCompatibility(subject).flatMap {
               case None => pure[Result[SchemaId]](Left(BackendError(new Exception("Something bad happened")))) // should never happen
-              case Some(subjectCurrentCompatibilityType) => isSchemaCompatible(subject, schema, compatibilityType).flatMap(isCompatible => if (isCompatible) {
+              case Some(subjectCurrentCompatibilityType) => isSchemaCompatible(subject, schema, subjectCurrentCompatibilityType).flatMap(isCompatible => if (isCompatible) {
                 storage.isSubjectConnectedToSchema(subject, schemaId).flatMap(isConnected => if (isConnected) {
                   pure[Result[SchemaId]](Left(SubjectIsAlreadyConnectedToSchema(subject, schemaId)))
                 } else {

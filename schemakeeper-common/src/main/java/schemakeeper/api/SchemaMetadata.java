@@ -1,5 +1,7 @@
 package schemakeeper.api;
 
+import org.apache.avro.Schema;
+import schemakeeper.schema.AvroSchemaUtils;
 import schemakeeper.schema.SchemaType;
 
 import java.util.Objects;
@@ -46,6 +48,10 @@ public class SchemaMetadata {
 
     public void setSchemaText(String schemaText) {
         this.schemaText = schemaText;
+    }
+
+    public Schema getSchema() {
+        return AvroSchemaUtils.parseSchema(schemaText);
     }
 
     public String getSchemaHash() {
