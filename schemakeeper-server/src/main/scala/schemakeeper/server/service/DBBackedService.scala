@@ -64,7 +64,6 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
       case Left(e) => Left(BackendError(e))
       case Right(r) => r match {
         case Left(e) => Left(e)
-        case Right(v) if v.isEmpty => Left(SubjectHasNoRegisteredSchemas(subject))
         case Right(v) => Right(v)
       }
     }
@@ -83,7 +82,6 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
       case Left(e) => Left(BackendError(e))
       case Right(r) => r match {
         case Left(e) => Left(e)
-        case Right(v) if v.isEmpty => Left(SubjectHasNoRegisteredSchemas(subject))
         case Right(v) => Right(v)
       }
     }

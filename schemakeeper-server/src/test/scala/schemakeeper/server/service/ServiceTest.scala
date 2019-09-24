@@ -50,11 +50,11 @@ abstract class ServiceTest extends WordSpec with Matchers {
       assertResult(SubjectDoesNotExist("A1"))(result.left.get)
     }
 
-    "return SubjectHasNoRegisteredSchemas" in {
+    "return empty list" in {
       schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       val result = schemaStorage.subjectVersions("A1")
-      assert(result.isLeft)
-      assertResult(SubjectHasNoRegisteredSchemas("A1"))(result.left.get)
+      assert(result.isRight)
+      assert(result.right.get.isEmpty)
     }
 
     "return version list" in {
@@ -75,8 +75,8 @@ abstract class ServiceTest extends WordSpec with Matchers {
     "return SubjectHasNoRegisteredSchemas" in {
       schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       val result = schemaStorage.subjectSchemasMetadata("A1")
-      assert(result.isLeft)
-      assertResult(SubjectHasNoRegisteredSchemas("A1"))(result.left.get)
+      assert(result.isRight)
+      assert(result.right.get.isEmpty)
     }
 
     "return schema metadata list" in {
