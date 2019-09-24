@@ -1,6 +1,6 @@
 package schemakeeper.server.service
 
-import schemakeeper.api.{SchemaId, SchemaMetadata, SubjectMetadata}
+import schemakeeper.api.{SchemaId, SchemaMetadata, SubjectMetadata, SubjectSchemaMetadata}
 import schemakeeper.schema.{CompatibilityType, SchemaType}
 
 trait Service[F[_]] {
@@ -25,14 +25,14 @@ trait Service[F[_]] {
     * @param subject - subject name
     * @return - list of subject schemas with metadata or empty list
     */
-  def subjectSchemasMetadata(subject: String): F[Either[SchemaKeeperError, List[SchemaMetadata]]]
+  def subjectSchemasMetadata(subject: String): F[Either[SchemaKeeperError, List[SubjectSchemaMetadata]]]
 
   /**
     * @param subject - subject name
     * @param version - schema version
     * @return - schema metadata for specified subject and version or none if subject or version do not exist
     */
-  def subjectSchemaByVersion(subject: String, version: Int): F[Either[SchemaKeeperError, SchemaMetadata]]
+  def subjectSchemaByVersion(subject: String, version: Int): F[Either[SchemaKeeperError, SubjectSchemaMetadata]]
 
   /**
     * @param id - schema id

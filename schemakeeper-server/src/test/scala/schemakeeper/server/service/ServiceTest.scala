@@ -79,7 +79,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
       assertResult(SubjectHasNoRegisteredSchemas("A1"))(result.left.get)
     }
 
-    "return version list" in {
+    "return schema metadata list" in {
       schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD, SchemaType.AVRO)
       val result = schemaStorage.subjectSchemasMetadata("A1")
       assert(result.isRight)

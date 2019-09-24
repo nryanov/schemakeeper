@@ -1,6 +1,6 @@
 package schemakeeper.server.storage
 
-import schemakeeper.api.{SchemaMetadata, SubjectMetadata}
+import schemakeeper.api.{SchemaMetadata, SubjectMetadata, SubjectSchemaMetadata}
 import schemakeeper.schema.{CompatibilityType, SchemaType}
 
 
@@ -26,14 +26,14 @@ trait SchemaStorage[F[_]] {
     * @param subject - subject name
     * @return - list of subject schemas with metadata or empty list
     */
-  def subjectSchemasMetadata(subject: String): F[List[SchemaMetadata]]
+  def subjectSchemasMetadata(subject: String): F[List[SubjectSchemaMetadata]]
 
   /**
     * @param subject - subject name
     * @param version - schema version
-    * @return - schema metadata or none
+    * @return - subject schema metadata or none
     */
-  def subjectSchemaByVersion(subject: String, version: Int): F[Option[SchemaMetadata]]
+  def subjectSchemaByVersion(subject: String, version: Int): F[Option[SubjectSchemaMetadata]]
 
   /**
     * @param id - schema id

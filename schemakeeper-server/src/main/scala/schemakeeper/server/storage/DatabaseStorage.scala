@@ -4,7 +4,7 @@ import doobie._
 import doobie.quill.DoobieContextBase
 import io.getquill.context.sql.idiom.SqlIdiom
 import io.getquill._
-import schemakeeper.api.{SchemaMetadata, SubjectMetadata}
+import schemakeeper.api.{SchemaMetadata, SubjectMetadata, SubjectSchemaMetadata}
 import schemakeeper.schema.{CompatibilityType, SchemaType}
 import schemakeeper.server.storage.model.{Config, SchemaInfo, Subject, SubjectSchema}
 import schemakeeper.server.storage.model.Converters._
@@ -33,23 +33,21 @@ class DatabaseStorage(dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy])
       .map(_.version)
   })
 
-  override def subjectSchemasMetadata(subject: String): doobie.ConnectionIO[List[SchemaMetadata]] = dc.run(quote {
+  override def subjectSchemasMetadata(subject: String): doobie.ConnectionIO[List[SubjectSchemaMetadata]] = dc.run(quote {
     query[SubjectSchema]
       .join(query[SchemaInfo])
       .on(_.schemaId == _.schemaId)
       .filter(_._1.subjectName == lift(subject))
-      .map(_._2)
-  }).map(_.map(schemaInfoToSchemaMetadata))
+  }).map(_.map(meta => SubjectSchemaMetadata.instance(meta._1.schemaId, meta._1.version, meta._2.schemaText, meta._2.schemaHash, SchemaType.findByName(meta._2.schemaTypeName))))
 
-  override def subjectSchemaByVersion(subject: String, version: Index): doobie.ConnectionIO[Option[SchemaMetadata]] = dc.run(quote {
+  override def subjectSchemaByVersion(subject: String, version: Index): doobie.ConnectionIO[Option[SubjectSchemaMetadata]] = dc.run(quote {
     query[SubjectSchema]
       .join(query[SchemaInfo])
       .on(_.schemaId == _.schemaId)
       .filter(_._1.subjectName == lift(subject))
       .filter(_._1.version == lift(version))
-      .map(_._2)
   }).map(_.headOption)
-    .map(_.map(schemaInfoToSchemaMetadata))
+    .map(_.map(meta => SubjectSchemaMetadata.instance(meta._1.schemaId, meta._1.version, meta._2.schemaText, meta._2.schemaHash, SchemaType.findByName(meta._2.schemaTypeName))))
 
   override def schemaById(id: Int): doobie.ConnectionIO[Option[SchemaMetadata]] = dc.run(quote {
     query[SchemaInfo]

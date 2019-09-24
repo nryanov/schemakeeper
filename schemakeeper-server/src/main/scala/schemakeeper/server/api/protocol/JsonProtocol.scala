@@ -23,6 +23,25 @@ object JsonProtocol {
     } yield SchemaMetadata.instance(schemaId, schemaText, schemaHash, SchemaType.findByName(schemaType))
   }
 
+  implicit val subjectSchemaMetadataEncoder: Encoder[SubjectSchemaMetadata] = new Encoder[SubjectSchemaMetadata] {
+    override def apply(a: SubjectSchemaMetadata): Json = Json.obj(
+      ("schemaId", Json.fromInt(a.getSchemaId)),
+      ("version", Json.fromInt(a.getVersion)),
+      ("schemaText", Json.fromString(a.getSchemaText)),
+      ("schemaHash", Json.fromString(a.getSchemaHash)),
+      ("schemaType", Json.fromString(a.getSchemaType.identifier)),
+    )
+  }
+  implicit val subjectSchemaMetadataDecoder: Decoder[SubjectSchemaMetadata] = new Decoder[SubjectSchemaMetadata] {
+    override def apply(c: HCursor): Result[SubjectSchemaMetadata] = for {
+      schemaId <- c.downField("schemaId").as[Int]
+      version <- c.downField("version").as[Int]
+      schemaText <- c.downField("schemaText").as[String]
+      schemaHash <- c.downField("schemaHash").as[String]
+      schemaType <- c.downField("schemaType").as[String]
+    } yield SubjectSchemaMetadata.instance(schemaId, version, schemaText, schemaHash, SchemaType.findByName(schemaType))
+  }
+
   implicit val compatibilityTypeEncoder: Encoder[CompatibilityType] = new Encoder[CompatibilityType] {
     override def apply(a: CompatibilityType): Json = Json.obj(
       ("compatibilityType", Json.fromString(a.identifier))

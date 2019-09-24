@@ -16,6 +16,15 @@ class JsonProtocolTest extends WordSpec with Matchers {
     }
   }
 
+  "SubjectSchemaMetadata" should {
+    "be encoded and decoded correctly" in {
+      val meta = SubjectSchemaMetadata.instance(1, 2, "b", "c")
+      val json = meta.asJson
+
+      assert(json.as[SubjectSchemaMetadata].contains(meta))
+    }
+  }
+
   "CompatibilityType" should {
     "be encoded and decoded correctly" in {
       val meta = CompatibilityType.BACKWARD

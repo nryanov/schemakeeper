@@ -6,7 +6,7 @@ import doobie.free.connection
 import doobie.implicits._
 import org.apache.avro.Schema
 import org.slf4j.LoggerFactory
-import schemakeeper.api.{SchemaId, SchemaMetadata, SubjectMetadata}
+import schemakeeper.api.{SchemaId, SchemaMetadata, SubjectMetadata, SubjectSchemaMetadata}
 import schemakeeper.schema.{AvroSchemaCompatibility, AvroSchemaUtils, CompatibilityType, SchemaType}
 import schemakeeper.server.Configuration
 import schemakeeper.server.datasource.DataSource
@@ -70,14 +70,14 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
     }
   }
 
-  override def subjectSchemasMetadata(subject: String): F[Result[List[SchemaMetadata]]] = {
+  override def subjectSchemasMetadata(subject: String): F[Result[List[SubjectSchemaMetadata]]] = {
     logger.info(s"Get subject schemas metadata list")
 
     transaction {
-      storage.isSubjectExist(subject).flatMap[Result[List[SchemaMetadata]]](exist => if (exist) {
+      storage.isSubjectExist(subject).flatMap[Result[List[SubjectSchemaMetadata]]](exist => if (exist) {
         storage.subjectSchemasMetadata(subject).map(Right(_))
       } else {
-        pure[Result[List[SchemaMetadata]]](Left(SubjectDoesNotExist(subject)))
+        pure[Result[List[SubjectSchemaMetadata]]](Left(SubjectDoesNotExist(subject)))
       })
     }.map {
       case Left(e) => Left(BackendError(e))
@@ -89,14 +89,14 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
     }
   }
 
-  override def subjectSchemaByVersion(subject: String, version: Int): F[Result[SchemaMetadata]] = {
+  override def subjectSchemaByVersion(subject: String, version: Int): F[Result[SubjectSchemaMetadata]] = {
     logger.info(s"Get subject schema: $subject by version: $version")
 
     transaction {
-      storage.isSubjectExist(subject).flatMap[Result[Option[SchemaMetadata]]](exist => if (exist) {
+      storage.isSubjectExist(subject).flatMap[Result[Option[SubjectSchemaMetadata]]](exist => if (exist) {
         storage.subjectSchemaByVersion(subject, version).map(Right(_))
       } else {
-        pure[Result[Option[SchemaMetadata]]](Left(SubjectDoesNotExist(subject)))
+        pure[Result[Option[SubjectSchemaMetadata]]](Left(SubjectDoesNotExist(subject)))
       })
     }.map {
       case Left(e) => Left(BackendError(e))
