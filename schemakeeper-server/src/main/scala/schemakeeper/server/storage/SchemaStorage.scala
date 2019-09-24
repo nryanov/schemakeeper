@@ -96,9 +96,8 @@ trait SchemaStorage[F[_]] {
   /**
     * @param subject - subject name
     * @param compatibilityType - compatibility type
-    * @param schemaType - schema type
     */
-  def registerSubject(subject: String, compatibilityType: CompatibilityType, schemaType: SchemaType): F[Unit]
+  def registerSubject(subject: String, compatibilityType: CompatibilityType): F[Unit]
 
   /**
     * Add already registered schema to subject

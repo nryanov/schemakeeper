@@ -8,19 +8,17 @@ import java.util.Objects;
 public class SubjectMetadata {
     private String subject;
     private CompatibilityType compatibilityType;
-    private SchemaType schemaType;
 
-    public static SubjectMetadata instance(String subject, CompatibilityType compatibilityType, SchemaType schemaType) {
-        return new SubjectMetadata(subject, compatibilityType, schemaType);
+    public static SubjectMetadata instance(String subject, CompatibilityType compatibilityType) {
+        return new SubjectMetadata(subject, compatibilityType);
     }
 
     public SubjectMetadata() {
     }
 
-    public SubjectMetadata(String subject, CompatibilityType compatibilityType, SchemaType schemaType) {
+    public SubjectMetadata(String subject, CompatibilityType compatibilityType) {
         this.subject = subject;
         this.compatibilityType = compatibilityType;
-        this.schemaType = schemaType;
     }
 
     public String getSubject() {
@@ -39,27 +37,18 @@ public class SubjectMetadata {
         this.compatibilityType = compatibilityType;
     }
 
-    public SchemaType getSchemaType() {
-        return schemaType;
-    }
-
-    public void setSchemaType(SchemaType schemaType) {
-        this.schemaType = schemaType;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         SubjectMetadata that = (SubjectMetadata) o;
         return Objects.equals(subject, that.subject) &&
-                compatibilityType == that.compatibilityType &&
-                schemaType == that.schemaType;
+                compatibilityType == that.compatibilityType;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(subject, compatibilityType, schemaType);
+        return Objects.hash(subject, compatibilityType);
     }
 
     @Override
@@ -67,7 +56,6 @@ public class SubjectMetadata {
         return "SubjectMetadata{" +
                 "subject='" + subject + '\'' +
                 ", compatibilityType=" + compatibilityType +
-                ", schemaType=" + schemaType +
                 '}';
     }
 }

@@ -5,23 +5,23 @@ import schemakeeper.schema.SchemaType;
 
 import java.util.Objects;
 
-public class NewSubjectRequest {
+public class SubjectAndSchemaRequest {
     private String schemaText;
     private SchemaType schemaType;
     private CompatibilityType compatibilityType;
 
-    public static NewSubjectRequest instance(String schemaText, SchemaType schemaType, CompatibilityType compatibilityType) {
-        return new NewSubjectRequest(schemaText, schemaType, compatibilityType);
+    public static SubjectAndSchemaRequest instance(String schemaText, SchemaType schemaType, CompatibilityType compatibilityType) {
+        return new SubjectAndSchemaRequest(schemaText, schemaType, compatibilityType);
     }
 
-    public static NewSubjectRequest instance(String schemaText, SchemaType schemaType) {
-        return new NewSubjectRequest(schemaText, schemaType, CompatibilityType.BACKWARD);
+    public static SubjectAndSchemaRequest instance(String schemaText, SchemaType schemaType) {
+        return new SubjectAndSchemaRequest(schemaText, schemaType, CompatibilityType.BACKWARD);
     }
 
-    public NewSubjectRequest() {
+    public SubjectAndSchemaRequest() {
     }
 
-    public NewSubjectRequest(String schemaText, SchemaType schemaType, CompatibilityType compatibilityType) {
+    public SubjectAndSchemaRequest(String schemaText, SchemaType schemaType, CompatibilityType compatibilityType) {
         this.schemaText = schemaText;
         this.schemaType = schemaType;
         this.compatibilityType = compatibilityType;
@@ -55,7 +55,7 @@ public class NewSubjectRequest {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        NewSubjectRequest that = (NewSubjectRequest) o;
+        SubjectAndSchemaRequest that = (SubjectAndSchemaRequest) o;
         return Objects.equals(schemaText, that.schemaText) &&
                 schemaType == that.schemaType &&
                 compatibilityType == that.compatibilityType;
@@ -68,7 +68,7 @@ public class NewSubjectRequest {
 
     @Override
     public String toString() {
-        return "NewSubjectRequest{" +
+        return "SubjectAndSchemaRequest{" +
                 "schemaText='" + schemaText + '\'' +
                 ", schemaType=" + schemaType +
                 ", compatibilityType=" + compatibilityType +

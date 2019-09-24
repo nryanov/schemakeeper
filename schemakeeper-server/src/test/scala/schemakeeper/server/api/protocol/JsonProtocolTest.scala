@@ -33,7 +33,7 @@ class JsonProtocolTest extends WordSpec with Matchers {
 
   "SubjectMetadata" should {
     "be encoded and decoded correctly" in {
-      val meta = SubjectMetadata.instance("a", CompatibilityType.BACKWARD, SchemaType.AVRO)
+      val meta = SubjectMetadata.instance("a", CompatibilityType.BACKWARD)
       val json = meta.asJson
 
       assert(json.as[SubjectMetadata].contains(meta))
@@ -55,12 +55,12 @@ class JsonProtocolTest extends WordSpec with Matchers {
     }
   }
 
-  "NewSubjectRequest" should {
+  "SubjectAndSchemaRequest" should {
     "be encoded and decoded correctly" in {
-      val meta = NewSubjectRequest.instance("schema", SchemaType.AVRO, CompatibilityType.NONE)
+      val meta = SubjectAndSchemaRequest.instance("schema", SchemaType.AVRO, CompatibilityType.NONE)
       val json = meta.asJson
 
-      assert(json.as[NewSubjectRequest].contains(meta))
+      assert(json.as[SubjectAndSchemaRequest].contains(meta))
     }
   }
 

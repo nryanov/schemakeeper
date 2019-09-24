@@ -2,7 +2,7 @@ package schemakeeper.server.service
 
 import schemakeeper.schema.CompatibilityType
 
-sealed abstract class SchemaKeeperError(msg: String) {
+sealed abstract class SchemaKeeperError(val msg: String) {
   def this(e: Throwable) = this(e.getLocalizedMessage)
 }
 

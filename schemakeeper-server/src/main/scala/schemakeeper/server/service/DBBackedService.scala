@@ -278,7 +278,7 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
       case Left(e) => Monad[F].pure[Result[SchemaId]](Left(e))
       case Right(schema) => transaction {
         storage.subjectMetadata(subject).flatMap {
-          case None => storage.registerSubject(subject, compatibilityType, schemaType)
+          case None => storage.registerSubject(subject, compatibilityType)
           case Some(_) => pure[Unit](())
         }.flatMap(_ => {
           val schemaHash = Utils.toMD5Hex(schemaText)
@@ -312,14 +312,14 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
     }
   }
 
-  override def registerSubject(subject: String, compatibilityType: CompatibilityType, schemaType: SchemaType): F[Result[Unit]] = {
-    logger.info(s"Register new subject: $subject, ${compatibilityType.identifier}, ${schemaType.identifier}")
+  override def registerSubject(subject: String, compatibilityType: CompatibilityType): F[Result[Unit]] = {
+    logger.info(s"Register new subject: $subject, ${compatibilityType.identifier}")
 
     transaction {
       storage.isSubjectExist(subject).flatMap[Result[Unit]](isExists => if (isExists) {
         pure[Result[Unit]](Left(SubjectIsAlreadyExists(subject)))
       } else {
-        storage.registerSubject(subject, compatibilityType, schemaType).map(Right(_))
+        storage.registerSubject(subject, compatibilityType).map(Right(_))
       })
     }.map {
       case Left(e) => Left(BackendError(e))

@@ -117,9 +117,9 @@ class DatabaseStorage(dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy])
       .returning(_.schemaId)
   })
 
-  override def registerSubject(subject: String, compatibilityType: CompatibilityType, schemaType: SchemaType): doobie.ConnectionIO[Unit] = dc.run(quote {
+  override def registerSubject(subject: String, compatibilityType: CompatibilityType): doobie.ConnectionIO[Unit] = dc.run(quote {
     query[Subject]
-      .insert(lift(Subject(subject, schemaType.identifier, compatibilityType.identifier)))
+      .insert(lift(Subject(subject, compatibilityType.identifier)))
   }).map(_ => Unit)
 
   override def addSchemaToSubject(subject: String, schemaId: Index, version: Index): doobie.ConnectionIO[Unit] = dc.run(quote {

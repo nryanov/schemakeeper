@@ -38,15 +38,13 @@ object JsonProtocol {
     override def apply(a: SubjectMetadata): Json = Json.obj(
       ("subject", Json.fromString(a.getSubject)),
       ("compatibilityType", Json.fromString(a.getCompatibilityType.identifier)),
-      ("schemaType", Json.fromString(a.getSchemaType.identifier)),
     )
   }
   implicit val subjectMetadataDecoder: Decoder[SubjectMetadata] = new Decoder[SubjectMetadata] {
     override def apply(c: HCursor): Result[SubjectMetadata] = for {
       subject <- c.downField("subject").as[String]
       compatibilityType <- c.downField("compatibilityType").as[String]
-      schemaType <- c.downField("schemaType").as[String]
-    } yield SubjectMetadata.instance(subject, CompatibilityType.findByName(compatibilityType), SchemaType.findByName(schemaType))
+    } yield SubjectMetadata.instance(subject, CompatibilityType.findByName(compatibilityType))
   }
 
   implicit val schemaTextEncoder: Encoder[SchemaText] = new Encoder[SchemaText] {
@@ -73,18 +71,18 @@ object JsonProtocol {
     } yield SchemaId.instance(schemaId)
   }
 
-  implicit val newSubjectRequestEncoder: Encoder[NewSubjectRequest] = new Encoder[NewSubjectRequest] {
-    override def apply(a: NewSubjectRequest): Json = Json.obj(
+  implicit val newSubjectRequestEncoder: Encoder[SubjectAndSchemaRequest] = new Encoder[SubjectAndSchemaRequest] {
+    override def apply(a: SubjectAndSchemaRequest): Json = Json.obj(
       ("schemaType", Json.fromString(a.getSchemaType.identifier)),
       ("compatibilityType", Json.fromString(a.getCompatibilityType.identifier)),
       ("schemaText", Json.fromString(a.getSchemaText))
     )
   }
-  implicit val newSubjectRequestDecoder: Decoder[NewSubjectRequest] = new Decoder[NewSubjectRequest] {
-    override def apply(c: HCursor): Result[NewSubjectRequest] = for {
+  implicit val newSubjectRequestDecoder: Decoder[SubjectAndSchemaRequest] = new Decoder[SubjectAndSchemaRequest] {
+    override def apply(c: HCursor): Result[SubjectAndSchemaRequest] = for {
       schemaType <- c.downField("schemaType").as[String]
       compatibilityType <- c.downField("compatibilityType").as[String]
       schemaText <- c.downField("schemaText").as[String]
-    } yield NewSubjectRequest.instance(schemaText, SchemaType.findByName(schemaType), CompatibilityType.findByName(compatibilityType))
+    } yield SubjectAndSchemaRequest.instance(schemaText, SchemaType.findByName(schemaType), CompatibilityType.findByName(compatibilityType))
   }
 }

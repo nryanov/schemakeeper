@@ -21,7 +21,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
     }
 
     "return subject list" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, SchemaType.AVRO)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       val result = schemaStorage.subjects()
       assert(result.isRight)
       assertResult(List("A1"))(result.right.get)
@@ -36,10 +36,10 @@ abstract class ServiceTest extends WordSpec with Matchers {
     }
 
     "return subject metadata" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, SchemaType.AVRO)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       val result = schemaStorage.subjectMetadata("A1")
       assert(result.isRight)
-      assertResult(SubjectMetadata.instance("A1", CompatibilityType.BACKWARD, SchemaType.AVRO))(result.right.get)
+      assertResult(SubjectMetadata.instance("A1", CompatibilityType.BACKWARD))(result.right.get)
     }
   }
 
@@ -51,7 +51,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
     }
 
     "return SubjectHasNoRegisteredSchemas" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, SchemaType.AVRO)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       val result = schemaStorage.subjectVersions("A1")
       assert(result.isLeft)
       assertResult(SubjectHasNoRegisteredSchemas("A1"))(result.left.get)
@@ -73,7 +73,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
     }
 
     "return SubjectHasNoRegisteredSchemas" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, SchemaType.AVRO)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       val result = schemaStorage.subjectSchemasMetadata("A1")
       assert(result.isLeft)
       assertResult(SubjectHasNoRegisteredSchemas("A1"))(result.left.get)
@@ -101,7 +101,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
     }
 
     "return SubjectSchemaVersionDoesNotExist" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, SchemaType.AVRO)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       val result = schemaStorage.subjectSchemaByVersion("A1", 1)
       assert(result.isLeft)
       assertResult(SubjectSchemaVersionDoesNotExist("A1", 1))(result.left.get)
@@ -145,7 +145,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
     }
 
     "return true" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, SchemaType.AVRO)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       val result = schemaStorage.deleteSubject("A1")
       assert(result.isRight)
       assertResult(true)(result.right.get)
@@ -160,7 +160,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
     }
 
     "return SubjectSchemaVersionDoesNotExist" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, SchemaType.AVRO)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       val result = schemaStorage.deleteSubjectSchemaByVersion("A1", 1)
       assert(result.isLeft)
       assertResult(service.SubjectSchemaVersionDoesNotExist("A1", 1))(result.left.get)
@@ -239,7 +239,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
     }
 
     "return true" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, SchemaType.AVRO)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       val result = schemaStorage.updateSubjectCompatibility("A1", CompatibilityType.BACKWARD)
       assert(result.isRight)
       assertResult(true)(result.right.get)
@@ -254,7 +254,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
     }
 
     "return true" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, SchemaType.AVRO)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       val result = schemaStorage.getSubjectCompatibility("A1")
       assert(result.isRight)
       assertResult(CompatibilityType.BACKWARD)(result.right.get)
@@ -269,7 +269,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
     }
 
     "return SubjectHasNoRegisteredSchemas" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, SchemaType.AVRO)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       val result = schemaStorage.getLastSubjectSchema("A1")
       assert(result.isLeft)
       assertResult(SubjectHasNoRegisteredSchemas("A1"))(result.left.get)
@@ -295,7 +295,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
     }
 
     "return SubjectHasNoRegisteredSchemas" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, SchemaType.AVRO)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       val result = schemaStorage.getSubjectSchemas("A1")
       assert(result.isLeft)
       assertResult(SubjectHasNoRegisteredSchemas("A1"))(result.left.get)
@@ -353,7 +353,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
     }
 
     "does not register schema and subject and does not connect schema and subject because they are already connected" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, SchemaType.AVRO)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       val id = schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString(), SchemaType.AVRO)
       schemaStorage.addSchemaToSubject("A1", id.right.get.getSchemaId)
       val result = schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD, SchemaType.AVRO)
@@ -373,7 +373,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
   "RegisterSubject" should {
     "register new subject" in {
       val before = schemaStorage.subjects().right.get
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, SchemaType.AVRO)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       val after = schemaStorage.subjects().right.get
 
       assert(before.isEmpty)
@@ -381,8 +381,8 @@ abstract class ServiceTest extends WordSpec with Matchers {
     }
 
     "return SubjectIsAlreadyExists" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, SchemaType.AVRO)
-      val result = schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, SchemaType.AVRO)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
+      val result = schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       assert(result.isLeft)
       assertResult(SubjectIsAlreadyExists("A1"))(result.left.get)
     }
@@ -390,7 +390,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
 
   "AddSchemaToSubject" should {
     "successfully add schema to subject" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, SchemaType.AVRO)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       val id = schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString(), SchemaType.AVRO).right.get.getSchemaId
       val result = schemaStorage.addSchemaToSubject("A1", id)
       assert(result.isRight)
@@ -405,7 +405,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
     }
 
     "return SubjectIsAlreadyConnectedToSchema" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, SchemaType.AVRO)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       val id = schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString(), SchemaType.AVRO).right.get.getSchemaId
       schemaStorage.addSchemaToSubject("A1", id)
       val result = schemaStorage.addSchemaToSubject("A1", id)
@@ -414,7 +414,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
     }
 
     "return SchemaDoesNotExist" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, SchemaType.AVRO)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       val result = schemaStorage.addSchemaToSubject("A1", 1)
       assert(result.isLeft)
       assertResult(SchemaDoesNotExist(1))(result.left.get)
@@ -423,7 +423,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
 
   "IsSubjectExist" should {
     "return true" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, SchemaType.AVRO)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       assertResult(true)(schemaStorage.isSubjectExist("A1").right.get)
     }
 
