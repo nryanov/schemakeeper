@@ -23,10 +23,10 @@ import schemakeeper.server.util.Utils
 import scala.util.Try
 
 class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
-  type Result[A] = Either[SchemaKeeperError, A]
-  val datasource = DataSource.build(config)
-  val storage = DatabaseStorage(DataSource.context(config))
-  val exceptionHandler = StorageExceptionHandler(config)
+  private type Result[A] = Either[SchemaKeeperError, A]
+  private val datasource = DataSource.build(config)
+  private val storage = DatabaseStorage(DataSource.context(config))
+  private val exceptionHandler = StorageExceptionHandler(config)
 
   override def subjects(): F[Result[List[String]]] = {
     logger.info("Get subjects list")
@@ -55,11 +55,10 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
     logger.info(s"Get subject version list")
 
     transaction {
-      storage.isSubjectExist(subject).flatMap[Result[List[Int]]](exist => if (exist) {
-        storage.subjectVersions(subject).map(Right(_))
-      } else {
-        pure[Result[List[Int]]](Left(SubjectDoesNotExist(subject)))
-      })
+      Monad[ConnectionIO].ifM[Result[List[Int]]](storage.isSubjectExist(subject))(
+        storage.subjectVersions(subject).map(Right(_)),
+        pure(Left(SubjectDoesNotExist(subject)))
+      )
     }.map {
       case Left(e) => Left(BackendError(e))
       case Right(r) => r match {
@@ -73,11 +72,10 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
     logger.info(s"Get subject schemas metadata list")
 
     transaction {
-      storage.isSubjectExist(subject).flatMap[Result[List[SubjectSchemaMetadata]]](exist => if (exist) {
-        storage.subjectSchemasMetadata(subject).map(Right(_))
-      } else {
-        pure[Result[List[SubjectSchemaMetadata]]](Left(SubjectDoesNotExist(subject)))
-      })
+      Monad[ConnectionIO].ifM[Result[List[SubjectSchemaMetadata]]](storage.isSubjectExist(subject))(
+        storage.subjectSchemasMetadata(subject).map(Right(_)),
+        pure(Left(SubjectDoesNotExist(subject)))
+      )
     }.map {
       case Left(e) => Left(BackendError(e))
       case Right(r) => r match {
@@ -91,11 +89,10 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
     logger.info(s"Get subject schema: $subject by version: $version")
 
     transaction {
-      storage.isSubjectExist(subject).flatMap[Result[Option[SubjectSchemaMetadata]]](exist => if (exist) {
-        storage.subjectSchemaByVersion(subject, version).map(Right(_))
-      } else {
-        pure[Result[Option[SubjectSchemaMetadata]]](Left(SubjectDoesNotExist(subject)))
-      })
+      Monad[ConnectionIO].ifM[Result[Option[SubjectSchemaMetadata]]](storage.isSubjectExist(subject))(
+        storage.subjectSchemaByVersion(subject, version).map(Right(_)),
+        pure(Left(SubjectDoesNotExist(subject)))
+      )
     }.map {
       case Left(e) => Left(BackendError(e))
       case Right(result) => result match {
@@ -133,11 +130,10 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
     logger.info(s"Delete subject schema by version: $subject - $version")
 
     transaction {
-      storage.isSubjectExist(subject).flatMap[Result[Boolean]](isExists => if (isExists) {
-        storage.deleteSubjectSchemaByVersion(subject, version).map(Right(_))
-      } else {
-        pure[Result[Boolean]](Left(SubjectDoesNotExist(subject)))
-      })
+      Monad[ConnectionIO].ifM[Result[Boolean]](storage.isSubjectExist(subject))(
+        storage.deleteSubjectSchemaByVersion(subject, version).map(Right(_)),
+        pure(Left(SubjectDoesNotExist(subject)))
+      )
     }.map {
       case Left(e) => Left(BackendError(e))
       case Right(tx) => tx match {
@@ -154,15 +150,11 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
     validateSchema(schema).flatMap {
       case Left(e) => Monad[F].pure[Result[Boolean]](Left(e))
       case Right(newSchema) => transaction {
-        storage.isSubjectExist(subject).flatMap[Result[Boolean]](isExists => if (isExists) {
-          storage.getSubjectCompatibility(subject).flatMap {
-            case Some(compatibilityType) =>
-              isSchemaCompatible(subject, newSchema, compatibilityType).map(Right(_))
-            case None => pure[Result[Boolean]](Left(SubjectDoesNotExist(subject))) // should never happen
-          }
-        } else {
-          pure[Result[Boolean]](Left(SubjectDoesNotExist(subject)))
-        })
+        storage.getSubjectCompatibility(subject).flatMap[Result[Boolean]] {
+          case Some(compatibilityType) =>
+            isSchemaCompatible(subject, newSchema, compatibilityType).map(Right(_))
+          case None => pure[Result[Boolean]](Left(SubjectDoesNotExist(subject)))
+        }
       }.map {
         case Left(e) => Left(BackendError(e))
         case Right(tx) => tx match {
@@ -177,11 +169,10 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
     logger.info(s"Update subject: $subject compatibility type: ${compatibilityType.identifier}")
 
     transaction {
-      storage.isSubjectExist(subject).flatMap[Result[Boolean]](isExists => if (isExists) {
-        storage.updateSubjectCompatibility(subject, compatibilityType).map(Right(_))
-      } else {
+      Monad[ConnectionIO].ifM[Result[Boolean]](storage.isSubjectExist(subject))(
+        storage.updateSubjectCompatibility(subject, compatibilityType).map(Right(_)),
         pure[Result[Boolean]](Left(SubjectDoesNotExist(subject)))
-      })
+      )
     }.map {
       case Left(e) => Left(BackendError(e))
       case Right(tx) => tx match {
@@ -195,18 +186,11 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
     logger.info(s"Get subject compatibility type: $subject")
 
     transaction {
-      storage.isSubjectExist(subject).flatMap[Result[Option[CompatibilityType]]](isExists => if (isExists) {
-        storage.getSubjectCompatibility(subject).map(Right(_))
-      } else {
-        pure[Result[Option[CompatibilityType]]](Left(SubjectDoesNotExist(subject)))
-      })
+      storage.getSubjectCompatibility(subject)
     }.map {
       case Left(e) => Left(BackendError(e))
-      case Right(tx) => tx match {
-        case Left(e) => Left(e)
-        case Right(None) => Left(SubjectDoesNotExist(subject)) // should never happen due to we check subject existence before getting compatibilityType
-        case Right(Some(v)) => Right(v)
-      }
+      case Right(None) => Left(SubjectDoesNotExist(subject))
+      case Right(Some(v)) => Right(v)
     }
   }
 
@@ -214,11 +198,10 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
     logger.info(s"Get last subject schema: $subject")
 
     transaction {
-      storage.isSubjectExist(subject).flatMap[Result[Option[SchemaMetadata]]](isExists => if (isExists) {
-        storage.getLastSubjectSchema(subject).map(Right(_))
-      } else {
-        pure[Result[Option[SchemaMetadata]]](Left(SubjectDoesNotExist(subject)))
-      })
+      Monad[ConnectionIO].ifM[Result[Option[SchemaMetadata]]](storage.isSubjectExist(subject))(
+        storage.getLastSubjectSchema(subject).map(Right(_)),
+        pure(Left(SubjectDoesNotExist(subject)))
+      )
     }.map {
       case Left(e) => Left(BackendError(e))
       case Right(tx) => tx match {
@@ -233,11 +216,10 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
     logger.info(s"Get last subject schemas: $subject")
 
     transaction {
-      storage.isSubjectExist(subject).flatMap[Result[List[SchemaMetadata]]](isExists => if (isExists) {
-        storage.getSubjectSchemas(subject).map(Right(_))
-      } else {
-        pure[Result[List[SchemaMetadata]]](Left(SubjectDoesNotExist(subject)))
-      })
+      Monad[ConnectionIO].ifM[Result[List[SchemaMetadata]]](storage.isSubjectExist(subject))(
+        storage.getSubjectSchemas(subject).map(Right(_)),
+        pure(Left(SubjectDoesNotExist(subject)))
+      )
     }.map {
       case Left(e) => Left(BackendError(e))
       case Right(tx) => tx match {
@@ -272,40 +254,33 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
   override def registerSchema(subject: String, schemaText: String, compatibilityType: CompatibilityType, schemaType: SchemaType): F[Result[SchemaId]] = {
     logger.info(s"Register schema: $schemaText and add to subject: $subject")
 
-    validateSchema(schemaText).flatMap {
-      case Left(e) => Monad[F].pure[Result[SchemaId]](Left(e))
+    validateSchema(schemaText).flatMap[Result[SchemaId]] {
+      case Left(e) => Monad[F].pure(Left(e))
       case Right(schema) => transaction {
-        storage.subjectMetadata(subject).flatMap {
-          case None => storage.registerSubject(subject, compatibilityType)
-          case Some(_) => pure[Unit](())
-        }.flatMap(_ => {
-          val schemaHash = Utils.toMD5Hex(schemaText)
-          storage.schemaByHash(schemaHash).flatMap {
-            case None => storage.registerSchema(schemaText, schemaHash, schemaType)
-            case Some(meta) => pure[Int](meta.getSchemaId)
-          }.flatMap(schemaId => {
-            storage.getSubjectCompatibility(subject).flatMap {
-              case None => pure[Result[SchemaId]](Left(BackendError(new Exception("Something bad happened")))) // should never happen
-              case Some(subjectCurrentCompatibilityType) => isSchemaCompatible(subject, schema, subjectCurrentCompatibilityType).flatMap(isCompatible => if (isCompatible) {
-                storage.isSubjectConnectedToSchema(subject, schemaId).flatMap(isConnected => if (isConnected) {
-                  pure[Result[SchemaId]](Left(SubjectIsAlreadyConnectedToSchema(subject, schemaId)))
-                } else {
-                  storage.getNextVersionNumber(subject)
-                    .flatMap[Result[SchemaId]](version => storage.addSchemaToSubject(subject, schemaId, version).map(_ => Right(SchemaId.instance(schemaId))))
-                })
-              } else {
-                pure[Result[SchemaId]](Left(SchemaIsNotCompatible(subject, schemaText, subjectCurrentCompatibilityType)))
-              })
-            }
-          })
-        })
+        val schemaHash = Utils.toMD5Hex(schemaText)
+        storage.schemaByHash(schemaHash).flatMap {
+          case None => storage.registerSchema(schemaText, schemaHash, schemaType)
+          case Some(meta) => pure[Int](meta.getSchemaId)
+        }.flatMap(schemaId => storage.getSubjectCompatibility(subject).flatMap {
+          case None => storage.registerSubject(subject, compatibilityType).map(_ => (schemaId, compatibilityType))
+          case Some(actualCompatibilityType) => pure[(Int, CompatibilityType)]((schemaId, actualCompatibilityType))
+        }).flatMap {
+          case (schemaId, actualCompatibilityType) => Monad[ConnectionIO].ifM[Result[SchemaId]](isSchemaCompatible(subject, schema, actualCompatibilityType))(
+            Monad[ConnectionIO].ifM(storage.isSubjectConnectedToSchema(subject, schemaId))(
+              pure(Left(SubjectIsAlreadyConnectedToSchema(subject, schemaId))),
+              storage.getNextVersionNumber(subject)
+                .flatMap(version => storage.addSchemaToSubject(subject, schemaId, version).map(_ => Right(SchemaId.instance(schemaId))))
+            ),
+            pure(Left(SchemaIsNotCompatible(subject, schemaText, actualCompatibilityType)))
+          )
+        }
       }.flatMap {
-        case Left(e) => if(exceptionHandler.isRecoverable(e)) {
+        case Left(e) => if (exceptionHandler.isRecoverable(e)) {
           registerSchema(subject, schemaText, compatibilityType, schemaType)
         } else {
-          Monad[F].pure[Result[SchemaId]](Left(BackendError(e)))
+          Monad[F].pure(Left(BackendError(e)))
         }
-        case Right(v) => Monad[F].pure[Result[SchemaId]](v)
+        case Right(v) => Monad[F].pure(v)
       }
     }
   }
@@ -314,11 +289,10 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
     logger.info(s"Register new subject: $subject, ${compatibilityType.identifier}")
 
     transaction {
-      storage.isSubjectExist(subject).flatMap[Result[Unit]](isExists => if (isExists) {
-        pure[Result[Unit]](Left(SubjectIsAlreadyExists(subject)))
-      } else {
+      Monad[ConnectionIO].ifM[Result[Unit]](storage.isSubjectExist(subject))(
+        pure(Left(SubjectIsAlreadyExists(subject))),
         storage.registerSubject(subject, compatibilityType).map(Right(_))
-      })
+      )
     }.map {
       case Left(e) => Left(BackendError(e))
       case Right(tx) => tx match {
@@ -332,18 +306,19 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
     logger.info(s"Add schema: $schemaId to subject: $subject")
 
     transaction {
-      storage.isSubjectExist(subject).flatMap[Result[Int]](isExists => if (isExists) {
-        storage.schemaById(schemaId).flatMap {
+      storage.getSubjectCompatibility(subject).flatMap {
+        case None => pure[Result[Int]](Left(SubjectDoesNotExist(subject)))
+        case Some(compatibilityType) => storage.schemaById(schemaId).flatMap {
           case None => pure[Result[Int]](Left(SchemaDoesNotExist(schemaId)))
-          case Some(_) => storage.isSubjectConnectedToSchema(subject, schemaId).flatMap(isConnected => if (isConnected) {
-            pure[Result[Int]](Left(SubjectIsAlreadyConnectedToSchema(subject, schemaId)))
-          } else {
-            storage.getNextVersionNumber(subject).flatMap(version => storage.addSchemaToSubject(subject, schemaId, version).map(_ => Right(version)))
-          })
+          case Some(schemaMetadata) => Monad[ConnectionIO].ifM[Result[Int]](storage.isSubjectConnectedToSchema(subject, schemaId))(
+            pure(Left(SubjectIsAlreadyConnectedToSchema(subject, schemaId))),
+            Monad[ConnectionIO].ifM(isSchemaCompatible(subject, schemaMetadata.getSchema, compatibilityType))(
+              storage.getNextVersionNumber(subject).flatMap(version => storage.addSchemaToSubject(subject, schemaId, version).map(_ => Right(version))),
+              pure(Left(SchemaIsNotCompatible(subject, schemaMetadata.getSchemaText, compatibilityType)))
+            )
+          )
         }
-      } else {
-        pure[Result[Int]](Left(SubjectDoesNotExist(subject)))
-      })
+      }
     }.map {
       case Left(e) => if (exceptionHandler.isRecoverable(e)) {
         // it may happen if multiple transactions will try to add schema to subject.

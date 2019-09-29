@@ -398,6 +398,14 @@ abstract class ServiceTest extends WordSpec with Matchers {
       assertResult(1)(result.right.get)
     }
 
+    "return SchemaIsNotCompatible" in {
+      schemaStorage.registerSchema("A1", Schema.create(Schema.Type.INT).toString(), CompatibilityType.BACKWARD, SchemaType.AVRO)
+      val id = schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString(), SchemaType.AVRO).right.get.getSchemaId
+      val result = schemaStorage.addSchemaToSubject("A1", id)
+      assert(result.isLeft)
+      assertResult(SchemaIsNotCompatible("A1", Schema.create(Schema.Type.STRING).toString(), CompatibilityType.BACKWARD))(result.left.get)
+    }
+
     "return SubjectDoesNotExist" in {
       val result = schemaStorage.addSchemaToSubject("A1", 1)
       assert(result.isLeft)
@@ -438,9 +446,9 @@ abstract class ServiceTest extends WordSpec with Matchers {
     }
   }
 
- "UpdateGlobalCompatibility" should {
-   "successfully update compatibility type" in {
-     assertResult(true)(schemaStorage.updateGlobalCompatibility(CompatibilityType.FULL).right.get)
-   }
- }
+  "UpdateGlobalCompatibility" should {
+    "successfully update compatibility type" in {
+      assertResult(true)(schemaStorage.updateGlobalCompatibility(CompatibilityType.FULL).right.get)
+    }
+  }
 }
