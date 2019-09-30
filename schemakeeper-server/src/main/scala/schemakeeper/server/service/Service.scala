@@ -41,6 +41,14 @@ trait Service[F[_]] {
   def schemaById(id: Int): F[Either[SchemaKeeperError, SchemaMetadata]]
 
   /**
+    * Get schema id
+    * @param subject - subject name
+    * @param schema - schema text
+    * @return - schema id or SubjectIsNotConnectedToSchema
+    */
+  def schemaIdBySubjectAndSchema(subject: String, schema: String): F[Either[SchemaKeeperError, SchemaId]]
+
+  /**
     * @param subject - subject name
     * @return - true if subject was deleted, otherwise false
     */

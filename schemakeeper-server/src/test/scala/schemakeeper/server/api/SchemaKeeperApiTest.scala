@@ -182,12 +182,47 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
     "NotFound - schema with specified id does not exist" in {
       val api = SchemaKeeperApi(schemaStorage)
       val result = api.schemaById(Input.get(s"/v1/schemas/1")).awaitOutputUnsafe()
-      assertResult(Output.failure(ErrorInfo(SchemaDoesNotExist(1).msg, ErrorCode.SchemaDoesNotExistCode), Status.NotFound))(result.get)
+      assertResult(Output.failure(ErrorInfo(SchemaIdDoesNotExist(1).msg, ErrorCode.SchemaIdDoesNotExistCode), Status.NotFound))(result.get)
     }
 
     "throws validation error" in {
       val api = SchemaKeeperApi(schemaStorage)
       assertThrows[NotValid](api.schemaById(Input.get(s"/v1/schemas/-1")).awaitOutputUnsafe())
+    }
+  }
+
+  "SchemaIdBySubjectAndSchema endpoint" should {
+    "return SchemaId" in {
+      val id = schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD, SchemaType.AVRO).unsafeRunSync().right.get
+      val body = SchemaText.instance(Schema.create(Schema.Type.STRING))
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.schemaIdBySubjectAndSchema(Input.post(s"/v1/subjects/A1/schemas").withBody[Application.Json](body)).awaitValueUnsafe()
+
+      assertResult(id)(result.get)
+    }
+
+    "NotFound - schema is not registered" in {
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      val body = SchemaText.instance(Schema.create(Schema.Type.STRING))
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.schemaIdBySubjectAndSchema(Input.post(s"/v1/subjects/A1/schemas").withBody[Application.Json](body)).awaitOutputUnsafe()
+      assertResult(Output.failure(ErrorInfo(SchemaIsNotRegistered(Schema.create(Schema.Type.STRING).toString()).msg, ErrorCode.SchemaIsNotRegisteredCode), Status.NotFound))(result.get)
+    }
+
+    "BadRequest - schema is not valid" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val body = SchemaText.instance("not valid schema")
+      val result = api.schemaIdBySubjectAndSchema(Input.post(s"/v1/subjects/A1/schemas").withBody[Application.Json](body)).awaitOutputUnsafe()
+      assertResult(Output.failure(ErrorInfo(SchemaIsNotValid("not valid schema").msg, ErrorCode.SchemaIsNotValidCode), Status.BadRequest))(result.get)
+    }
+
+    "BadRequest - schema is not connected to subject" in {
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      val id = schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString(), SchemaType.AVRO).unsafeRunSync().right.get.getSchemaId
+      val body = SchemaText.instance(Schema.create(Schema.Type.STRING))
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.schemaIdBySubjectAndSchema(Input.post(s"/v1/subjects/A1/schemas").withBody[Application.Json](body)).awaitOutputUnsafe()
+      assertResult(Output.failure(ErrorInfo(SubjectIsNotConnectedToSchema("A1", id).msg, ErrorCode.SubjectIsNotConnectedToSchemaCode), Status.BadRequest))(result.get)
     }
   }
 
@@ -404,7 +439,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
       schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
       val api = SchemaKeeperApi(schemaStorage)
       val result = api.addSchemaToSubject(Input.put(s"/v1/subjects/A1/schemas/123")).awaitOutputUnsafe()
-      assertResult(Output.failure(ErrorInfo(SchemaDoesNotExist(123).msg, ErrorCode.SchemaDoesNotExistCode), Status.NotFound))(result.get)
+      assertResult(Output.failure(ErrorInfo(SchemaIdDoesNotExist(123).msg, ErrorCode.SchemaIdDoesNotExistCode), Status.NotFound))(result.get)
     }
 
     "throws validation error" in {

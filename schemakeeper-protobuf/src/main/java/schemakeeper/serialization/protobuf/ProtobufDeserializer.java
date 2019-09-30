@@ -15,6 +15,7 @@ import schemakeeper.serialization.AbstractDeserializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public class ProtobufDeserializer extends AbstractDeserializer<com.google.protobuf.GeneratedMessageV3> implements ProtobufSerDe {
     private static final Logger logger = LoggerFactory.getLogger(ProtobufDeserializer.class);
@@ -59,11 +60,9 @@ public class ProtobufDeserializer extends AbstractDeserializer<com.google.protob
             }
 
             int schemaId = readSchemaId(buffer);
-            Schema schema = client.getSchemaById(schemaId);
-
-            if (schema == null) {
+            Schema schema = client.getSchemaById(schemaId).orElseThrow((Supplier<ProtobufDeserializationException>) () -> {
                 throw new ProtobufDeserializationException(String.format("Schema with id: %s does not exist", schemaId));
-            }
+            });
 
             int dataLength = buffer.limit() - 5;
             int start = buffer.position() + buffer.arrayOffset();

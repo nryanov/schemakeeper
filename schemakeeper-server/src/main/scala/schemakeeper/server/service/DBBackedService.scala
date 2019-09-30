@@ -110,8 +110,31 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
       storage.schemaById(id)
     }.map {
       case Left(e) => Left(BackendError(e))
-      case Right(None) => Left(SchemaDoesNotExist(id))
+      case Right(None) => Left(SchemaIdDoesNotExist(id))
       case Right(Some(schema)) => Right(schema)
+    }
+  }
+
+  override def schemaIdBySubjectAndSchema(subject: String, schema: String): F[Either[SchemaKeeperError, SchemaId]] = {
+    logger.info(s"Get schema id: $subject - $schema")
+
+    validateSchema(schema).flatMap {
+      case Left(e) => Monad[F].pure[Result[SchemaId]](Left(e))
+      case Right(_) => transaction {
+        storage.schemaByHash(Utils.toMD5Hex(schema)).flatMap[Result[SchemaId]] {
+          case None => pure(Left(SchemaIsNotRegistered(schema)))
+          case Some(meta) => Monad[ConnectionIO].ifM(storage.isSubjectConnectedToSchema(subject, meta.getSchemaId))(
+            pure(Right(SchemaId.instance(meta.getSchemaId))),
+            pure(Left(SubjectIsNotConnectedToSchema(subject, meta.getSchemaId)))
+          )
+        }
+      }.map {
+        case Left(e) => Left(BackendError(e))
+        case Right(tx) => tx match {
+          case Left(e) => Left(e)
+          case Right(v) => Right(v)
+        }
+      }
     }
   }
 
@@ -309,7 +332,7 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
       storage.getSubjectCompatibility(subject).flatMap {
         case None => pure[Result[Int]](Left(SubjectDoesNotExist(subject)))
         case Some(compatibilityType) => storage.schemaById(schemaId).flatMap {
-          case None => pure[Result[Int]](Left(SchemaDoesNotExist(schemaId)))
+          case None => pure[Result[Int]](Left(SchemaIdDoesNotExist(schemaId)))
           case Some(schemaMetadata) => Monad[ConnectionIO].ifM[Result[Int]](storage.isSubjectConnectedToSchema(subject, schemaId))(
             pure(Left(SubjectIsAlreadyConnectedToSchema(subject, schemaId))),
             Monad[ConnectionIO].ifM(isSchemaCompatible(subject, schemaMetadata.getSchema, compatibilityType))(

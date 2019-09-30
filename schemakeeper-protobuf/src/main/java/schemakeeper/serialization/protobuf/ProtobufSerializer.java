@@ -11,34 +11,41 @@ import schemakeeper.client.CachedSchemaKeeperClient;
 import schemakeeper.client.SchemaKeeperClient;
 import schemakeeper.exception.ProtobufSerializationException;
 import schemakeeper.exception.SerializationException;
+import schemakeeper.schema.CompatibilityType;
+import schemakeeper.schema.SchemaType;
 import schemakeeper.serialization.AbstractSerializer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 
 public class ProtobufSerializer extends AbstractSerializer<com.google.protobuf.GeneratedMessageV3> implements ProtobufSerDe {
     private static final Logger logger = LoggerFactory.getLogger(ProtobufSerializer.class);
     private final EncoderFactory encoderFactory;
     private final SchemaKeeperClient client;
     private final boolean allowForceSchemaRegister;
+    private final CompatibilityType compatibilityType;
 
     public ProtobufSerializer(SchemaKeeperClient client) {
         this.client = client;
         this.allowForceSchemaRegister = true;
         this.encoderFactory = EncoderFactory.get();
+        this.compatibilityType = CompatibilityType.BACKWARD;
     }
 
     public ProtobufSerializer(SchemaKeeperClient client, ProtobufSerDeConfig config) {
         this.client = client;
         this.encoderFactory = EncoderFactory.get();
         this.allowForceSchemaRegister = config.allowForceSchemaRegister();
+        this.compatibilityType = config.compatibilityType();
     }
 
     public ProtobufSerializer(ProtobufSerDeConfig config) {
         this.client = new CachedSchemaKeeperClient(config);
         this.encoderFactory = EncoderFactory.get();
         this.allowForceSchemaRegister = config.allowForceSchemaRegister();
+        this.compatibilityType = config.compatibilityType();
     }
 
     public ProtobufSerializer(Map<String, Object> config) {
@@ -53,11 +60,17 @@ public class ProtobufSerializer extends AbstractSerializer<com.google.protobuf.G
 
         try {
             Schema schema = ProtobufData.get().getSchema(data.getClass());
-            int id = client.getSchemaId(schema);
+            Optional<Integer> optId = client.getSchemaId(subject, schema, SchemaType.PROTOBUF);
+            int id = -1;
 
-            if (id == -1) {
+            if (!optId.isPresent()) {
                 if (allowForceSchemaRegister) {
-                    id = client.registerNewSchema(subject, schema);
+                    optId = client.registerNewSchema(subject, schema, SchemaType.PROTOBUF, compatibilityType);
+                    if (optId.isPresent()) {
+                        id = optId.get();
+                    } else {
+                        throw new IllegalArgumentException(String.format("Schema %s is not registered in registry and flag 'allowForceSchemaRegister' is false ", schema.toString()));
+                    }
                 } else {
                     throw new IllegalArgumentException(String.format("Schema %s is not registered in registry and flag 'allowForceSchemaRegister' is false ", schema.toString()));
                 }

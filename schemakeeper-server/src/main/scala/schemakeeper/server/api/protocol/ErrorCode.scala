@@ -9,12 +9,14 @@ object ErrorCode {
     case 1002 => SubjectIsAlreadyExistsCode
     case 1003 => SubjectHasNoRegisteredSchemasCode
     case 1004 => SubjectSchemaVersionDoesNotExistCode
-    case 1005 => SchemaDoesNotExistCode
+    case 1005 => SchemaIdDoesNotExistCode
     case 1006 => ConfigIsNotDefinedCode
     case 1007 => SchemaIsNotValidCode
     case 1008 => SchemaIsAlreadyExistCode
     case 1009 => SubjectIsAlreadyConnectedToSchemaCode
     case 1010 => SchemaIsNotCompatibleCode
+    case 1011 => SchemaIsNotRegisteredCode
+    case 1012 => SubjectIsNotConnectedToSchemaCode
     case x => unknownCode(x)
   }
 
@@ -25,10 +27,12 @@ object ErrorCode {
   val SubjectIsAlreadyExistsCode = ErrorCode(1002)
   val SubjectHasNoRegisteredSchemasCode = ErrorCode(1003)
   val SubjectSchemaVersionDoesNotExistCode = ErrorCode(1004)
-  val SchemaDoesNotExistCode = ErrorCode(1005)
+  val SchemaIdDoesNotExistCode = ErrorCode(1005)
   val ConfigIsNotDefinedCode = ErrorCode(1006)
   val SchemaIsNotValidCode = ErrorCode(1007)
   val SchemaIsAlreadyExistCode = ErrorCode(1008)
   val SubjectIsAlreadyConnectedToSchemaCode = ErrorCode(1009)
   val SchemaIsNotCompatibleCode = ErrorCode(1010)
+  val SchemaIsNotRegisteredCode = ErrorCode(1011)
+  val SubjectIsNotConnectedToSchemaCode = ErrorCode(1012)
 }

@@ -14,6 +14,8 @@ import schemakeeper.client.SchemaKeeperClient;
 import schemakeeper.exception.AvroSerializationException;
 import schemakeeper.exception.SerializationException;
 import schemakeeper.schema.AvroSchemaUtils;
+import schemakeeper.schema.CompatibilityType;
+import schemakeeper.schema.SchemaType;
 import schemakeeper.serialization.AbstractSerializer;
 
 import java.io.ByteArrayOutputStream;
@@ -26,17 +28,27 @@ public class AvroSerializer extends AbstractSerializer<Object> implements AvroSe
     private final EncoderFactory encoderFactory;
     private final SchemaKeeperClient client;
     private final boolean allowForceSchemaRegister;
+    private final CompatibilityType compatibilityType;
+
+    public AvroSerializer(SchemaKeeperClient client) {
+        this.client = client;
+        this.allowForceSchemaRegister = true;
+        this.encoderFactory = EncoderFactory.get();
+        this.compatibilityType = CompatibilityType.BACKWARD;
+    }
 
     public AvroSerializer(SchemaKeeperClient client, AvroSerDeConfig config) {
         this.client = client;
         this.encoderFactory = EncoderFactory.get();
         this.allowForceSchemaRegister = config.allowForceSchemaRegister();
+        this.compatibilityType = config.compatibilityType();
     }
 
     public AvroSerializer(AvroSerDeConfig config) {
         this.client = new CachedSchemaKeeperClient(config);
         this.encoderFactory = EncoderFactory.get();
         this.allowForceSchemaRegister = config.allowForceSchemaRegister();
+        this.compatibilityType = config.compatibilityType();
     }
 
     public AvroSerializer(Map<String, Object> config) {
@@ -50,11 +62,17 @@ public class AvroSerializer extends AbstractSerializer<Object> implements AvroSe
 
         try {
             Schema schema = AvroSchemaUtils.getSchema(value);
-            int id = client.getSchemaId(schema);
+            Optional<Integer> optId = client.getSchemaId(subject, schema, SchemaType.AVRO);
+            int id = -1;
 
-            if (id == -1) {
+            if (!optId.isPresent()) {
                 if (allowForceSchemaRegister) {
-                    id = client.registerNewSchema(subject, schema);
+                    optId = client.registerNewSchema(subject, schema, SchemaType.AVRO, compatibilityType);
+                    if (optId.isPresent()) {
+                        id = optId.get();
+                    } else {
+                        throw new IllegalArgumentException(String.format("Schema %s is not registered in registry and flag 'allowForceSchemaRegister' is false ", schema.toString()));
+                    }
                 } else {
                     throw new IllegalArgumentException(String.format("Schema %s is not registered in registry and flag 'allowForceSchemaRegister' is false ", schema.toString()));
                 }

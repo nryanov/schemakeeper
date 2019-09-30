@@ -88,7 +88,24 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     logger.info(s"Get schema by id: $id")
     storage.schemaById(id).map {
       case Left(e) => e match {
-        case s: SchemaDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaDoesNotExistCode), Status.NotFound)
+        case s: SchemaIdDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIdDoesNotExistCode), Status.NotFound)
+        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      }
+      case Right(v) => Ok(v)
+    }
+  }
+
+  final val schemaIdBySubjectAndSchema: Endpoint[IO, SchemaId] = post(apiVersion
+    :: "subjects"
+    :: path[String]
+    :: "schemas"
+    :: jsonBody[SchemaText]) { (subject: String, schemaText: SchemaText) =>
+    logger.info(s"Get schema id: $subject - ${schemaText.getSchemaText}")
+    storage.schemaIdBySubjectAndSchema(subject, schemaText.getSchemaText).map {
+      case Left(e) => e match {
+        case s: SchemaIsNotRegistered => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotRegisteredCode), Status.NotFound)
+        case s: SchemaIsNotValid => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotValidCode), Status.BadRequest)
+        case s: SubjectIsNotConnectedToSchema => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectIsNotConnectedToSchemaCode), Status.BadRequest)
         case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
       }
       case Right(v) => Ok(v)
@@ -217,7 +234,7 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     logger.info(s"Connect subject: $subject and schema: $id")
     storage.addSchemaToSubject(subject, id).map {
       case Left(e) => e match {
-        case s: SchemaDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaDoesNotExistCode), Status.NotFound)
+        case s: SchemaIdDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIdDoesNotExistCode), Status.NotFound)
         case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
         case s: SubjectIsAlreadyConnectedToSchema => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectIsAlreadyConnectedToSchemaCode), Status.BadRequest)
         case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)

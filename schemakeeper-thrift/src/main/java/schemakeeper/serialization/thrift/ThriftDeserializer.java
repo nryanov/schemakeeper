@@ -18,6 +18,7 @@ import schemakeeper.serialization.AbstractDeserializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public class ThriftDeserializer extends AbstractDeserializer<TBase<? extends TBase, ? extends TFieldIdEnum>> implements ThriftSerDe {
     private static final Logger logger = LoggerFactory.getLogger(ThriftDeserializer.class);
@@ -61,11 +62,9 @@ public class ThriftDeserializer extends AbstractDeserializer<TBase<? extends TBa
             }
 
             int schemaId = readSchemaId(buffer);
-            Schema schema = client.getSchemaById(schemaId);
-
-            if (schema == null) {
+            Schema schema = client.getSchemaById(schemaId).orElseThrow((Supplier<ThriftDeserializationException>) () -> {
                 throw new ThriftDeserializationException(String.format("Schema with id: %s does not exist", schemaId));
-            }
+            });
 
             int dataLength = buffer.limit() - 5;
             int start = buffer.position() + buffer.arrayOffset();

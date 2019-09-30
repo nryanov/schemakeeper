@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 public class AvroDeserializer extends AbstractDeserializer<Object> implements AvroSerDe {
     private static final Logger logger = LoggerFactory.getLogger(AvroDeserializer.class);
@@ -62,7 +63,9 @@ public class AvroDeserializer extends AbstractDeserializer<Object> implements Av
             readProtocolByte(byteBuffer); // todo: check protocol byte
 
             int id = byteBuffer.getInt();
-            Schema schema = client.getSchemaById(id);
+            Schema schema = client.getSchemaById(id).orElseThrow((Supplier<AvroDeserializationException>) () -> {
+                throw new AvroDeserializationException(String.format("Schema with id: %s does not exist", id));
+            });
 
             int dataLength = byteBuffer.limit() - 5;
 

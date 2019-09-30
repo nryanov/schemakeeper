@@ -124,7 +124,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
     "return SchemaDoesNotExist" in {
       val result = schemaStorage.schemaById(1)
       assert(result.isLeft)
-      assertResult(SchemaDoesNotExist(1))(result.left.get)
+      assertResult(SchemaIdDoesNotExist(1))(result.left.get)
     }
 
     "return SchemaMetadata" in {
@@ -132,6 +132,35 @@ abstract class ServiceTest extends WordSpec with Matchers {
       val result = schemaStorage.schemaById(id)
       assert(result.isRight)
       assertResult(SchemaMetadata.instance(id, Schema.create(Schema.Type.STRING).toString, Utils.toMD5Hex(Schema.create(Schema.Type.STRING).toString), SchemaType.AVRO))(result.right.get)
+    }
+  }
+
+  "SchemaIdBySubjectAndSchema" should {
+    "return SchemaIsNotValid" in {
+      val result = schemaStorage.schemaIdBySubjectAndSchema("A1", "not valid schema")
+      assert(result.isLeft)
+      assertResult(SchemaIsNotValid("not valid schema"))(result.left.get)
+    }
+
+    "return SchemaIsNotRegistered" in {
+      val result = schemaStorage.schemaIdBySubjectAndSchema("A1", Schema.create(Schema.Type.STRING).toString())
+      assert(result.isLeft)
+      assertResult(SchemaIsNotRegistered(Schema.create(Schema.Type.STRING).toString()))(result.left.get)
+    }
+
+    "return SubjectIsNotConnectedToSchema" in {
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
+      val id = schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString(), SchemaType.AVRO).right.get.getSchemaId
+      val result = schemaStorage.schemaIdBySubjectAndSchema("A1", Schema.create(Schema.Type.STRING).toString())
+      assert(result.isLeft)
+      assertResult(SubjectIsNotConnectedToSchema("A1", id))(result.left.get)
+    }
+
+    "return SchemaId" in {
+      val schemaId = schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString(), CompatibilityType.BACKWARD, SchemaType.AVRO).right.get
+      val result = schemaStorage.schemaIdBySubjectAndSchema("A1", Schema.create(Schema.Type.STRING).toString())
+      assert(result.isRight)
+      assertResult(schemaId)(result.right.get)
     }
   }
 
@@ -425,7 +454,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
       schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
       val result = schemaStorage.addSchemaToSubject("A1", 1)
       assert(result.isLeft)
-      assertResult(SchemaDoesNotExist(1))(result.left.get)
+      assertResult(SchemaIdDoesNotExist(1))(result.left.get)
     }
   }
 

@@ -17,6 +17,10 @@ public class SchemaText {
         return new SchemaText(schema);
     }
 
+    public static SchemaText instance(Schema schema, SchemaType schemaType) {
+        return new SchemaText(schema.toString(), schemaType);
+    }
+
     public static SchemaText instance(String schema, SchemaType schemaType) {
         return new SchemaText(schema, schemaType);
     }

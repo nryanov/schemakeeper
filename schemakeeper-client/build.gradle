@@ -1,6 +1,6 @@
 dependencies {
     compile project(':schemakeeper-common')
-    compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.9'
+    compile group: 'com.konghq', name: 'unirest-java', version: '3.1.00'
 
     testCompile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
 }
