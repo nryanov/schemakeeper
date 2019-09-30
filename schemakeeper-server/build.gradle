@@ -27,3 +27,13 @@ dependencies {
     testCompile group: 'org.testcontainers', name: 'mysql', version: '1.12.0'
     testCompile group: 'com.dimafeng', name: 'testcontainers-scala_2.12', version: '0.30.0'
 }
+
+jar {
+    manifest {
+        attributes "Main-Class": "schemakeeper.server.SchemaKeeper"
+    }
+
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
