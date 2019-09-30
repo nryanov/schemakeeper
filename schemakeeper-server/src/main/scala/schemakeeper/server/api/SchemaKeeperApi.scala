@@ -2,169 +2,257 @@ package schemakeeper.server.api
 
 import io.finch._
 import io.finch.circe._
-import cats.effect.{ContextShift, IO}
-import io.circe.generic.auto._
 import org.slf4j.LoggerFactory
+import cats.effect.{ContextShift, IO}
+import com.twitter.finagle.http.Status
 import Validation._
 import schemakeeper.api._
-import schemakeeper.server.service.Service
+import schemakeeper.schema.CompatibilityType
+import schemakeeper.server.api.protocol.{ErrorCode, ErrorInfo}
+import schemakeeper.server.service._
 import schemakeeper.server.api.protocol.JsonProtocol._
-
 
 class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extends Endpoint.Module[IO] {
 
   import SchemaKeeperApi._
 
-  final val schema: Endpoint[IO, SchemaText] = get(apiVersion
-    :: "schema"
-    :: path[Int].should(positiveSchemaId)) { id: Int =>
-    logger.info("Getting schema by id: {}", id)
-    storage.schemaById(id).map {
-      case Some(s) => Ok(SchemaText.instance(s))
-      case None => NoContent[SchemaText]
+  final val subjects: Endpoint[IO, List[String]] = get(apiVersion
+    :: "subjects") {
+    logger.info("Get subjects list")
+    storage.subjects().map {
+      case Left(e) => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      case Right(v) => Ok(v)
     }
   }
 
-  final val subjects: Endpoint[IO, List[String]] = get(apiVersion
-    :: "subjects") {
-    logger.info("Getting subject list")
-    storage.subjects().map(Ok)
-  }
-
-  final val getSubjectMetadata: Endpoint[IO, SubjectMetadata] = get(apiVersion
+  final val subjectMetadata: Endpoint[IO, SubjectMetadata] = get(apiVersion
     :: "subjects"
     :: path[String]) { subject: String =>
     logger.info(s"Get subject metadata: $subject")
-    storage.getSubjectMetadata(subject).map {
-      case Some(v) => Ok(v)
-      case None => NoContent[SubjectMetadata]
+    storage.subjectMetadata(subject).map {
+      case Left(e) => e match {
+        case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
+        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      }
+      case Right(v) => Ok(v)
     }
   }
 
   final val subjectVersions: Endpoint[IO, List[Int]] = get(apiVersion
     :: "subjects"
     :: path[String]
-    :: "versions") { subjectName: String =>
-    logger.info("Getting subject versions: {}", subjectName)
-    storage.subjectVersions(subjectName).map {
-      case l if l.isEmpty => NoContent[List[Int]]
-      case l => Ok(l)
+    :: "versions") { subject: String =>
+    logger.info(s"Get subject: $subject versions")
+    storage.subjectVersions(subject).map {
+      case Left(e) => e match {
+        case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
+        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      }
+      case Right(v) => Ok(v)
     }
   }
 
-  final val subjectSchemaByVersion: Endpoint[IO, SchemaMetadata] = get(apiVersion
+  final val subjectSchemasMetadata: Endpoint[IO, List[SubjectSchemaMetadata]] = get(apiVersion
     :: "subjects"
     :: path[String]
-    :: "versions"
-    :: path[Int].should(positiveVersion)) { (subjectName: String, version: Int) =>
-    logger.info("Getting subject schema metadata by version: {}:{}", subjectName, version)
-    storage.subjectSchemaByVersion(subjectName, version).map {
-      case Some(meta) => Ok(meta)
-      case None => NoContent[SchemaMetadata]
+    :: "schemas") { subject: String =>
+    logger.info(s"Get subject: $subject schemas metadata")
+    storage.subjectSchemasMetadata(subject).map {
+      case Left(e) => e match {
+        case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
+        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      }
+      case Right(v) => Ok(v)
     }
   }
 
-  final val subjectOnlySchemaByVersion: Endpoint[IO, SchemaText] = get(apiVersion
+  final val subjectSchemaByVersion: Endpoint[IO, SubjectSchemaMetadata] = get(apiVersion
     :: "subjects"
     :: path[String]
     :: "versions"
-    :: path[Int].should(positiveVersion)
-    :: "schema") { (subjectName: String, version: Int) =>
-    logger.info("Getting only subject schema by version: {}:{}", subjectName, version)
-    storage.subjectOnlySchemaByVersion(subjectName, version).map {
-      case Some(meta) => Ok(SchemaText.instance(meta))
-      case None => NoContent[SchemaText]
+    :: path[Int].should(positiveVersion)) { (subject: String, version: Int) =>
+    logger.info(s"Get subject  schema by version: $subject - $version")
+    storage.subjectSchemaByVersion(subject, version).map {
+      case Left(e) => e match {
+        case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
+        case s: SubjectSchemaVersionDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectSchemaVersionDoesNotExistCode), Status.NotFound)
+        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      }
+      case Right(v) => Ok(v)
+    }
+  }
+
+  final val schemaById: Endpoint[IO, SchemaMetadata] = get(apiVersion
+    :: "schemas"
+    :: path[Int].should(positiveSchemaId)) { id: Int =>
+    logger.info(s"Get schema by id: $id")
+    storage.schemaById(id).map {
+      case Left(e) => e match {
+        case s: SchemaDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaDoesNotExistCode), Status.NotFound)
+        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      }
+      case Right(v) => Ok(v)
     }
   }
 
   final val deleteSubject: Endpoint[IO, Boolean] = delete(apiVersion
     :: "subjects"
-    :: path[String]) { subjectName: String =>
-    logger.info("Deleting subject: {}", subjectName)
-    storage.deleteSubject(subjectName).map(Ok)
-  }
-
-  final val deleteSubjectVersion: Endpoint[IO, Boolean] = delete(apiVersion
-    :: "subjects"
-    :: path[String]
-    :: "versions"
-    :: path[Int].should(positiveVersion)) { (subjectName: String, versionId: Int) =>
-    logger.info("Deleting subject version: {}:{}", subjectName, versionId)
-    storage.deleteSubjectVersion(subjectName, versionId).map(Ok)
-  }
-
-  final val registerNewSubjectSchema: Endpoint[IO, SchemaId] = post(apiVersion
-    :: "subjects"
-    :: "versions"
-    :: path[String]
-    :: jsonBody[SchemaText]) { (subjectName: String, schema: SchemaText) =>
-    logger.info(s"Register new subject schema: $subjectName - $schema")
-    storage.registerNewSubjectSchema(subjectName, schema.getSchemaText, schema.getSchemaType)
-      .map(SchemaId.instance)
-      .map(Ok)
-  }
-
-  final val registerNewSubject: Endpoint[IO, SchemaId] = post(apiVersion
-    :: "subjects"
-    :: path[String]
-    :: jsonBody[NewSubjectRequest]) { (subjectName: String, request: NewSubjectRequest) =>
-    logger.info(s"Register new subject: $subjectName - $request")
-    storage.registerNewSubject(subjectName, request.getSchemaText, request.getSchemaType, request.getCompatibilityType)
-      .map {
-        case Some(v) => Ok(SchemaId.instance(v))
-        case None => NoContent[SchemaId]
-      }
-  }
-
-  final val checkSubjectSchemaCompatibility: Endpoint[IO, Boolean] = post(apiVersion
-    :: "compatibility"
-    :: path[String]
-    :: jsonBody[SchemaText]) { (subjectName: String, schema: SchemaText) =>
-    logger.info(s"Check subject schema compatibility: $subjectName - ${schema.getSchemaText}")
-    storage.checkSubjectSchemaCompatibility(subjectName, schema.getSchemaText).map(Ok)
-  }
-
-  final val updateSubjectCompatibilityConfig: Endpoint[IO, CompatibilityTypeMetadata] = put(apiVersion
-    :: "compatibility"
-    :: path[String]
-    :: jsonBody[CompatibilityTypeMetadata]) { (subjectName: String, compatibility: CompatibilityTypeMetadata) =>
-    logger.info(s"Update compatibility level for subject: $subjectName - $compatibility")
-    storage.updateSubjectCompatibility(subjectName, compatibility.getCompatibilityType).map {
-      case Some(v) => Ok(CompatibilityTypeMetadata.instance(v))
-      case None => NoContent[CompatibilityTypeMetadata]
+    :: path[String]) { subject: String =>
+    logger.info(s"Delete subject: $subject")
+    storage.deleteSubject(subject).map {
+      case Left(e) => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      case Right(v) => Ok(v)
     }
   }
 
-  final val getSubjectCompatibilityConfig: Endpoint[IO, CompatibilityTypeMetadata] = get(apiVersion
-    :: "compatibility"
-    :: path[String]) { subjectName: String =>
-    logger.info("Get subject compatibility level: {}", subjectName)
-    storage.getSubjectCompatibility(subjectName)
-      .map {
-        case Some(v) => Ok(CompatibilityTypeMetadata.instance(v))
-        case None => NoContent[CompatibilityTypeMetadata]
+  final val deleteSubjectSchemaByVersion: Endpoint[IO, Boolean] = delete(apiVersion
+    :: "subjects"
+    :: path[String]
+    :: "versions"
+    :: path[Int].should(positiveVersion)) { (subject: String, version: Int) =>
+    logger.info(s"Delete subject schema by version: $subject - $version")
+    storage.deleteSubjectSchemaByVersion(subject, version).map {
+      case Left(e) => e match {
+        case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.BadRequest)
+        case s: SubjectSchemaVersionDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectSchemaVersionDoesNotExistCode), Status.BadRequest)
+        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
       }
+      case Right(v) => Ok(v)
+    }
   }
 
-  final val getGlobalCompatibilityConfig: Endpoint[IO, CompatibilityTypeMetadata] = get(apiVersion
+  final val checkSubjectSchemaCompatibility: Endpoint[IO, Boolean] = post(apiVersion
+    :: "subjects"
+    :: path[String]
+    :: "schemas"
+    :: jsonBody[SchemaText]) { (subject: String, schema: SchemaText) =>
+    logger.info(s"Check subject schema compatibility: $subject - ${schema.getSchemaText}")
+    storage.checkSubjectSchemaCompatibility(subject, schema.getSchemaText).map {
+      case Left(e) => e match {
+        case s: SchemaIsNotValid => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotValidCode), Status.BadRequest)
+        case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.BadRequest)
+        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      }
+      case Right(v) => Ok(v)
+    }
+  }
+
+  final val updateSubjectCompatibility: Endpoint[IO, Boolean] = post(apiVersion
+    :: "subjects"
+    :: path[String]
+    :: "compatibility"
+    :: jsonBody[CompatibilityType]) { (subject: String, compatibilityType: CompatibilityType) =>
+    logger.info(s"Update subject compatibility: $subject - ${compatibilityType.identifier}")
+    storage.updateSubjectCompatibility(subject, compatibilityType).map {
+      case Left(e) => e match {
+        case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
+        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      }
+      case Right(v) => Ok(v)
+    }
+  }
+
+  final val getSubjectCompatibility: Endpoint[IO, CompatibilityType] = get(apiVersion
+    :: "subjects"
+    :: path[String]
+    :: "compatibility") { subject: String =>
+    logger.info(s"Get subject compatibility type: $subject")
+    storage.getSubjectCompatibility(subject).map {
+      case Left(e) => e match {
+        case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
+        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      }
+      case Right(v) => Ok(v)
+    }
+  }
+
+  final val registerSchema: Endpoint[IO, SchemaId] = put(apiVersion
+    :: "schemas"
+    :: jsonBody[SchemaText]) { schemaText: SchemaText =>
+    logger.info(s"Register new schema: $schemaText")
+    storage.registerSchema(schemaText.getSchemaText, schemaText.getSchemaType).map {
+      case Left(e) => e match {
+        case s: SchemaIsNotValid => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotValidCode), Status.BadRequest)
+        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      }
+      case Right(v) => Ok(v)
+    }
+  }
+
+  final val registerSchemaAndSubject: Endpoint[IO, SchemaId] = put(apiVersion
+    :: "subjects"
+    :: path[String]
+    :: "schemas"
+    :: jsonBody[SubjectAndSchemaRequest]) { (subject: String, request: SubjectAndSchemaRequest) =>
+    logger.info(s"Register schema and subject: $subject - $request")
+    storage.registerSchema(subject, request.getSchemaText, request.getCompatibilityType, request.getSchemaType).map {
+      case Left(e) => e match {
+        case s: SchemaIsNotValid => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotValidCode), Status.BadRequest)
+        case _@SubjectIsAlreadyConnectedToSchema(_, schemaId) => Ok(SchemaId.instance(schemaId))
+        case s: SchemaIsNotCompatible => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotCompatibleCode), Status.BadRequest)
+        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      }
+      case Right(v) => Ok(v)
+    }
+  }
+
+  final val registerSubject: Endpoint[IO, Unit] = put(apiVersion
+    :: "subjects"
+    :: jsonBody[SubjectMetadata]) { meta: SubjectMetadata =>
+    logger.info(s"Register new subject: $meta")
+    storage.registerSubject(meta.getSubject, meta.getCompatibilityType).map {
+      case Left(e) => e match {
+        case s: SubjectIsAlreadyExists => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectIsAlreadyExistsCode), Status.BadRequest)
+        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      }
+      case Right(v) => Ok(v)
+    }
+  }
+
+  final val addSchemaToSubject: Endpoint[IO, Int] = put(apiVersion
+    :: "subjects"
+    :: path[String]
+    :: "schemas"
+    :: path[Int].should(positiveSchemaId)) { (subject: String, id: Int) =>
+    logger.info(s"Connect subject: $subject and schema: $id")
+    storage.addSchemaToSubject(subject, id).map {
+      case Left(e) => e match {
+        case s: SchemaDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaDoesNotExistCode), Status.NotFound)
+        case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
+        case s: SubjectIsAlreadyConnectedToSchema => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectIsAlreadyConnectedToSchemaCode), Status.BadRequest)
+        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      }
+      case Right(v) => Ok(v)
+    }
+  }
+
+  final val isSubjectExist: Endpoint[IO, Boolean] = post(apiVersion
+    :: "subjects"
+    :: path[String]) { subject: String =>
+    logger.info(s"Check if subject: $subject exists")
+    storage.isSubjectExist(subject).map {
+      case Left(e) => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      case Right(v) => Ok(v)
+    }
+  }
+
+  final val getGlobalCompatibility: Endpoint[IO, CompatibilityType] = get(apiVersion
     :: "compatibility") {
-    logger.info("Get global compatibility config")
-    storage.getGlobalCompatibility()
-      .map {
-        case Some(v) => Ok(CompatibilityTypeMetadata.instance(v))
-        case None => NoContent[CompatibilityTypeMetadata]
-      }
+    logger.info("Get global compatibility type")
+    storage.getGlobalCompatibility().map {
+      case Left(e) => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      case Right(v) => Ok(v)
+    }
   }
 
-  final val updateGlobalCompatibilityConfig: Endpoint[IO, CompatibilityTypeMetadata] = put(apiVersion
+  final val updateGlobalCompatibility: Endpoint[IO, Boolean] = post(apiVersion
     :: "compatibility"
-    :: jsonBody[CompatibilityTypeMetadata]) { compatibility: CompatibilityTypeMetadata =>
-    logger.info(s"Update global compatibility config: ${compatibility.getCompatibilityType.identifier}")
-    storage.updateGlobalCompatibility(compatibility.getCompatibilityType)
-      .map {
-        case Some(v) => Ok(CompatibilityTypeMetadata.instance(v))
-        case None => NoContent[CompatibilityTypeMetadata]
-      }
+    :: jsonBody[CompatibilityType]) { compatibilityType: CompatibilityType =>
+    logger.info(s"Update global compatibility type: ${compatibilityType.identifier}")
+    storage.updateGlobalCompatibility(compatibilityType).map {
+      case Left(e) => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      case Right(v) => Ok(v)
+    }
   }
 }
 

@@ -1,364 +1,447 @@
 package schemakeeper.server.api
 
+import java.sql.DriverManager
+import java.util
+
 import cats.effect.IO
+import com.twitter.finagle.http.Status
+import com.typesafe.config.{Config, ConfigFactory}
 import io.finch.Error.{NotPresent, NotValid}
-import io.finch.{Application, Input, NoContent, Ok, Output, Text}
+import io.finch._
 import io.finch.circe._
 import org.apache.avro.Schema
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpec}
 import schemakeeper.api._
 import schemakeeper.schema.{CompatibilityType, SchemaType}
-import schemakeeper.server.service.{InitialDataGenerator, MockService}
+import schemakeeper.server.{Configuration, service}
+import schemakeeper.server.api.protocol.{ErrorCode, ErrorInfo}
 import schemakeeper.server.api.protocol.JsonProtocol._
+import schemakeeper.server.service._
 
 import scala.concurrent.ExecutionContext
 
-class SchemaKeeperApiTest extends WordSpec with Matchers {
+class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll {
   implicit val ctx = IO.contextShift(ExecutionContext.global)
 
-  "Schema by id endpoint" should {
-    "return NoContent" when {
-      "there is no schema with such id" in {
-        val service = MockService[IO](InitialDataGenerator())
-        val api = SchemaKeeperApi(service)
-        val result: Option[Output[SchemaText]] = api.schema(Input.get("/v1/schema/1")).awaitOutputUnsafe()
+  lazy val schemaStorage: DBBackedService[IO] = {
+    val map: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]
+    map.put("schemakeeper.storage.username", "")
+    map.put("schemakeeper.storage.password", "")
+    map.put("schemakeeper.storage.schema", "schemakeeper")
+    map.put("schemakeeper.storage.driver", "org.h2.Driver")
+    map.put("schemakeeper.storage.maxConnections", "1")
+    map.put("schemakeeper.storage.url", "jdbc:h2:mem:schemakeeper;DB_CLOSE_DELAY=-1")
 
-        assert(result.isDefined)
-        assertResult(result.get)(NoContent[SchemaText])
-      }
-    }
-
-    "return Schema" in {
-      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
-      val api = SchemaKeeperApi(service)
-      val result: Option[Output[SchemaText]] = api.schema(Input.get("/v1/schema/1")).awaitOutputUnsafe()
-
-      assert(result.isDefined)
-      assertResult(result.get)(Ok[SchemaText](SchemaText.instance("S1")))
-    }
-
-    "return error" when {
-      "schema id is not positive" in {
-        val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
-        val api = SchemaKeeperApi(service)
-
-        assertThrows[NotValid](api.schema(Input.get("/v1/schema/-1")).awaitOutputUnsafe())
-      }
-    }
+    val config: Config = ConfigFactory.parseMap(map)
+    DBBackedService.apply[IO](Configuration.apply(config))
   }
 
-  "Subjects endpoint" should {
-    "return empty list" when {
-      "there is no registered subjects" in {
-        val service = MockService[IO](InitialDataGenerator())
-        val api = SchemaKeeperApi(service)
-        val result = api.subjects(Input.get("/v1/subjects")).awaitValueUnsafe()
+  lazy val connection = {
+    Class.forName("org.h2.Driver")
+    val connection = DriverManager.getConnection("jdbc:h2:mem:schemakeeper;DB_CLOSE_DELAY=-1", "", "")
+    connection.setSchema("schemakeeper")
+    connection.setAutoCommit(false)
+    connection
+  }
 
-        assert(result.get.isEmpty)
-      }
-    }
+  override protected def afterEach(): Unit = {
+    connection.createStatement().execute("update config set config_value = 'backward' where config_name = 'default.compatibility'")
+    connection.createStatement().execute("delete from subject_schema")
+    connection.createStatement().execute("delete from schema_info")
+    connection.createStatement().execute("delete from subject")
+    connection.commit()
+  }
 
-    "return not empty list" in {
-      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
-      val api = SchemaKeeperApi(service)
+  override protected def afterAll(): Unit = {
+    connection.close()
+  }
+
+  "Subject endpoint" should {
+    "return subject list" in {
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
       val result = api.subjects(Input.get("/v1/subjects")).awaitValueUnsafe()
 
-      assertResult(result.get)(List("A1"))
+      assertResult(List("A1"))(result.get)
+    }
+
+    "return empty subject list" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.subjects(Input.get("/v1/subjects")).awaitValueUnsafe()
+
+      assert(result.get.isEmpty)
     }
   }
 
-  "Subject versions endpoint" should {
-    "return NoContent" when {
-      "there is no registered subject with such name" in {
-        val service = MockService[IO](InitialDataGenerator())
-        val api = SchemaKeeperApi(service)
-        val result = api.subjectVersions(Input.get("/v1/subjects/A1/versions")).awaitOutputUnsafe()
+  "SubjectMetadata endpoint" should {
+    "return subject metadata" in {
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.subjectMetadata(Input.get("/v1/subjects/A1")).awaitValueUnsafe()
 
-        assertResult(result.get)(NoContent[String])
-      }
+      assertResult(SubjectMetadata.instance("A1", CompatibilityType.BACKWARD))(result.get)
     }
 
-    "return list of subject versions" in {
-      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"), ("A1", "S2"))))
-      val api = SchemaKeeperApi(service)
+    "NotFound - subject does not exist" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.subjectMetadata(Input.get("/v1/subjects/A1")).awaitOutputUnsafe()
+
+      assertResult(Output.failure(ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound))(result.get)
+    }
+  }
+
+  "SubjectVersions endpoint" should {
+    "return versions list" in {
+      schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD, SchemaType.AVRO).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
       val result = api.subjectVersions(Input.get("/v1/subjects/A1/versions")).awaitValueUnsafe()
 
-      assertResult(result.get)(List(1, 2))
+      assertResult(List(1))(result.get)
+    }
+
+    "return empty versions list" in {
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.subjectVersions(Input.get("/v1/subjects/A1/versions")).awaitValueUnsafe()
+
+      assert(result.get.isEmpty)
+    }
+
+    "NotFound - subject does not exist" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.subjectVersions(Input.get("/v1/subjects/A1/versions")).awaitOutputUnsafe()
+
+      assertResult(Output.failure(ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound))(result.get)
     }
   }
 
-  "Subject schema metadata by version endpoint" should {
-    "return NoContent" when {
-      "there is no registered subject with specified version id" in {
-        val service = MockService[IO](InitialDataGenerator())
-        val api = SchemaKeeperApi(service)
-        val result = api.subjectSchemaByVersion(Input.get("/v1/subjects/A1/versions/1")).awaitOutputUnsafe()
+  "SubjectSchemasMetadata endpoint" should {
+    "return meta list" in {
+      schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD, SchemaType.AVRO).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.subjectSchemasMetadata(Input.get("/v1/subjects/A1/schemas")).awaitValueUnsafe()
 
-        assertResult(result.get)(NoContent[SchemaMetadata])
-      }
+      assertResult(1)(result.get.length)
     }
 
-    "return schema by version" in {
-      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
-      val api = SchemaKeeperApi(service)
+    "return empty list" in {
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.subjectSchemasMetadata(Input.get("/v1/subjects/A1/schemas")).awaitValueUnsafe()
+
+      assert(result.get.isEmpty)
+    }
+
+    "NotFound - subject does not exist" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.subjectSchemasMetadata(Input.get("/v1/subjects/A1/schemas")).awaitOutputUnsafe()
+
+      assertResult(Output.failure(ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound))(result.get)
+    }
+  }
+
+  "SubjectSchemaByVersion endpoint" should {
+    "return meta" in {
+      schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD, SchemaType.AVRO).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
       val result = api.subjectSchemaByVersion(Input.get("/v1/subjects/A1/versions/1")).awaitValueUnsafe()
 
-      assertResult(result.get)(SchemaMetadata.instance("A1", 1, 1, "S1"))
+      assertResult(Schema.create(Schema.Type.STRING).toString)(result.get.getSchemaText)
     }
 
-    "return error" when {
-      "schema id is not positive" in {
-        val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
-        val api = SchemaKeeperApi(service)
+    "NotFound - subject does not exist" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.subjectSchemaByVersion(Input.get("/v1/subjects/A1/versions/1")).awaitOutputUnsafe()
 
-        assertThrows[NotValid](api.subjectSchemaByVersion(Input.get("/v1/subjects/A1/versions/-1")).awaitOutputUnsafe())
-      }
-    }
-  }
-
-  "Subject schema by version endpoint" should {
-    "return NoContent" when {
-      "there is no registered subject with specified version id" in {
-        val service = MockService[IO](InitialDataGenerator())
-        val api = SchemaKeeperApi(service)
-        val result = api.subjectOnlySchemaByVersion(Input.get("/v1/subjects/A1/versions/1/schema")).awaitOutputUnsafe()
-
-        assertResult(result.get)(NoContent[String])
-      }
+      assertResult(Output.failure(ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound))(result.get)
     }
 
-    "return schema by version" in {
-      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
-      val api = SchemaKeeperApi(service)
-      val result = api.subjectOnlySchemaByVersion(Input.get("/v1/subjects/A1/versions/1/schema")).awaitValueUnsafe()
+    "NotFound - subject has no schema with such version" in {
+      schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD, SchemaType.AVRO).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.subjectSchemaByVersion(Input.get("/v1/subjects/A1/versions/2")).awaitOutputUnsafe()
 
-      assertResult(result.get)(SchemaText.instance("S1"))
+      assertResult(Output.failure(ErrorInfo(SubjectSchemaVersionDoesNotExist("A1", 2).msg, ErrorCode.SubjectSchemaVersionDoesNotExistCode), Status.NotFound))(result.get)
     }
 
-    "return error" when {
-      "schema id is not positive" in {
-        val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
-        val api = SchemaKeeperApi(service)
-
-        assertThrows[NotValid](api.subjectOnlySchemaByVersion(Input.get("/v1/subjects/A1/versions/-1/schema")).awaitOutputUnsafe())
-      }
+    "throws validation error" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      assertThrows[NotValid](api.subjectSchemaByVersion(Input.get("/v1/subjects/A1/versions/-1")).awaitOutputUnsafe())
     }
   }
 
-  "Delete subject endpoint" should {
-    "return false" when {
-      "there is no registered subject with such name" in {
-        val service = MockService[IO](InitialDataGenerator())
-        val api = SchemaKeeperApi(service)
-        val result = api.deleteSubject(Input.delete("/v1/subjects/A1")).awaitValueUnsafe()
+  "SchemaById endpoint" should {
+    "return meta" in {
+      val id = schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO).unsafeRunSync().right.get.getSchemaId
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.schemaById(Input.get(s"/v1/schemas/$id")).awaitValueUnsafe()
 
-        assert(!result.get)
-      }
+      assertResult(id)(result.get.getSchemaId)
     }
 
+    "NotFound - schema with specified id does not exist" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.schemaById(Input.get(s"/v1/schemas/1")).awaitOutputUnsafe()
+      assertResult(Output.failure(ErrorInfo(SchemaDoesNotExist(1).msg, ErrorCode.SchemaDoesNotExistCode), Status.NotFound))(result.get)
+    }
+
+    "throws validation error" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      assertThrows[NotValid](api.schemaById(Input.get(s"/v1/schemas/-1")).awaitOutputUnsafe())
+    }
+  }
+
+  "DeleteSubject endpoint" should {
     "return true" in {
-      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
-      val api = SchemaKeeperApi(service)
-      val result = api.deleteSubject(Input.delete("/v1/subjects/A1")).awaitValueUnsafe()
-
-      assert(result.get)
-    }
-  }
-
-  "Delete subject verion endpoint" should {
-    "return false" when {
-      "there is no registered subject with such name or version" in {
-        val service = MockService[IO](InitialDataGenerator())
-        val api = SchemaKeeperApi(service)
-        val result = api.deleteSubjectVersion(Input.delete("/v1/subjects/A1/versions/1")).awaitValueUnsafe()
-
-        assert(!result.get)
-      }
-    }
-
-    "return true" in {
-      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
-      val api = SchemaKeeperApi(service)
-      val result = api.deleteSubjectVersion(Input.delete("/v1/subjects/A1/versions/1")).awaitValueUnsafe()
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.deleteSubject(Input.delete(s"/v1/subjects/A1")).awaitValueUnsafe()
 
       assert(result.get)
     }
 
-    "return error" when {
-      "version id is not positive" in {
-        val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
-        val api = SchemaKeeperApi(service)
+    "return false" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.deleteSubject(Input.delete(s"/v1/subjects/A1")).awaitValueUnsafe()
 
-        assertThrows[NotValid](api.deleteSubjectVersion(Input.delete("/v1/subjects/A1/versions/-1")).awaitOutputUnsafe())
-      }
+      assert(!result.get)
     }
   }
 
-  "Register new subject schema endpoint" should {
-    "return next schema id" in {
-      val service = MockService[IO](InitialDataGenerator())
-      val api = SchemaKeeperApi(service)
-      val body = SchemaText.instance("SCHEMA")
-      val result = api.registerNewSubjectSchema(Input.post("/v1/subjects/versions/A1").withBody[Application.Json](body)).awaitValueUnsafe()
+  "DeleteSubjectSchemaByVersion endpoint" should {
+    "return true" in {
+      schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD, SchemaType.AVRO).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.deleteSubjectSchemaByVersion(Input.delete("/v1/subjects/A1/versions/1")).awaitValueUnsafe()
 
-      assertResult(SchemaId.instance(1))(result.get)
+      assert(result.get)
     }
 
-    "return error" when {
-      "body is empty" in {
-        val service = MockService[IO](InitialDataGenerator())
-        val api = SchemaKeeperApi(service)
+    "BadRequest - subject does not exist" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.deleteSubjectSchemaByVersion(Input.delete("/v1/subjects/A1/versions/1")).awaitOutputUnsafe()
 
-        assertThrows[NotPresent](api.registerNewSubjectSchema(Input.post("/v1/subjects/versions/A1").withBody[Text.Plain]("")).awaitOutputUnsafe())
-      }
-    }
-  }
-
-  "Register new subject endpoint" should {
-    "return new schema id" in {
-      val service = MockService[IO](InitialDataGenerator())
-      val api = SchemaKeeperApi(service)
-      val body = NewSubjectRequest.instance("SCHEMA", SchemaType.AVRO, CompatibilityType.BACKWARD)
-      val result = api.registerNewSubject(Input.post("/v1/subjects/A1").withBody[Application.Json](body)).awaitValueUnsafe()
-
-      assertResult(SchemaId.instance(1))(result.get)
+      assertResult(Output.failure(ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode), Status.BadRequest))(result.get)
     }
 
-    "return none" when {
-      "there is already registered subject with such name" in {
-        val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S"))))
-        val api = SchemaKeeperApi(service)
-        val body = NewSubjectRequest.instance("SCHEMA", SchemaType.AVRO, CompatibilityType.BACKWARD)
-        val result = api.registerNewSubject(Input.post("/v1/subjects/A1").withBody[Application.Json](body)).awaitOutputUnsafe()
+    "BadRequest - specified version does not exist" in {
+      schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD, SchemaType.AVRO).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.deleteSubjectSchemaByVersion(Input.delete("/v1/subjects/A1/versions/123")).awaitOutputUnsafe()
 
-        assertResult(NoContent[SchemaId])(result.get)
-      }
+      assertResult(Output.failure(ErrorInfo(service.SubjectSchemaVersionDoesNotExist("A1", 123).msg, ErrorCode.SubjectSchemaVersionDoesNotExistCode), Status.BadRequest))(result.get)
+    }
+
+    "throws validation error" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      assertThrows[NotValid](api.deleteSubjectSchemaByVersion(Input.delete("/v1/subjects/A1/versions/-1")).awaitOutputUnsafe())
     }
   }
 
-  "Update Subject Compatibility Config endpoint" should {
-    "return None" when {
-      "there is no registered subjects" in {
-        val service = MockService[IO](InitialDataGenerator())
-        val api = SchemaKeeperApi(service)
-        val body = CompatibilityTypeMetadata.instance(CompatibilityType.BACKWARD)
-        val result = api.updateSubjectCompatibilityConfig(Input.put("/v1/compatibility/A1").withBody[Application.Json](body)).awaitOutputUnsafe()
-
-        assertResult(result.get)(NoContent[CompatibilityTypeMetadata])
-      }
+  "CheckSubjectCompatibility endpoint" should {
+    "return true" in {
+      schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.NONE, SchemaType.AVRO).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
+      val body = SchemaText.instance(Schema.create(Schema.Type.INT).toString)
+      val result = api.checkSubjectSchemaCompatibility(Input.post("/v1/subjects/A1/schemas").withBody[Application.Json](body)).awaitValueUnsafe()
+      assert(result.get)
     }
 
-    "return new compatibility type" in {
-      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
-      val api = SchemaKeeperApi(service)
-      val body = CompatibilityTypeMetadata.instance(CompatibilityType.BACKWARD)
-      val result = api.updateSubjectCompatibilityConfig(Input.put("/v1/compatibility/A1").withBody[Application.Json](body)).awaitValueUnsafe()
-
-      assertResult(CompatibilityTypeMetadata.instance(CompatibilityType.BACKWARD))(result.get)
-    }
-  }
-
-  "Get Subject Compatibility Config endpoint" should {
-    "return None" when {
-      "there is no registered subjects" in {
-        val service = MockService[IO](InitialDataGenerator())
-        val api = SchemaKeeperApi(service)
-        val result = api.getSubjectCompatibilityConfig(Input.get("/v1/compatibility/A1")).awaitOutputUnsafe()
-
-        assertResult(result.get)(NoContent[CompatibilityTypeMetadata])
-      }
+    "return false" in {
+      schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD, SchemaType.AVRO).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
+      val body = SchemaText.instance(Schema.create(Schema.Type.INT).toString)
+      val result = api.checkSubjectSchemaCompatibility(Input.post("/v1/subjects/A1/schemas").withBody[Application.Json](body)).awaitValueUnsafe()
+      assert(!result.get)
     }
 
-    "return current compatibility type" in {
-      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
-      val api = SchemaKeeperApi(service)
-      val result = api.getSubjectCompatibilityConfig(Input.get("/v1/compatibility/A1")).awaitValueUnsafe()
+    "BadRequest - schema is not a valid avro schema" in {
+      schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD, SchemaType.AVRO).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
+      val body = SchemaText.instance("not valid schema")
+      val result = api.checkSubjectSchemaCompatibility(Input.post("/v1/subjects/A1/schemas").withBody[Application.Json](body)).awaitOutputUnsafe()
 
-      assertResult(CompatibilityTypeMetadata.instance(CompatibilityType.NONE))(result.get)
+      assertResult(Output.failure(ErrorInfo(SchemaIsNotValid("not valid schema").msg, ErrorCode.SchemaIsNotValidCode), Status.BadRequest))(result.get)
+    }
+
+    "BadRequest - subject does not exist" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val body = SchemaText.instance(Schema.create(Schema.Type.INT).toString)
+      val result = api.checkSubjectSchemaCompatibility(Input.post("/v1/subjects/A1/schemas").withBody[Application.Json](body)).awaitOutputUnsafe()
+      assertResult(Output.failure(ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode), Status.BadRequest))(result.get)
     }
   }
 
-  "Check subject compatibility" should {
-    "return false" when {
-      "there is not registered subjects with specified name" in {
-        val service = MockService[IO](InitialDataGenerator())
-        val api = SchemaKeeperApi(service)
-        val body = SchemaText.instance(Schema.create(Schema.Type.INT))
-        val result = api.checkSubjectSchemaCompatibility(Input.post("/v1/compatibility/A1").withBody[Application.Json](body)).awaitValueUnsafe()
-
-        assertResult(false)(result.get)
-      }
-
-      "schema is not compatible" in {
-        val service = MockService[IO](InitialDataGenerator(Seq(("A1", Schema.create(Schema.Type.STRING).toString))))
-        val api = SchemaKeeperApi(service)
-
-        val compatibility = CompatibilityTypeMetadata.instance(CompatibilityType.BACKWARD)
-        api.updateSubjectCompatibilityConfig(Input.put("/v1/compatibility/A1").withBody[Application.Json](compatibility)).awaitValueUnsafe()
-
-        val body = SchemaText.instance(Schema.create(Schema.Type.INT))
-        val result = api.checkSubjectSchemaCompatibility(Input.post("/v1/compatibility/A1").withBody[Application.Json](body)).awaitValueUnsafe()
-
-        assertResult(false)(result.get)
-      }
+  "UpdateSubjectCompatibility endpoint" should {
+    "return true" in {
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
+      val body = CompatibilityType.FORWARD
+      val result = api.updateSubjectCompatibility(Input.post("/v1/subjects/A1/compatibility").withBody[Application.Json](body)).awaitValueUnsafe()
+      assert(result.get)
     }
 
-    "return true" when {
-      "schema is compatible" in {
-        val service = MockService[IO](InitialDataGenerator(Seq(("A1", Schema.create(Schema.Type.INT).toString))))
-        val api = SchemaKeeperApi(service)
-
-        val compatibility = CompatibilityTypeMetadata.instance(CompatibilityType.BACKWARD)
-        api.updateSubjectCompatibilityConfig(Input.put("/v1/compatibility/A1").withBody[Application.Json](compatibility)).awaitValueUnsafe()
-
-        val body = SchemaText.instance(Schema.create(Schema.Type.LONG))
-        val result = api.checkSubjectSchemaCompatibility(Input.post("/v1/compatibility/A1").withBody[Application.Json](body)).awaitValueUnsafe()
-
-        assertResult(true)(result.get)
-      }
+    "BadRequest - subject does not exist" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val body = CompatibilityType.FORWARD
+      val result = api.updateSubjectCompatibility(Input.post("/v1/subjects/A1/compatibility").withBody[Application.Json](body)).awaitOutputUnsafe()
+      assertResult(Output.failure(ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound))(result.get)
     }
   }
 
-  "Get global compatibility config" should {
-    "return config" in {
-      val service = MockService[IO](InitialDataGenerator())
-      val api = SchemaKeeperApi(service)
-      val result = api.getGlobalCompatibilityConfig(Input.get("/v1/compatibility")).awaitValueUnsafe()
+  "GetSubjectCompatibility endpoint" should {
+    "return compatibilityType" in {
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.getSubjectCompatibility(Input.get("/v1/subjects/A1/compatibility")).awaitValueUnsafe()
+      assertResult(CompatibilityType.BACKWARD)(result.get)
+    }
 
-      // default value
-      assertResult(result.get)(CompatibilityTypeMetadata.instance(CompatibilityType.BACKWARD))
+    "NoContent - subject does not exist" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.getSubjectCompatibility(Input.get("/v1/subjects/A1/compatibility")).awaitOutputUnsafe()
+      assertResult(Output.failure(ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound))(result.get)
     }
   }
 
-  "Update global compatibility config" should {
-    "update config" in {
-      val service = MockService[IO](InitialDataGenerator())
-      val api = SchemaKeeperApi(service)
-      val body = CompatibilityTypeMetadata.instance(CompatibilityType.FORWARD)
-      val result = api.updateGlobalCompatibilityConfig(Input.put("/v1/compatibility").withBody[Application.Json](body)).awaitValueUnsafe()
+  "RegisterSchema endpoint" should {
+    "return schemaId" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val body = SchemaText.instance(Schema.create(Schema.Type.STRING).toString)
+      val result = api.registerSchema(Input.put("/v1/schemas").withBody[Application.Json](body)).awaitValueUnsafe()
+      assert(result.get.isInstanceOf[SchemaId])
+    }
 
-      assertResult(result.get)(body)
+    "BadRequest - schema is not valid" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val body = SchemaText.instance("not valid schema")
+      val result = api.registerSchema(Input.put("/v1/schemas").withBody[Application.Json](body)).awaitOutputUnsafe()
+      assertResult(Output.failure(ErrorInfo(SchemaIsNotValid("not valid schema").msg, ErrorCode.SchemaIsNotValidCode), Status.BadRequest))(result.get)
     }
   }
 
-  "Get subject meta" should {
-    "return no content" when {
-      "there is not registered subject with such name" in {
-        val service = MockService[IO](InitialDataGenerator())
-        val api = SchemaKeeperApi(service)
-        val result = api.getSubjectMetadata(Input.get("/v1/subjects/A1")).awaitOutputUnsafe()
-
-        assertResult(result.get)(NoContent[SubjectMetadata])
-      }
+  "RegisterSchemaAndSubject endpoint" should {
+    "return schemaId" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val body = SubjectAndSchemaRequest.instance(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO, CompatibilityType.BACKWARD)
+      val result = api.registerSchemaAndSubject(Input.put("/v1/subjects/A1/schemas").withBody[Application.Json](body)).awaitValueUnsafe()
+      assert(result.get.isInstanceOf[SchemaId])
     }
 
-    "return subject metadata" in {
-      val service = MockService[IO](InitialDataGenerator(Seq(("A1", "S1"))))
-      val api = SchemaKeeperApi(service)
-      val result = api.getSubjectMetadata(Input.get("/v1/subjects/A1")).awaitValueUnsafe()
-      val expected = SubjectMetadata.instance("A1", CompatibilityType.NONE, SchemaType.AVRO, Array(1))
+    "return schemaId - schema and subject are already registered and connected" in {
+      val id = schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD, SchemaType.AVRO).unsafeRunSync().right.get
+      val api = SchemaKeeperApi(schemaStorage)
+      val body = SubjectAndSchemaRequest.instance(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO, CompatibilityType.BACKWARD)
+      val result = api.registerSchemaAndSubject(Input.put("/v1/subjects/A1/schemas").withBody[Application.Json](body)).awaitValueUnsafe()
+      assertResult(id)(result.get)
+    }
 
-      assertResult(result.get)(expected)
+    "BadRequest - schema is not valid" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val body = SubjectAndSchemaRequest.instance("not valid schema", SchemaType.AVRO, CompatibilityType.BACKWARD)
+      val result = api.registerSchemaAndSubject(Input.put("/v1/subjects/A1/schemas").withBody[Application.Json](body)).awaitOutputUnsafe()
+      assertResult(Output.failure(ErrorInfo(SchemaIsNotValid("not valid schema").msg, ErrorCode.SchemaIsNotValidCode), Status.BadRequest))(result.get)
+    }
+
+    "BadRequest - schema is not compatible" in {
+      schemaStorage.registerSchema("A1", Schema.create(Schema.Type.INT).toString, CompatibilityType.BACKWARD, SchemaType.AVRO).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
+      val body = SubjectAndSchemaRequest.instance(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO, CompatibilityType.BACKWARD)
+      val result = api.registerSchemaAndSubject(Input.put("/v1/subjects/A1/schemas").withBody[Application.Json](body)).awaitOutputUnsafe()
+      assertResult(Output.failure(ErrorInfo(service.SchemaIsNotCompatible("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD).msg, ErrorCode.SchemaIsNotCompatibleCode), Status.BadRequest))(result.get)
+    }
+  }
+
+  "RegisterSubject endpoint" should {
+    "return ok" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val body = SubjectMetadata.instance("A1", CompatibilityType.BACKWARD)
+      val result = api.registerSubject(Input.put("/v1/subjects").withBody[Application.Json](body)).awaitOutputUnsafe()
+      assertResult(Ok(()))(result.get)
+    }
+
+    "BadRequest - subject is already exist" in {
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
+      val body = SubjectMetadata.instance("A1", CompatibilityType.BACKWARD)
+      val result = api.registerSubject(Input.put("/v1/subjects").withBody[Application.Json](body)).awaitOutputUnsafe()
+      assertResult(Output.failure(ErrorInfo(SubjectIsAlreadyExists("A1").msg, ErrorCode.SubjectIsAlreadyExistsCode), Status.BadRequest))(result.get)
+    }
+  }
+
+  "AddSchemaToSubject endpoint" should {
+    "return version number - first schema" in {
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      val id = schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO).unsafeRunSync().right.get.getSchemaId
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.addSchemaToSubject(Input.put(s"/v1/subjects/A1/schemas/$id")).awaitValueUnsafe()
+      assert(result.contains(1))
+    }
+
+    "return version number - second schema" in {
+      schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.NONE, SchemaType.AVRO).unsafeRunSync()
+      val id = schemaStorage.registerSchema(Schema.create(Schema.Type.INT).toString, SchemaType.AVRO).unsafeRunSync().right.get.getSchemaId
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.addSchemaToSubject(Input.put(s"/v1/subjects/A1/schemas/$id")).awaitValueUnsafe()
+      assert(result.contains(2))
+    }
+
+    "BadRequest - subject and schema are already connected" in {
+      val id = schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.NONE, SchemaType.AVRO).unsafeRunSync().right.get.getSchemaId
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.addSchemaToSubject(Input.put(s"/v1/subjects/A1/schemas/$id")).awaitOutputUnsafe()
+      assertResult(Output.failure(ErrorInfo(SubjectIsAlreadyConnectedToSchema("A1", id).msg, ErrorCode.SubjectIsAlreadyConnectedToSchemaCode), Status.BadRequest))(result.get)
+    }
+
+    "NotFound - subject does not exist" in {
+      val id = schemaStorage.registerSchema(Schema.create(Schema.Type.INT).toString, SchemaType.AVRO).unsafeRunSync().right.get.getSchemaId
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.addSchemaToSubject(Input.put(s"/v1/subjects/A1/schemas/$id")).awaitOutputUnsafe()
+      assertResult(Output.failure(ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound))(result.get)
+    }
+
+    "NotFound - schema does not exist" in {
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.addSchemaToSubject(Input.put(s"/v1/subjects/A1/schemas/123")).awaitOutputUnsafe()
+      assertResult(Output.failure(ErrorInfo(SchemaDoesNotExist(123).msg, ErrorCode.SchemaDoesNotExistCode), Status.NotFound))(result.get)
+    }
+
+    "throws validation error" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      assertThrows[NotValid](api.addSchemaToSubject(Input.put("/v1/subjects/A1/schemas/-1")).awaitOutputUnsafe())
+    }
+  }
+
+  "IsSubjectExist endpoint" should {
+    "return true" in {
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.isSubjectExist(Input.post("/v1/subjects/A1")).awaitValueUnsafe()
+      assert(result.get)
+    }
+
+    "return false" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.isSubjectExist(Input.post("/v1/subjects/A1")).awaitValueUnsafe()
+      assert(!result.get)
+    }
+  }
+
+  "GetGlobalCompatibility endpoint" should {
+    "return compatibilityType" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.getGlobalCompatibility(Input.get("/v1/compatibility")).awaitValueUnsafe()
+      assertResult(CompatibilityType.BACKWARD)(result.get)
+    }
+  }
+
+  "UpdateGlobalCompatibility endpoint" should {
+    "return true" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val body = CompatibilityType.FULL
+      val result = api.updateGlobalCompatibility(Input.post("/v1/compatibility").withBody[Application.Json](body)).awaitValueUnsafe()
+      assert(result.get)
     }
   }
 }

@@ -6,6 +6,15 @@ import schemakeeper.api._
 import schemakeeper.schema.{CompatibilityType, SchemaType}
 
 object JsonProtocol {
+    implicit val exceptionEncoder: Encoder[Exception] = Encoder.instance {
+          case e: ErrorInfo =>
+            Json.obj(
+              ("reason", Json.fromString(e.reason)),
+              ("code", Json.fromInt(e.code.code))
+            )
+      case e => Json.fromString(e.getLocalizedMessage)
+    }
+
   implicit val schemaMetadataEncoder: Encoder[SchemaMetadata] = new Encoder[SchemaMetadata] {
     override def apply(a: SchemaMetadata): Json = Json.obj(
       ("schemaId", Json.fromInt(a.getSchemaId)),
