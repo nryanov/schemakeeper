@@ -90,6 +90,40 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
     }
   }
 
+  "LockSubject endpoint" should {
+    "return true" in {
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.lockSubject(Input.post("/v1/subjects/A1/lock")).awaitValueUnsafe()
+
+      assert(result.get)
+    }
+
+    "NotFound - subject does not exist" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.lockSubject(Input.post("/v1/subjects/A1/lock")).awaitOutputUnsafe()
+
+      assertResult(Output.failure(ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound))(result.get)
+    }
+  }
+
+  "UnlockSubject endpoint" should {
+    "return true" in {
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.unlockSubject(Input.post("/v1/subjects/A1/unlock")).awaitValueUnsafe()
+
+      assert(result.get)
+    }
+
+    "NotFound - subject does not exist" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val result = api.unlockSubject(Input.post("/v1/subjects/A1/unlock")).awaitOutputUnsafe()
+
+      assertResult(Output.failure(ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound))(result.get)
+    }
+  }
+
   "SubjectVersions endpoint" should {
     "return versions list" in {
       schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD, SchemaType.AVRO).unsafeRunSync()
@@ -378,6 +412,15 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
       assertResult(Output.failure(ErrorInfo(SchemaIsNotValid("not valid schema").msg, ErrorCode.SchemaIsNotValidCode), Status.BadRequest))(result.get)
     }
 
+    "BadRequest - subject is locked" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      schemaStorage.lockSubject("A1").unsafeRunSync()
+      val body = SubjectAndSchemaRequest.instance(Schema.create(Schema.Type.INT).toString, SchemaType.AVRO, CompatibilityType.BACKWARD)
+      val result = api.registerSchemaAndSubject(Input.put("/v1/subjects/A1/schemas").withBody[Application.Json](body)).awaitOutputUnsafe()
+      assertResult(Output.failure(ErrorInfo(SubjectIsLocked("A1").msg, ErrorCode.SubjectIsLockedErrorCode), Status.BadRequest))(result.get)
+    }
+
     "BadRequest - schema is not compatible" in {
       schemaStorage.registerSchema("A1", Schema.create(Schema.Type.INT).toString, CompatibilityType.BACKWARD, SchemaType.AVRO).unsafeRunSync()
       val api = SchemaKeeperApi(schemaStorage)
@@ -392,7 +435,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
       val api = SchemaKeeperApi(schemaStorage)
       val body = SubjectMetadata.instance("A1", CompatibilityType.BACKWARD)
       val result = api.registerSubject(Input.put("/v1/subjects").withBody[Application.Json](body)).awaitOutputUnsafe()
-      assertResult(Ok(()))(result.get)
+      assertResult(Ok(SubjectMetadata.instance("A1", CompatibilityType.BACKWARD)))(result.get)
     }
 
     "BadRequest - subject is already exist" in {
@@ -426,6 +469,15 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
       val api = SchemaKeeperApi(schemaStorage)
       val result = api.addSchemaToSubject(Input.put(s"/v1/subjects/A1/schemas/$id")).awaitOutputUnsafe()
       assertResult(Output.failure(ErrorInfo(SubjectIsAlreadyConnectedToSchema("A1", id).msg, ErrorCode.SubjectIsAlreadyConnectedToSchemaCode), Status.BadRequest))(result.get)
+    }
+
+    "BadRequest - subject is locked" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      val id = schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO).unsafeRunSync().right.get.getSchemaId
+      schemaStorage.lockSubject("A1").unsafeRunSync()
+      val result = api.addSchemaToSubject(Input.put(s"/v1/subjects/A1/schemas/$id")).awaitOutputUnsafe()
+      assertResult(Output.failure(ErrorInfo(SubjectIsLocked("A1").msg, ErrorCode.SubjectIsLockedErrorCode), Status.BadRequest))(result.get)
     }
 
     "NotFound - subject does not exist" in {

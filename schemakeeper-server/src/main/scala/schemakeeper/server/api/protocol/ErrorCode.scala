@@ -17,6 +17,7 @@ object ErrorCode {
     case 1010 => SchemaIsNotCompatibleCode
     case 1011 => SchemaIsNotRegisteredCode
     case 1012 => SubjectIsNotConnectedToSchemaCode
+    case 1013 => SubjectIsLockedErrorCode
     case x => unknownCode(x)
   }
 
@@ -35,4 +36,5 @@ object ErrorCode {
   val SchemaIsNotCompatibleCode = ErrorCode(1010)
   val SchemaIsNotRegisteredCode = ErrorCode(1011)
   val SubjectIsNotConnectedToSchemaCode = ErrorCode(1012)
+  val SubjectIsLockedErrorCode = ErrorCode(1013)
 }

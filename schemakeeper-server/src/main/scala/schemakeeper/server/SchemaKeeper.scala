@@ -32,6 +32,8 @@ object SchemaKeeper extends TwitterServer {
       :+: api.subjectVersions
       :+: api.subjectSchemasMetadata
       :+: api.subjectSchemaByVersion
+      :+: api.lockSubject
+      :+: api.unlockSubject
       :+: api.schemaIdBySubjectAndSchema
       :+: api.schemaById
       :+: api.deleteSubject

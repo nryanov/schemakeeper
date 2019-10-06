@@ -24,6 +24,18 @@ trait SchemaStorage[F[_]] {
 
   /**
     * @param subject - subject name
+    * @return - operation result
+    */
+  def lockSubject(subject: String): F[Boolean]
+
+  /**
+    * @param subject - subject name
+    * @return - operation result
+    */
+  def unlockSubject(subject: String): F[Boolean]
+
+  /**
+    * @param subject - subject name
     * @return - list of subject schemas with metadata or empty list
     */
   def subjectSchemasMetadata(subject: String): F[List[SubjectSchemaMetadata]]
@@ -96,8 +108,9 @@ trait SchemaStorage[F[_]] {
   /**
     * @param subject - subject name
     * @param compatibilityType - compatibility type
+    * @return - subject metadata
     */
-  def registerSubject(subject: String, compatibilityType: CompatibilityType): F[Unit]
+  def registerSubject(subject: String, compatibilityType: CompatibilityType): F[SubjectMetadata]
 
   /**
     * Add already registered schema to subject

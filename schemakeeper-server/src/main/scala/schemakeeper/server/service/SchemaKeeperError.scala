@@ -35,3 +35,5 @@ final case class SchemaIsNotCompatible(
                                         schemaText: String,
                                         compatibilityType: CompatibilityType) extends
   SchemaKeeperError(s"New schema: $schemaText is not compatible with previous for subject: $subject with compatibility type: ${compatibilityType.identifier}")
+
+final case class SubjectIsLocked(subject: String) extends SchemaKeeperError(s"Subject: $subject is locked. Unlock to add new schemas to this subject")

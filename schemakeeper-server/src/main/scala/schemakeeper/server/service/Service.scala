@@ -23,6 +23,18 @@ trait Service[F[_]] {
 
   /**
     * @param subject - subject name
+    * @return - operation result
+    */
+  def lockSubject(subject: String): F[Either[SchemaKeeperError, Boolean]]
+
+  /**
+    * @param subject - subject name
+    * @return - operation result
+    */
+  def unlockSubject(subject: String): F[Either[SchemaKeeperError, Boolean]]
+
+  /**
+    * @param subject - subject name
     * @return - list of subject schemas with metadata or empty list
     */
   def subjectSchemasMetadata(subject: String): F[Either[SchemaKeeperError, List[SubjectSchemaMetadata]]]
@@ -118,8 +130,9 @@ trait Service[F[_]] {
   /**
     * @param subject - subject name
     * @param compatibilityType - compatibility type
+    * @return - subject metadata
     */
-  def registerSubject(subject: String, compatibilityType: CompatibilityType): F[Either[SchemaKeeperError, Unit]]
+  def registerSubject(subject: String, compatibilityType: CompatibilityType): F[Either[SchemaKeeperError, SubjectMetadata]]
 
   /**
     * Add already registered schema to subject if schema is compatible.

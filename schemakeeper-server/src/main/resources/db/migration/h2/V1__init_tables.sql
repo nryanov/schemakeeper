@@ -17,6 +17,7 @@ create table if not exists config (
 create table if not exists subject (
   subject_name varchar(255) not null,
   compatibility_type_name varchar(255) not null,
+  is_locked boolean not null default false,
   creation_ts timestamp not null default now(),
   constraint subject_pk primary key (subject_name),
   constraint subject_compatibility_type_fk foreign key (compatibility_type_name) references compatibility_type (compatibility_type_name) on delete restrict on update restrict

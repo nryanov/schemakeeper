@@ -66,13 +66,15 @@ object JsonProtocol {
     override def apply(a: SubjectMetadata): Json = Json.obj(
       ("subject", Json.fromString(a.getSubject)),
       ("compatibilityType", Json.fromString(a.getCompatibilityType.identifier)),
+      ("isLocked", Json.fromBoolean(a.isLocked)),
     )
   }
   implicit val subjectMetadataDecoder: Decoder[SubjectMetadata] = new Decoder[SubjectMetadata] {
     override def apply(c: HCursor): Result[SubjectMetadata] = for {
       subject <- c.downField("subject").as[String]
       compatibilityType <- c.downField("compatibilityType").as[String]
-    } yield SubjectMetadata.instance(subject, CompatibilityType.findByName(compatibilityType))
+      isLocked <- c.downField("isLocked").as[Boolean]
+    } yield SubjectMetadata.instance(subject, CompatibilityType.findByName(compatibilityType), isLocked)
   }
 
   implicit val schemaTextEncoder: Encoder[SchemaText] = new Encoder[SchemaText] {

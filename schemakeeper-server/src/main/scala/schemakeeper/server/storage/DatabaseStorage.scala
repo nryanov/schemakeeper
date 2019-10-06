@@ -33,6 +33,18 @@ class DatabaseStorage(dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy])
       .map(_.version)
   })
 
+  override def lockSubject(subject: String): doobie.ConnectionIO[Boolean] = dc.run(quote {
+    query[Subject]
+      .filter(_.subjectName == lift(subject))
+      .update(_.isLocked -> lift(true))
+  }).map(_ > 0)
+
+  override def unlockSubject(subject: String): doobie.ConnectionIO[Boolean] = dc.run(quote {
+    query[Subject]
+      .filter(_.subjectName == lift(subject))
+      .update(_.isLocked -> lift(false))
+  }).map(_ > 0)
+
   override def subjectSchemasMetadata(subject: String): doobie.ConnectionIO[List[SubjectSchemaMetadata]] = dc.run(quote {
     query[SubjectSchema]
       .join(query[SchemaInfo])
@@ -115,10 +127,10 @@ class DatabaseStorage(dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy])
       .returning(_.schemaId)
   })
 
-  override def registerSubject(subject: String, compatibilityType: CompatibilityType): doobie.ConnectionIO[Unit] = dc.run(quote {
+  override def registerSubject(subject: String, compatibilityType: CompatibilityType): doobie.ConnectionIO[SubjectMetadata] = dc.run(quote {
     query[Subject]
       .insert(lift(Subject(subject, compatibilityType.identifier)))
-  }).map(_ => Unit)
+  }).map(_ => SubjectMetadata.instance(subject, compatibilityType))
 
   override def addSchemaToSubject(subject: String, schemaId: Index, version: Index): doobie.ConnectionIO[Unit] = dc.run(quote {
     query[SubjectSchema]

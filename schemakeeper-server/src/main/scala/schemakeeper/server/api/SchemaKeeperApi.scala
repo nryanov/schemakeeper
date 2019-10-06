@@ -92,6 +92,38 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     }
   }
 
+  final val lockSubject: Endpoint[IO, Boolean] = post(apiVersion
+    :: "subjects"
+    :: path[String]
+    :: "lock") { subject: String =>
+    logger.info(s"Lock subjecT: $subject")
+    storage.lockSubject(subject).map {
+      case Left(e) =>
+        logger.error(s"Error while locking subject: $subject: ${e.msg}")
+        e match {
+          case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
+          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+        }
+      case Right(v) => Ok(v)
+    }
+  }
+
+  final val unlockSubject: Endpoint[IO, Boolean] = post(apiVersion
+    :: "subjects"
+    :: path[String]
+    :: "unlock") { subject: String =>
+    logger.info(s"Lock subject: $subject")
+    storage.unlockSubject(subject).map {
+      case Left(e) =>
+        logger.error(s"Error while unlocking subject: $subject: ${e.msg}")
+        e match {
+          case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
+          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+        }
+      case Right(v) => Ok(v)
+    }
+  }
+
   final val schemaById: Endpoint[IO, SchemaMetadata] = get(apiVersion
     :: "schemas"
     :: path[Int].should(positiveSchemaId)) { id: Int =>
@@ -237,13 +269,14 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
           case s: SchemaIsNotValid => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotValidCode), Status.BadRequest)
           case _@SubjectIsAlreadyConnectedToSchema(_, schemaId) => Ok(SchemaId.instance(schemaId))
           case s: SchemaIsNotCompatible => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotCompatibleCode), Status.BadRequest)
+          case s: SubjectIsLocked => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectIsLockedErrorCode), Status.BadRequest)
           case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
         }
       case Right(v) => Ok(v)
     }
   }
 
-  final val registerSubject: Endpoint[IO, Unit] = put(apiVersion
+  final val registerSubject: Endpoint[IO, SubjectMetadata] = put(apiVersion
     :: "subjects"
     :: jsonBody[SubjectMetadata]) { meta: SubjectMetadata =>
     logger.info(s"Register new subject: $meta")
@@ -270,6 +303,7 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
         e match {
           case s: SchemaIdDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIdDoesNotExistCode), Status.NotFound)
           case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
+          case s: SubjectIsLocked => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectIsLockedErrorCode), Status.BadRequest)
           case s: SubjectIsAlreadyConnectedToSchema => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectIsAlreadyConnectedToSchemaCode), Status.BadRequest)
           case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
         }

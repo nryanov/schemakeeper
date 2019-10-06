@@ -8,5 +8,5 @@ object Converters {
     SchemaMetadata.instance(schemaInfo.schemaId, schemaInfo.schemaText, schemaInfo.schemaHash, SchemaType.findByName(schemaInfo.schemaTypeName))
 
   def subjectInfoToSubjectMetadata(subject: Subject): SubjectMetadata =
-    SubjectMetadata.instance(subject.subjectName, CompatibilityType.findByName(subject.compatibilityTypeName))
+    SubjectMetadata.instance(subject.subjectName, CompatibilityType.findByName(subject.compatibilityTypeName), subject.isLocked)
 }
