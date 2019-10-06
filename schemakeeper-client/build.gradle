@@ -3,4 +3,5 @@ dependencies {
     compile group: 'com.konghq', name: 'unirest-java', version: '3.1.00'
 
     testCompile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
+    testCompile group: 'org.testcontainers', name: 'testcontainers', version: '1.12.2'
 }

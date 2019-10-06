@@ -28,7 +28,7 @@ public class AvroSerDeTest {
 
     @BeforeEach
     public void set() {
-        this.client = new MockSchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.NONE);
+        this.client = new MockSchemaKeeperClient(CompatibilityType.NONE);
         this.config = new AvroSerDeConfig(Collections.emptyMap());
         this.serializer = new AvroSerializer(client, config);
         this.deserializer = new AvroDeserializer(client, config);

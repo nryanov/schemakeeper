@@ -5,11 +5,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import schemakeeper.schema.AvroSchemaCompatibility;
 import schemakeeper.schema.CompatibilityType;
+import schemakeeper.schema.SchemaType;
 import schemakeeper.serialization.SerDeConfig;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Useful for debug or testing purposes
@@ -23,6 +25,14 @@ public class MockSchemaKeeperClient extends SchemaKeeperClient {
     private Map<Schema, Integer> schemaId;
     private Map<Integer, Schema> idSchema;
     private Map<String, Map<Integer, Schema>> subjectSchemas;
+
+    public MockSchemaKeeperClient() {
+        this(new SerDeConfig(Collections.singletonMap(SerDeConfig.SCHEMAKEEPER_URL_CONFIG, "mock")), CompatibilityType.NONE);
+    }
+
+    public MockSchemaKeeperClient(CompatibilityType compatibilityType) {
+        this(new SerDeConfig(Collections.singletonMap(SerDeConfig.SCHEMAKEEPER_URL_CONFIG, "mock")), compatibilityType);
+    }
 
     public MockSchemaKeeperClient(SerDeConfig config) {
         this(config, CompatibilityType.NONE);
@@ -61,9 +71,40 @@ public class MockSchemaKeeperClient extends SchemaKeeperClient {
         }
     }
 
-    public AvroSchemaCompatibility getAvroSchemaCompatibility() {
-        return avroSchemaCompatibility;
+    @Override
+    public synchronized int registerNewSchema(String subject, Schema schema, SchemaType schemaType, CompatibilityType compatibilityType) {
+        logger.debug("Register new schema for subject: {}, {}", subject, schema.toString());
+
+        logger.debug("New schema: {}", schema);
+        logger.debug("Old schema: {}", getLastSubjectSchema(subject));
+        if (avroSchemaCompatibility.isCompatible(schema, getLastSubjectSchema(subject))) {
+            id++;
+            idSchema.put(id, schema);
+            schemaId.put(schema, id);
+
+            subjectSchemas.putIfAbsent(subject, new HashMap<>());
+            subjectSchemas.get(subject).put(id, schema);
+        } else {
+            throw new RuntimeException("New schema is not compatible");
+        }
+
+        return id;
     }
+
+    @Override
+    public synchronized int getSchemaId(String subject, Schema schema, SchemaType schemaType) {
+        logger.debug("Get schema id for schema: {}", schema);
+        return schemaId.get(schema);
+    }
+
+    @Override
+    public synchronized Schema getSchemaById(int id) {
+        logger.debug("Get schema by id: {}", id);
+        return idSchema.get(id);
+    }
+
+    @Override
+    public void close() {}
 
     public int getId() {
         return id;
@@ -81,26 +122,7 @@ public class MockSchemaKeeperClient extends SchemaKeeperClient {
         return Collections.unmodifiableMap(subjectSchemas);
     }
 
-    @Override
-    public synchronized Schema getSchemaById(int id) {
-        logger.debug("Get schema by id: {}", id);
-        return idSchema.get(id);
-    }
-
-    @Override
-    public synchronized Iterable<Schema> getSubjectSchemas(String subject) {
-        logger.debug("Return schema by subject name: {}", subject);
-        return subjectSchemas.getOrDefault(subject, Collections.emptyMap()).values();
-    }
-
-    @Override
-    public synchronized int getSchemaId(Schema schema) {
-        logger.debug("Get schema id for schema: {}", schema);
-        return schemaId.getOrDefault(schema, -1);
-    }
-
-    @Override
-    public synchronized Schema getLastSubjectSchema(String subject) {
+    private synchronized Schema getLastSubjectSchema(String subject) {
         logger.debug("Get last schema for subject: {}", subject);
 
         Map<Integer, Schema> schemas = subjectSchemas.get(subject);
@@ -108,27 +130,7 @@ public class MockSchemaKeeperClient extends SchemaKeeperClient {
         if (schemas == null) {
             return null;
         } else {
-            return schemas.values().stream().skip(schemas.size()).findFirst().orElseGet(() -> null);
+            return schemas.values().stream().skip(schemas.size() - 1).findFirst().orElse(null);
         }
-    }
-
-    @Override
-    public synchronized int registerNewSchema(String subject, Schema schema) {
-        logger.debug("Register new schema for subject: {}, {}", subject, schema.toString());
-
-        logger.debug("New schema: {}", schema);
-        logger.debug("Old schema: {}", getLastSubjectSchema(subject));
-        if (avroSchemaCompatibility.isCompatible(schema, getLastSubjectSchema(subject))) {
-            id++;
-            idSchema.put(id, schema);
-            schemaId.put(schema, id);
-
-            subjectSchemas.putIfAbsent(subject, new HashMap<>());
-            subjectSchemas.get(subject).put(id, schema);
-        } else {
-            throw new RuntimeException("New schema is not compatible");
-        }
-
-        return id;
     }
 }

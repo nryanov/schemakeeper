@@ -62,20 +62,16 @@ public class AvroSerializer extends AbstractSerializer<Object> implements AvroSe
 
         try {
             Schema schema = AvroSchemaUtils.getSchema(value);
-            Optional<Integer> optId = client.getSchemaId(subject, schema, SchemaType.AVRO);
-            int id = -1;
+            int id;
 
-            if (!optId.isPresent()) {
-                if (allowForceSchemaRegister) {
-                    optId = client.registerNewSchema(subject, schema, SchemaType.AVRO, compatibilityType);
-                    if (optId.isPresent()) {
-                        id = optId.get();
-                    } else {
-                        throw new IllegalArgumentException(String.format("Schema %s is not registered in registry and flag 'allowForceSchemaRegister' is false ", schema.toString()));
-                    }
-                } else {
-                    throw new IllegalArgumentException(String.format("Schema %s is not registered in registry and flag 'allowForceSchemaRegister' is false ", schema.toString()));
-                }
+            if (allowForceSchemaRegister) {
+                id = client.registerNewSchema(subject, schema, SchemaType.AVRO, compatibilityType);
+            } else {
+                id = client.getSchemaId(subject, schema, SchemaType.AVRO);
+            }
+
+            if (id <= 0) {
+                throw new IllegalArgumentException(String.format("Schema %s was not registered in registry", schema.toString()));
             }
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();

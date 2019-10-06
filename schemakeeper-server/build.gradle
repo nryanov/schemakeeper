@@ -28,6 +28,15 @@ dependencies {
     testCompile group: 'com.dimafeng', name: 'testcontainers-scala_2.12', version: '0.30.0'
 }
 
+tasks.withType(ScalaCompile) {
+    scalaCompileOptions.additionalParameters = [
+            '-feature',
+            '-language:implicitConversions',
+            '-language:higherKinds',
+            '-language:existentials'
+    ]
+}
+
 jar {
     manifest {
         attributes "Main-Class": "schemakeeper.server.SchemaKeeper"

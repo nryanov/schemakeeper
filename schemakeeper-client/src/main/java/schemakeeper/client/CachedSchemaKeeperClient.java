@@ -5,7 +5,8 @@ import schemakeeper.schema.CompatibilityType;
 import schemakeeper.schema.SchemaType;
 import schemakeeper.serialization.SerDeConfig;
 
-import java.util.Optional;
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class CachedSchemaKeeperClient extends DefaultSchemaKeeperClient {
@@ -19,36 +20,44 @@ public class CachedSchemaKeeperClient extends DefaultSchemaKeeperClient {
     }
 
     @Override
-    public Optional<Schema> getSchemaById(int id) {
-        Schema result = idToSchema.computeIfAbsent(id, integer -> {
-            Optional<Schema> schema = CachedSchemaKeeperClient.super.getSchemaById(id);
-            return schema.orElse(null);
-        });
+    public Schema getSchemaById(int id) {
+        return idToSchema.computeIfAbsent(id, integer -> getSchemaByIdRest(id));
+    }
 
-        return Optional.ofNullable(result);
+    public Schema getSchemaByIdRest(int id) {
+        logger.info("Schema with id: {} not in cache. Trying to get it from server", id);
+        return super.getSchemaById(id);
     }
 
     @Override
-    public Optional<Integer> registerNewSchema(String subject, Schema schema, SchemaType schemaType, CompatibilityType compatibilityType) {
-        Integer result = subjectSchemas
+    public int registerNewSchema(String subject, Schema schema, SchemaType schemaType, CompatibilityType compatibilityType) {
+        return subjectSchemas
                 .computeIfAbsent(subject, s -> new ConcurrentHashMap<>())
-                .computeIfAbsent(schema, schema1 -> {
-                    Optional<Integer> id  = CachedSchemaKeeperClient.super.registerNewSchema(subject, schema1, schemaType, compatibilityType);
-                    return id.orElse(null);
-                });
+                .computeIfAbsent(schema, schema1 -> registerNewSchemaRest(subject, schema1, schemaType, compatibilityType));
+    }
 
-        return Optional.ofNullable(result);
+    public int registerNewSchemaRest(String subject, Schema schema, SchemaType schemaType, CompatibilityType compatibilityType) {
+        logger.info("Schema: {} for subject: {} not in cache. Trying to get it from server", subject, schema.toString());
+        return super.registerNewSchema(subject, schema, schemaType, compatibilityType);
     }
 
     @Override
-    public Optional<Integer> getSchemaId(String subject, Schema schema, SchemaType schemaType) {
-        Integer result = subjectSchemas
+    public int getSchemaId(String subject, Schema schema, SchemaType schemaType) {
+        return subjectSchemas
                 .computeIfAbsent(subject, s -> new ConcurrentHashMap<>())
-                .computeIfAbsent(schema, schema1 -> {
-                    Optional<Integer> id  = CachedSchemaKeeperClient.super.getSchemaId(subject, schema1, schemaType);
-                    return id.orElse(null);
-                });
+                .computeIfAbsent(schema, schema1 -> getSchemaIdRest(subject, schema1, schemaType));
+    }
 
-        return Optional.ofNullable(result);
+    public int getSchemaIdRest(String subject, Schema schema, SchemaType schemaType) {
+        logger.info("Schema: {} for subject: {} not in cache. Trying to get it from server", subject, schema.toString());
+        return super.getSchemaId(subject, schema, schemaType);
+    }
+
+    public Map<String, ConcurrentHashMap<Schema, Integer>> getSubjectSchemas() {
+        return Collections.unmodifiableMap(subjectSchemas);
+    }
+
+    public Map<Integer, Schema> getIdToSchema() {
+        return Collections.unmodifiableMap(idToSchema);
     }
 }

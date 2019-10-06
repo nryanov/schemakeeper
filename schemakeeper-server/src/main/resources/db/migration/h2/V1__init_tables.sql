@@ -17,6 +17,7 @@ create table if not exists config (
 create table if not exists subject (
   subject_name varchar(255) not null,
   compatibility_type_name varchar(255) not null,
+  creation_ts timestamp not null default now(),
   constraint subject_pk primary key (subject_name),
   constraint subject_compatibility_type_fk foreign key (compatibility_type_name) references compatibility_type (compatibility_type_name) on delete restrict on update restrict
 );
@@ -26,6 +27,7 @@ create table if not exists schema_info (
   schema_type_name varchar(255) not null,
   schema_text text not null,
   schema_hash char(32) not null,
+  creation_ts timestamp not null default now(),
   constraint schema_info_pk primary key (schema_id),
   constraint schema_type_fk foreign key (schema_type_name) references schema_type (schema_type_name) on delete restrict on update restrict,
   constraint schema_info_schema_hash_unique unique (schema_hash)
@@ -35,6 +37,7 @@ create table if not exists subject_schema (
   subject_name varchar(255) not null,
   schema_id int not null,
   version int not null,
+  creation_ts timestamp not null default now(),
   constraint subject_schema_pk primary key (subject_name, schema_id),
   constraint subject_schema_version_unique unique (subject_name, version),
   constraint subject_fk foreign key (subject_name) references subject (subject_name) on delete cascade on update cascade,

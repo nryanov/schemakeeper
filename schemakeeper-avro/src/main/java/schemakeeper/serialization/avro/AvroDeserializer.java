@@ -60,12 +60,15 @@ public class AvroDeserializer extends AbstractDeserializer<Object> implements Av
 
         try {
             ByteBuffer byteBuffer = ByteBuffer.wrap(data);
-            readProtocolByte(byteBuffer); // todo: check protocol byte
+            byte b = readProtocolByte(byteBuffer);
+            checkByte(b);
 
             int id = byteBuffer.getInt();
-            Schema schema = client.getSchemaById(id).orElseThrow((Supplier<AvroDeserializationException>) () -> {
+            Schema schema = client.getSchemaById(id);
+
+            if (schema == null) {
                 throw new AvroDeserializationException(String.format("Schema with id: %s does not exist", id));
-            });
+            }
 
             int dataLength = byteBuffer.limit() - 5;
 

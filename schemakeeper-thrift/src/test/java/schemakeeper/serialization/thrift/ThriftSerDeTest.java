@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ThriftSerDeTest {
     @Test
     public void simpleSerializationTest() throws ThriftSerializationException, ThriftDeserializationException {
-        MockSchemaKeeperClient client = new MockSchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.NONE);
+        MockSchemaKeeperClient client = new MockSchemaKeeperClient(CompatibilityType.NONE);
         ThriftSerializer serializer = new ThriftSerializer(client);
         ThriftDeserializer deserializer = new ThriftDeserializer(client);
 
@@ -31,7 +31,7 @@ public class ThriftSerDeTest {
 
     @Test
     public void throwErrorDueToSchemaIncompatibility() throws ThriftSerializationException {
-        MockSchemaKeeperClient client = new MockSchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.BACKWARD);
+        MockSchemaKeeperClient client = new MockSchemaKeeperClient(CompatibilityType.BACKWARD);
         ThriftSerializer s1 = new ThriftSerializer(client);
         ThriftSerializer s2 = new ThriftSerializer(client);
 
@@ -45,7 +45,7 @@ public class ThriftSerDeTest {
 
     @Test
     public void readDataUsingOldSchema() throws ThriftSerializationException, ThriftDeserializationException {
-        MockSchemaKeeperClient client = new MockSchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.FULL);
+        MockSchemaKeeperClient client = new MockSchemaKeeperClient(CompatibilityType.FULL);
         ThriftSerializer s1 = new ThriftSerializer(client);
         ThriftSerializer s2 = new ThriftSerializer(client);
         ThriftDeserializer deserializer = new ThriftDeserializer(client);
@@ -63,7 +63,7 @@ public class ThriftSerDeTest {
 
     @Test
     public void readDataWithoutSpecifiedSchema() throws ThriftSerializationException, ThriftDeserializationException {
-        MockSchemaKeeperClient client = new MockSchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.FULL);
+        MockSchemaKeeperClient client = new MockSchemaKeeperClient(CompatibilityType.FULL);
         ThriftSerializer s1 = new ThriftSerializer(client);
         ThriftSerializer s2 = new ThriftSerializer(client);
         ThriftDeserializer deserializer = new ThriftDeserializer(client);

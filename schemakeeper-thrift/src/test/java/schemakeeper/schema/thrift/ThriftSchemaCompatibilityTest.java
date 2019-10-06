@@ -1,6 +1,7 @@
 package schemakeeper.schema.thrift;
 
 import org.apache.avro.Schema;
+import org.apache.avro.thrift.ThriftData;
 import org.junit.jupiter.api.Test;
 import schemakeeper.schema.AvroSchemaCompatibility;
 import schemakeeper.serialization.thrift.test.*;

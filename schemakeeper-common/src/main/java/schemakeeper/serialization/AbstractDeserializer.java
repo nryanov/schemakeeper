@@ -1,12 +1,15 @@
 package schemakeeper.serialization;
 
 import schemakeeper.exception.DeserializationException;
+import schemakeeper.exception.SerializationException;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 public abstract class AbstractDeserializer<T> implements Deserializer<T> {
+    private static final byte AVRO_COMPATIBLE_MASK = 0b1111;
+
     public byte readProtocolByte(InputStream in) throws DeserializationException {
         try {
             return (byte) in.read();
@@ -31,5 +34,11 @@ public abstract class AbstractDeserializer<T> implements Deserializer<T> {
 
     public final int readSchemaId(ByteBuffer in) {
         return in.getInt();
+    }
+
+    public final void checkByte(byte b) {
+        if (((b >> 3) ^ AVRO_COMPATIBLE_MASK) != 0) {
+            throw new SerializationException("Schema type byte is not avro compatible");
+        }
     }
 }

@@ -1,5 +1,6 @@
 package schemakeeper.api;
 
+import org.apache.avro.Schema;
 import schemakeeper.schema.CompatibilityType;
 import schemakeeper.schema.SchemaType;
 
@@ -9,6 +10,10 @@ public class SubjectAndSchemaRequest {
     private String schemaText;
     private SchemaType schemaType;
     private CompatibilityType compatibilityType;
+
+    public static SubjectAndSchemaRequest instance(Schema schema, SchemaType schemaType, CompatibilityType compatibilityType) {
+        return new SubjectAndSchemaRequest(schema.toString(), schemaType, compatibilityType);
+    }
 
     public static SubjectAndSchemaRequest instance(String schemaText, SchemaType schemaType, CompatibilityType compatibilityType) {
         return new SubjectAndSchemaRequest(schemaText, schemaType, compatibilityType);

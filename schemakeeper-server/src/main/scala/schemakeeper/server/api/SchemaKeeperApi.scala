@@ -20,7 +20,9 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: "subjects") {
     logger.info("Get subjects list")
     storage.subjects().map {
-      case Left(e) => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      case Left(e) =>
+        logger.error(s"Error while getting subjects: ${e.msg}")
+        Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
       case Right(v) => Ok(v)
     }
   }
@@ -30,10 +32,12 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: path[String]) { subject: String =>
     logger.info(s"Get subject metadata: $subject")
     storage.subjectMetadata(subject).map {
-      case Left(e) => e match {
-        case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
-        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
-      }
+      case Left(e) =>
+        logger.error(s"Error while getting subject: $subject metadata: ${e.msg}")
+        e match {
+          case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
+          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+        }
       case Right(v) => Ok(v)
     }
   }
@@ -44,10 +48,12 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: "versions") { subject: String =>
     logger.info(s"Get subject: $subject versions")
     storage.subjectVersions(subject).map {
-      case Left(e) => e match {
-        case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
-        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
-      }
+      case Left(e) =>
+        logger.error(s"Error while getting subject versions: $subject metadata: ${e.msg}")
+        e match {
+          case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
+          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+        }
       case Right(v) => Ok(v)
     }
   }
@@ -58,10 +64,12 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: "schemas") { subject: String =>
     logger.info(s"Get subject: $subject schemas metadata")
     storage.subjectSchemasMetadata(subject).map {
-      case Left(e) => e match {
-        case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
-        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
-      }
+      case Left(e) =>
+        logger.error(s"Error while getting subject schemas: $subject metadata: ${e.msg}")
+        e match {
+          case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
+          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+        }
       case Right(v) => Ok(v)
     }
   }
@@ -71,13 +79,15 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: path[String]
     :: "versions"
     :: path[Int].should(positiveVersion)) { (subject: String, version: Int) =>
-    logger.info(s"Get subject  schema by version: $subject - $version")
+    logger.info(s"Get subject schema by version: $subject - $version")
     storage.subjectSchemaByVersion(subject, version).map {
-      case Left(e) => e match {
-        case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
-        case s: SubjectSchemaVersionDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectSchemaVersionDoesNotExistCode), Status.NotFound)
-        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
-      }
+      case Left(e) =>
+        logger.error(s"Error while getting subject: $subject schema by versions: $version metadata: ${e.msg}")
+        e match {
+          case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
+          case s: SubjectSchemaVersionDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectSchemaVersionDoesNotExistCode), Status.NotFound)
+          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+        }
       case Right(v) => Ok(v)
     }
   }
@@ -87,10 +97,12 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: path[Int].should(positiveSchemaId)) { id: Int =>
     logger.info(s"Get schema by id: $id")
     storage.schemaById(id).map {
-      case Left(e) => e match {
-        case s: SchemaIdDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIdDoesNotExistCode), Status.NotFound)
-        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
-      }
+      case Left(e) =>
+        logger.error(s"Error while getting schema by id: $id : ${e.msg}")
+        e match {
+          case s: SchemaIdDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIdDoesNotExistCode), Status.NotFound)
+          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+        }
       case Right(v) => Ok(v)
     }
   }
@@ -99,15 +111,18 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: "subjects"
     :: path[String]
     :: "schemas"
+    :: "id"
     :: jsonBody[SchemaText]) { (subject: String, schemaText: SchemaText) =>
     logger.info(s"Get schema id: $subject - ${schemaText.getSchemaText}")
     storage.schemaIdBySubjectAndSchema(subject, schemaText.getSchemaText).map {
-      case Left(e) => e match {
-        case s: SchemaIsNotRegistered => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotRegisteredCode), Status.NotFound)
-        case s: SchemaIsNotValid => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotValidCode), Status.BadRequest)
-        case s: SubjectIsNotConnectedToSchema => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectIsNotConnectedToSchemaCode), Status.BadRequest)
-        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
-      }
+      case Left(e) =>
+        logger.error(s"Error while getting schema id by subject: $subject and schema: $schemaText : ${e.msg}")
+        e match {
+          case s: SchemaIsNotRegistered => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotRegisteredCode), Status.NotFound)
+          case s: SchemaIsNotValid => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotValidCode), Status.BadRequest)
+          case s: SubjectIsNotConnectedToSchema => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectIsNotConnectedToSchemaCode), Status.BadRequest)
+          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+        }
       case Right(v) => Ok(v)
     }
   }
@@ -117,7 +132,9 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: path[String]) { subject: String =>
     logger.info(s"Delete subject: $subject")
     storage.deleteSubject(subject).map {
-      case Left(e) => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      case Left(e) =>
+        logger.error(s"Error while deleting subject: $subject: ${e.msg}")
+        Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
       case Right(v) => Ok(v)
     }
   }
@@ -129,11 +146,13 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: path[Int].should(positiveVersion)) { (subject: String, version: Int) =>
     logger.info(s"Delete subject schema by version: $subject - $version")
     storage.deleteSubjectSchemaByVersion(subject, version).map {
-      case Left(e) => e match {
-        case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.BadRequest)
-        case s: SubjectSchemaVersionDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectSchemaVersionDoesNotExistCode), Status.BadRequest)
-        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
-      }
+      case Left(e) =>
+        logger.error(s"Error while deleting subject schema by version: $subject-$version: ${e.msg}")
+        e match {
+          case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.BadRequest)
+          case s: SubjectSchemaVersionDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectSchemaVersionDoesNotExistCode), Status.BadRequest)
+          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+        }
       case Right(v) => Ok(v)
     }
   }
@@ -141,15 +160,18 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
   final val checkSubjectSchemaCompatibility: Endpoint[IO, Boolean] = post(apiVersion
     :: "subjects"
     :: path[String]
+    :: "compatibility"
     :: "schemas"
     :: jsonBody[SchemaText]) { (subject: String, schema: SchemaText) =>
     logger.info(s"Check subject schema compatibility: $subject - ${schema.getSchemaText}")
     storage.checkSubjectSchemaCompatibility(subject, schema.getSchemaText).map {
-      case Left(e) => e match {
-        case s: SchemaIsNotValid => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotValidCode), Status.BadRequest)
-        case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.BadRequest)
-        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
-      }
+      case Left(e) =>
+        logger.error(s"Error while checking subject schema compatibility: $subject-$schema: ${e.msg}")
+        e match {
+          case s: SchemaIsNotValid => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotValidCode), Status.BadRequest)
+          case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.BadRequest)
+          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+        }
       case Right(v) => Ok(v)
     }
   }
@@ -161,10 +183,12 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: jsonBody[CompatibilityType]) { (subject: String, compatibilityType: CompatibilityType) =>
     logger.info(s"Update subject compatibility: $subject - ${compatibilityType.identifier}")
     storage.updateSubjectCompatibility(subject, compatibilityType).map {
-      case Left(e) => e match {
-        case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
-        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
-      }
+      case Left(e) =>
+        logger.error(s"Error while updating subject compatibility: $subject-${compatibilityType.identifier}: ${e.msg}")
+        e match {
+          case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
+          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+        }
       case Right(v) => Ok(v)
     }
   }
@@ -175,10 +199,12 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: "compatibility") { subject: String =>
     logger.info(s"Get subject compatibility type: $subject")
     storage.getSubjectCompatibility(subject).map {
-      case Left(e) => e match {
-        case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
-        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
-      }
+      case Left(e) =>
+        logger.error(s"Error while getting subject compatibility: $subject: ${e.msg}")
+        e match {
+          case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
+          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+        }
       case Right(v) => Ok(v)
     }
   }
@@ -188,10 +214,12 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: jsonBody[SchemaText]) { schemaText: SchemaText =>
     logger.info(s"Register new schema: $schemaText")
     storage.registerSchema(schemaText.getSchemaText, schemaText.getSchemaType).map {
-      case Left(e) => e match {
-        case s: SchemaIsNotValid => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotValidCode), Status.BadRequest)
-        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
-      }
+      case Left(e) =>
+        logger.error(s"Error while registering schema: $schemaText: ${e.msg}")
+        e match {
+          case s: SchemaIsNotValid => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotValidCode), Status.BadRequest)
+          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+        }
       case Right(v) => Ok(v)
     }
   }
@@ -203,12 +231,14 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: jsonBody[SubjectAndSchemaRequest]) { (subject: String, request: SubjectAndSchemaRequest) =>
     logger.info(s"Register schema and subject: $subject - $request")
     storage.registerSchema(subject, request.getSchemaText, request.getCompatibilityType, request.getSchemaType).map {
-      case Left(e) => e match {
-        case s: SchemaIsNotValid => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotValidCode), Status.BadRequest)
-        case _@SubjectIsAlreadyConnectedToSchema(_, schemaId) => Ok(SchemaId.instance(schemaId))
-        case s: SchemaIsNotCompatible => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotCompatibleCode), Status.BadRequest)
-        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
-      }
+      case Left(e) =>
+        logger.error(s"Error while registering schema and subject: $request: ${e.msg}")
+        e match {
+          case s: SchemaIsNotValid => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotValidCode), Status.BadRequest)
+          case _@SubjectIsAlreadyConnectedToSchema(_, schemaId) => Ok(SchemaId.instance(schemaId))
+          case s: SchemaIsNotCompatible => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIsNotCompatibleCode), Status.BadRequest)
+          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+        }
       case Right(v) => Ok(v)
     }
   }
@@ -218,10 +248,12 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: jsonBody[SubjectMetadata]) { meta: SubjectMetadata =>
     logger.info(s"Register new subject: $meta")
     storage.registerSubject(meta.getSubject, meta.getCompatibilityType).map {
-      case Left(e) => e match {
-        case s: SubjectIsAlreadyExists => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectIsAlreadyExistsCode), Status.BadRequest)
-        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
-      }
+      case Left(e) =>
+        logger.error(s"Error while registering subject: $meta: ${e.msg}")
+        e match {
+          case s: SubjectIsAlreadyExists => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectIsAlreadyExistsCode), Status.BadRequest)
+          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+        }
       case Right(v) => Ok(v)
     }
   }
@@ -233,12 +265,14 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: path[Int].should(positiveSchemaId)) { (subject: String, id: Int) =>
     logger.info(s"Connect subject: $subject and schema: $id")
     storage.addSchemaToSubject(subject, id).map {
-      case Left(e) => e match {
-        case s: SchemaIdDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIdDoesNotExistCode), Status.NotFound)
-        case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
-        case s: SubjectIsAlreadyConnectedToSchema => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectIsAlreadyConnectedToSchemaCode), Status.BadRequest)
-        case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
-      }
+      case Left(e) =>
+        logger.error(s"Error while adding schema: $id to subject: $subject: ${e.msg}")
+        e match {
+          case s: SchemaIdDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SchemaIdDoesNotExistCode), Status.NotFound)
+          case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
+          case s: SubjectIsAlreadyConnectedToSchema => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectIsAlreadyConnectedToSchemaCode), Status.BadRequest)
+          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+        }
       case Right(v) => Ok(v)
     }
   }
@@ -248,7 +282,9 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: path[String]) { subject: String =>
     logger.info(s"Check if subject: $subject exists")
     storage.isSubjectExist(subject).map {
-      case Left(e) => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      case Left(e) =>
+        logger.error(s"Error while checking subject existencee: $subject: ${e.msg}")
+        Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
       case Right(v) => Ok(v)
     }
   }
@@ -257,7 +293,9 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: "compatibility") {
     logger.info("Get global compatibility type")
     storage.getGlobalCompatibility().map {
-      case Left(e) => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      case Left(e) =>
+        logger.error(s"Error while getting global compatibility: ${e.msg}")
+        Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
       case Right(v) => Ok(v)
     }
   }
@@ -267,7 +305,9 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: jsonBody[CompatibilityType]) { compatibilityType: CompatibilityType =>
     logger.info(s"Update global compatibility type: ${compatibilityType.identifier}")
     storage.updateGlobalCompatibility(compatibilityType).map {
-      case Left(e) => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+      case Left(e) =>
+        logger.error(s"Error while updating global compatibility to ${compatibilityType.identifier}: ${e.msg}")
+        Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
       case Right(v) => Ok(v)
     }
   }

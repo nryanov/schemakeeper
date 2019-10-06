@@ -62,9 +62,11 @@ public class ThriftDeserializer extends AbstractDeserializer<TBase<? extends TBa
             }
 
             int schemaId = readSchemaId(buffer);
-            Schema schema = client.getSchemaById(schemaId).orElseThrow((Supplier<ThriftDeserializationException>) () -> {
+            Schema schema = client.getSchemaById(schemaId);
+
+            if (schema == null) {
                 throw new ThriftDeserializationException(String.format("Schema with id: %s does not exist", schemaId));
-            });
+            }
 
             int dataLength = buffer.limit() - 5;
             int start = buffer.position() + buffer.arrayOffset();

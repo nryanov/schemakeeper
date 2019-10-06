@@ -49,24 +49,22 @@ public class SchemaKeeperThriftData extends ThriftData {
                         symbols.add(e.name());
                     schema = Schema.createEnum(c.getName(), null, null, symbols);
                 } else if (TBase.class.isAssignableFrom(c)) { // struct
-                    TBase instance = ((Class<? extends TBase>) c).getConstructor().newInstance();
                     schema = Schema.createRecord(c.getName(), null, null, Throwable.class.isAssignableFrom(c));
                     List<Schema.Field> fields = new ArrayList<>();
 
                     FieldMetaData.getStructMetaDataMap((Class<? extends TBase>) c).forEach((key, value) -> {
                         Schema s;
-                        Object defaultValue = null;
                         if (value.requirementType == TFieldRequirementType.OPTIONAL) {
-                            defaultValue = getOptionalDefaultValue(instance, key);
-                            s = getSchema(value.valueMetaData, defaultValue != NULL_DEFAULT_VALUE);
+                            s = getSchema(value.valueMetaData, true);
                             if ((s.getType() != Schema.Type.UNION)) {
-                                s = nullable(s, defaultValue != NULL_DEFAULT_VALUE);
+                                s = nullable(s, true);
                             }
+
+                            fields.add(new Schema.Field(value.fieldName, s, null, NULL_DEFAULT_VALUE));
                         } else {
                             s = getSchema(value.valueMetaData);
+                            fields.add(new Schema.Field(value.fieldName, s, null, null));
                         }
-
-                        fields.add(new Schema.Field(value.fieldName, s, null, defaultValue));
                     });
 
                     schema.setFields(fields);
@@ -87,7 +85,7 @@ public class SchemaKeeperThriftData extends ThriftData {
         return getSchema(f, false);
     }
 
-    private Schema getSchema(FieldValueMetaData f, boolean hasNotNullDefaultValue) {
+    private Schema getSchema(FieldValueMetaData f, boolean isOptional) {
         switch (f.type) {
             case TType.BOOL:
                 return Schema.create(Schema.Type.BOOLEAN);
@@ -107,45 +105,36 @@ public class SchemaKeeperThriftData extends ThriftData {
                 return Schema.create(Schema.Type.DOUBLE);
             case TType.ENUM:
                 EnumMetaData enumMeta = (EnumMetaData) f;
-                return nullable(getSchema(enumMeta.enumClass), hasNotNullDefaultValue);
+                return nullable(getSchema(enumMeta.enumClass), isOptional);
             case TType.LIST:
                 ListMetaData listMeta = (ListMetaData) f;
-                return nullable(Schema.createArray(getSchema(listMeta.elemMetaData)), hasNotNullDefaultValue);
+                return nullable(Schema.createArray(getSchema(listMeta.elemMetaData)), isOptional);
             case TType.MAP:
                 MapMetaData mapMeta = (MapMetaData) f;
                 if (mapMeta.keyMetaData.type != TType.STRING)
                     throw new AvroRuntimeException("Map keys must be strings: " + f);
                 Schema map = Schema.createMap(getSchema(mapMeta.valueMetaData));
                 GenericData.setStringType(map, GenericData.StringType.String);
-                return nullable(map, hasNotNullDefaultValue);
+                return nullable(map, isOptional);
             case TType.SET:
                 SetMetaData setMeta = (SetMetaData) f;
                 Schema set = Schema.createArray(getSchema(setMeta.elemMetaData));
                 set.addProp(THRIFT_PROP, "set");
-                return nullable(set, hasNotNullDefaultValue);
+                return nullable(set, isOptional);
             case TType.STRING:
                 if (f.isBinary())
-                    return nullable(Schema.create(Schema.Type.BYTES), hasNotNullDefaultValue);
+                    return nullable(Schema.create(Schema.Type.BYTES), isOptional);
                 Schema string = Schema.create(Schema.Type.STRING);
                 GenericData.setStringType(string, GenericData.StringType.String);
-                return nullable(string, hasNotNullDefaultValue);
+                return nullable(string, isOptional);
             case TType.STRUCT:
                 StructMetaData structMeta = (StructMetaData) f;
                 Schema record = getSchema(structMeta.structClass);
-                return nullable(record, hasNotNullDefaultValue);
+                return nullable(record, isOptional);
             case TType.VOID:
                 return NULL;
             default:
                 throw new RuntimeException("Unexpected type in field: " + f);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private Object getOptionalDefaultValue(TBase instance, TFieldIdEnum field) {
-        if (instance.isSet(field)) {
-            return null;
-        } else {
-            return NULL_DEFAULT_VALUE;
         }
     }
 
@@ -155,11 +144,9 @@ public class SchemaKeeperThriftData extends ThriftData {
 
     /**
      * Avro recommends to set default value type as first type in union schema.
-     * So, if the current schema has some not null default type, then this type should be first,
-     * otherwise the NULL type should be first.
      */
-    private Schema nullable(Schema schema, boolean hasNotNullDefaultValue) {
-        if (hasNotNullDefaultValue) {
+    private Schema nullable(Schema schema, boolean isOptional) {
+        if (!isOptional) {
             return Schema.createUnion(Arrays.asList(schema, NULL));
         }
 

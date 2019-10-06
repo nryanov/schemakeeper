@@ -60,9 +60,11 @@ public class ProtobufDeserializer extends AbstractDeserializer<com.google.protob
             }
 
             int schemaId = readSchemaId(buffer);
-            Schema schema = client.getSchemaById(schemaId).orElseThrow((Supplier<ProtobufDeserializationException>) () -> {
+            Schema schema = client.getSchemaById(schemaId);
+
+            if (schema == null) {
                 throw new ProtobufDeserializationException(String.format("Schema with id: %s does not exist", schemaId));
-            });
+            }
 
             int dataLength = buffer.limit() - 5;
             int start = buffer.position() + buffer.arrayOffset();

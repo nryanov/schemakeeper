@@ -60,20 +60,16 @@ public class ProtobufSerializer extends AbstractSerializer<com.google.protobuf.G
 
         try {
             Schema schema = ProtobufData.get().getSchema(data.getClass());
-            Optional<Integer> optId = client.getSchemaId(subject, schema, SchemaType.PROTOBUF);
-            int id = -1;
+            int id;
 
-            if (!optId.isPresent()) {
-                if (allowForceSchemaRegister) {
-                    optId = client.registerNewSchema(subject, schema, SchemaType.PROTOBUF, compatibilityType);
-                    if (optId.isPresent()) {
-                        id = optId.get();
-                    } else {
-                        throw new IllegalArgumentException(String.format("Schema %s is not registered in registry and flag 'allowForceSchemaRegister' is false ", schema.toString()));
-                    }
-                } else {
-                    throw new IllegalArgumentException(String.format("Schema %s is not registered in registry and flag 'allowForceSchemaRegister' is false ", schema.toString()));
-                }
+            if (allowForceSchemaRegister) {
+                id = client.registerNewSchema(subject, schema, SchemaType.PROTOBUF, compatibilityType);
+            } else {
+                id = client.getSchemaId(subject, schema, SchemaType.PROTOBUF);
+            }
+
+            if (id <= 0) {
+                throw new IllegalArgumentException(String.format("Schema %s was not registered in registry", schema.toString()));
             }
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();

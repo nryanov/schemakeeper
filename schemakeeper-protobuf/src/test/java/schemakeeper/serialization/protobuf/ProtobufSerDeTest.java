@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class ProtobufSerDeTest {
     @Test
     public void simpleSerializationTest() throws ProtobufSerializationException, ProtobufDeserializationException {
-        MockSchemaKeeperClient client = new MockSchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.NONE);
+        MockSchemaKeeperClient client = new MockSchemaKeeperClient(CompatibilityType.NONE);
         ProtobufSerializer serializer = new ProtobufSerializer(client);
         ProtobufDeserializer deserializer = new ProtobufDeserializer(client);
 
@@ -34,7 +34,7 @@ public class ProtobufSerDeTest {
 
     @Test
     public void throwErrorDueToSchemaIncompatibility() throws ProtobufSerializationException {
-        MockSchemaKeeperClient client = new MockSchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.BACKWARD);
+        MockSchemaKeeperClient client = new MockSchemaKeeperClient(CompatibilityType.BACKWARD);
         ProtobufSerializer s1 = new ProtobufSerializer(client);
         ProtobufSerializer s2 = new ProtobufSerializer(client);
 
@@ -56,7 +56,7 @@ public class ProtobufSerDeTest {
 
     @Test
     public void readDataUsingOldSchema() throws ProtobufSerializationException, ProtobufDeserializationException {
-        MockSchemaKeeperClient client = new MockSchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.FULL);
+        MockSchemaKeeperClient client = new MockSchemaKeeperClient(CompatibilityType.FULL);
         ProtobufSerializer s1 = new ProtobufSerializer(client);
         ProtobufSerializer s2 = new ProtobufSerializer(client);
         ProtobufDeserializer deserializer = new ProtobufDeserializer(client);
@@ -84,7 +84,7 @@ public class ProtobufSerDeTest {
 
     @Test
     public void readDataWithoutSpecifiedSchema() throws ProtobufSerializationException, ProtobufDeserializationException {
-        MockSchemaKeeperClient client = new MockSchemaKeeperClient(new SerDeConfig(Collections.emptyMap()), CompatibilityType.FULL);
+        MockSchemaKeeperClient client = new MockSchemaKeeperClient(CompatibilityType.FULL);
         ProtobufSerializer s1 = new ProtobufSerializer(client);
         ProtobufSerializer s2 = new ProtobufSerializer(client);
         ProtobufDeserializer deserializer = new ProtobufDeserializer(client);
