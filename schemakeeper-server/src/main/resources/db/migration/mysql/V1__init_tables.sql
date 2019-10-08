@@ -10,12 +10,6 @@ create table if not exists ${schemakeeper_schema}.compatibility_type (
   constraint compatibility_type_pk primary key (compatibility_type_name)
 );
 
-create table if not exists ${schemakeeper_schema}.config (
-  config_name varchar(255) not null,
-  config_value text not null,
-  constraint configs_pk primary key (config_name)
-);
-
 create table if not exists ${schemakeeper_schema}.subject (
   subject_name varchar(255) not null,
   compatibility_type_name varchar(255) not null,
@@ -46,8 +40,6 @@ create table if not exists ${schemakeeper_schema}.subject_schema (
   constraint subject_fk foreign key (subject_name) references ${schemakeeper_schema}.subject (subject_name) on delete cascade on update cascade,
   constraint schema_fk foreign key (schema_id) references ${schemakeeper_schema}.schema_info (schema_id) on delete cascade on update cascade
 );
-
-insert into ${schemakeeper_schema}.config(config_name, config_value) values('default.compatibility', 'backward');
 
 insert into ${schemakeeper_schema}.schema_type(schema_type_name) values ('avro');
 insert into ${schemakeeper_schema}.schema_type(schema_type_name) values ('thrift');

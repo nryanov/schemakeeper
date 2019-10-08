@@ -147,16 +147,4 @@ trait Service[F[_]] {
     * @return - true if subject exists otherwise false
     */
   def isSubjectExist(subject: String): F[Either[SchemaKeeperError, Boolean]]
-
-  /**
-    * @return - global compatibility type used by default for new subjects.
-    * May be none if someone deleted record from storage. In this case BACKWARD is used.
-    */
-  def getGlobalCompatibility(): F[Either[SchemaKeeperError, CompatibilityType]]
-
-  /**
-    * @param compatibilityType - new compatibility type
-    * @return - new compatibility type if value was updated successfully
-    */
-  def updateGlobalCompatibility(compatibilityType: CompatibilityType): F[Either[SchemaKeeperError, Boolean]]
 }

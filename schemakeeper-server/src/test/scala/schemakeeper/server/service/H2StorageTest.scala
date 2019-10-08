@@ -31,7 +31,6 @@ class H2StorageTest extends ServiceTest with BeforeAndAfterEach with BeforeAndAf
   }
 
   override protected def afterEach(): Unit = {
-    connection.createStatement().execute("update config set config_value = 'backward' where config_name = 'default.compatibility'")
     connection.createStatement().execute("delete from subject_schema")
     connection.createStatement().execute("delete from schema_info")
     connection.createStatement().execute("delete from subject")

@@ -32,7 +32,6 @@ class MySQLStorageTest extends ServiceTest with ForAllTestContainer with BeforeA
   }
 
   override protected def afterEach(): Unit = {
-    connection.createStatement().execute("update schemakeeper.config set config_value = 'backward' where config_name = 'default.compatibility'")
     connection.createStatement().execute("delete from schemakeeper.subject_schema")
     connection.createStatement().execute("delete from schemakeeper.schema_info")
     connection.createStatement().execute("delete from schemakeeper.subject")

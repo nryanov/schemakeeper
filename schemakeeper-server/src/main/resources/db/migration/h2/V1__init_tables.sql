@@ -8,12 +8,6 @@ create table if not exists compatibility_type (
   constraint compatibility_type_pk primary key (compatibility_type_name)
 );
 
-create table if not exists config (
-  config_name varchar(255) not null,
-  config_value text not null,
-  constraint configs_pk primary key (config_name)
-);
-
 create table if not exists subject (
   subject_name varchar(255) not null,
   compatibility_type_name varchar(255) not null,
@@ -44,8 +38,6 @@ create table if not exists subject_schema (
   constraint subject_fk foreign key (subject_name) references subject (subject_name) on delete cascade on update cascade,
   constraint schema_fk foreign key (schema_id) references schema_info (schema_id) on delete cascade on update cascade
 );
-
-insert into config(config_name, config_value) values('default.compatibility', 'backward');
 
 insert into schema_type(schema_type_name) values ('avro');
 insert into schema_type(schema_type_name) values ('thrift');

@@ -410,29 +410,6 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
     }
   }
 
-  override def getGlobalCompatibility(): F[Result[CompatibilityType]] = {
-    logger.info("Get global compatibility type")
-
-    transaction {
-      storage.getGlobalCompatibility()
-    }.map {
-      case Left(e) => Left(BackendError(e))
-      case Right(None) => Left(ConfigIsNotDefined("default.compatibility"))
-      case Right(Some(v)) => Right(v)
-    }
-  }
-
-  override def updateGlobalCompatibility(compatibilityType: CompatibilityType): F[Result[Boolean]] = {
-    logger.info(s"Update global compatibility type: ${compatibilityType.identifier}")
-
-    transaction {
-      storage.updateGlobalCompatibility(compatibilityType)
-    }.map {
-      case Left(e) => Left(BackendError(e))
-      case Right(v) => Right(v)
-    }
-  }
-
   private def transaction[A](query: ConnectionIO[A]): F[Either[Throwable, A]] = Monad[F].pure {
     datasource.use {
       xa => query.transact(xa)

@@ -20,8 +20,6 @@ final case class SchemaIdDoesNotExist(schemaId: Int) extends SchemaKeeperError(s
 
 final case class SchemaIsNotRegistered(schema: String) extends SchemaKeeperError(s"Schema: $schema is not registered")
 
-final case class ConfigIsNotDefined(configName: String) extends SchemaKeeperError(s"Config value for $configName is not defined")
-
 final case class SchemaIsNotValid(schema: String) extends SchemaKeeperError(s"Schema: $schema is not a valid Avro schema")
 
 final case class SchemaIsAlreadyExist(schemaId: Int, schema: String) extends SchemaKeeperError(s"Schema: $schema is already exist")

@@ -46,8 +46,6 @@ object SchemaKeeper extends TwitterServer {
       :+: api.registerSubject
       :+: api.addSchemaToSubject
       :+: api.isSubjectExist
-      :+: api.getGlobalCompatibility
-      :+: api.updateGlobalCompatibility
     )
       .toService
 

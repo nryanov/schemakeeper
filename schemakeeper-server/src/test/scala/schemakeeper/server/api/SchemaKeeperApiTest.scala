@@ -45,7 +45,6 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
   }
 
   override protected def afterEach(): Unit = {
-    connection.createStatement().execute("update config set config_value = 'backward' where config_name = 'default.compatibility'")
     connection.createStatement().execute("delete from subject_schema")
     connection.createStatement().execute("delete from schema_info")
     connection.createStatement().execute("delete from subject")
@@ -290,7 +289,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
       val api = SchemaKeeperApi(schemaStorage)
       val result = api.deleteSubjectSchemaByVersion(Input.delete("/v1/subjects/A1/versions/1")).awaitOutputUnsafe()
 
-      assertResult(Output.failure(ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode), Status.BadRequest))(result.get)
+      assertResult(Output.failure(ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound))(result.get)
     }
 
     "BadRequest - specified version does not exist" in {
@@ -298,7 +297,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
       val api = SchemaKeeperApi(schemaStorage)
       val result = api.deleteSubjectSchemaByVersion(Input.delete("/v1/subjects/A1/versions/123")).awaitOutputUnsafe()
 
-      assertResult(Output.failure(ErrorInfo(service.SubjectSchemaVersionDoesNotExist("A1", 123).msg, ErrorCode.SubjectSchemaVersionDoesNotExistCode), Status.BadRequest))(result.get)
+      assertResult(Output.failure(ErrorInfo(service.SubjectSchemaVersionDoesNotExist("A1", 123).msg, ErrorCode.SubjectSchemaVersionDoesNotExistCode), Status.NotFound))(result.get)
     }
 
     "throws validation error" in {
@@ -337,7 +336,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
       val api = SchemaKeeperApi(schemaStorage)
       val body = SchemaText.instance(Schema.create(Schema.Type.INT).toString)
       val result = api.checkSubjectSchemaCompatibility(Input.post("/v1/subjects/A1/compatibility/schemas").withBody[Application.Json](body)).awaitOutputUnsafe()
-      assertResult(Output.failure(ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode), Status.BadRequest))(result.get)
+      assertResult(Output.failure(ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound))(result.get)
     }
   }
 
@@ -386,6 +385,15 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
       val body = SchemaText.instance("not valid schema")
       val result = api.registerSchema(Input.put("/v1/schemas").withBody[Application.Json](body)).awaitOutputUnsafe()
       assertResult(Output.failure(ErrorInfo(SchemaIsNotValid("not valid schema").msg, ErrorCode.SchemaIsNotValidCode), Status.BadRequest))(result.get)
+    }
+
+    "BadRequest - schema is already exist" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val schema = schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO).unsafeRunSync()
+      val id = schema.right.get.getSchemaId
+      val body = SchemaText.instance(Schema.create(Schema.Type.STRING))
+      val result = api.registerSchema(Input.put("/v1/schemas").withBody[Application.Json](body)).awaitOutputUnsafe()
+      assertResult(Output.failure(ErrorInfo(SchemaIsAlreadyExist(id, Schema.create(Schema.Type.STRING).toString()).msg, ErrorCode.SchemaIsAlreadyExistCode), Status.BadRequest))(result.get)
     }
   }
 
@@ -512,23 +520,6 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
       val api = SchemaKeeperApi(schemaStorage)
       val result = api.isSubjectExist(Input.post("/v1/subjects/A1")).awaitValueUnsafe()
       assert(!result.get)
-    }
-  }
-
-  "GetGlobalCompatibility endpoint" should {
-    "return compatibilityType" in {
-      val api = SchemaKeeperApi(schemaStorage)
-      val result = api.getGlobalCompatibility(Input.get("/v1/compatibility")).awaitValueUnsafe()
-      assertResult(CompatibilityType.BACKWARD)(result.get)
-    }
-  }
-
-  "UpdateGlobalCompatibility endpoint" should {
-    "return true" in {
-      val api = SchemaKeeperApi(schemaStorage)
-      val body = CompatibilityType.FULL
-      val result = api.updateGlobalCompatibility(Input.post("/v1/compatibility").withBody[Application.Json](body)).awaitValueUnsafe()
-      assert(result.get)
     }
   }
 }

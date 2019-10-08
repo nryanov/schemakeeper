@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class CachedSchemaKeeperClientTest {
     private static final Logger logger = LoggerFactory.getLogger(CachedSchemaKeeperClientTest.class);
-    private static final GenericContainer schemakeeperServer = new GenericContainer("schemakeeper-server:0.1")
+    private static final GenericContainer schemakeeperServer = new GenericContainer("schemakeeper/server:0.1")
             .withExposedPorts(9081)
             .waitingFor(Wait.forHttp("/v1/subjects"))
             .withLogConsumer(new Slf4jLogConsumer(logger));

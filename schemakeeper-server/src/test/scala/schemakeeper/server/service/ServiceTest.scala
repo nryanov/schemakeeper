@@ -523,16 +523,4 @@ abstract class ServiceTest extends WordSpec with Matchers {
       assertResult(false)(schemaStorage.isSubjectExist("A1").right.get)
     }
   }
-
-  "GetGlobalCompatibility" should {
-    "return global compatibilityType" in {
-      assertResult(CompatibilityType.BACKWARD)(schemaStorage.getGlobalCompatibility().right.get)
-    }
-  }
-
-  "UpdateGlobalCompatibility" should {
-    "successfully update compatibility type" in {
-      assertResult(true)(schemaStorage.updateGlobalCompatibility(CompatibilityType.FULL).right.get)
-    }
-  }
 }

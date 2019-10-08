@@ -139,16 +139,4 @@ trait SchemaStorage[F[_]] {
     * @return - true or false
     */
   def isSubjectConnectedToSchema(subject: String, schemaId: Int): F[Boolean]
-
-  /**
-    * Used as default compatibility type for new subjects
-    * @return - compatibility type. May return none if option was deleted from table.
-    *         In this case the hard-coded default value will be used - BACKWARD
-    */
-  def getGlobalCompatibility(): F[Option[CompatibilityType]]
-
-  /**
-    * @param compatibilityType - new compatibility type
-    */
-  def updateGlobalCompatibility(compatibilityType: CompatibilityType): F[Boolean]
 }

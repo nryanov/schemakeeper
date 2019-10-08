@@ -6,7 +6,7 @@ import io.getquill.context.sql.idiom.SqlIdiom
 import io.getquill._
 import schemakeeper.api.{SchemaMetadata, SubjectMetadata, SubjectSchemaMetadata}
 import schemakeeper.schema.{CompatibilityType, SchemaType}
-import schemakeeper.server.storage.model.{Config, SchemaInfo, Subject, SubjectSchema}
+import schemakeeper.server.storage.model.{SchemaInfo, Subject, SubjectSchema}
 import schemakeeper.server.storage.model.Converters._
 
 class DatabaseStorage(dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy]) extends SchemaStorage[ConnectionIO] {
@@ -156,19 +156,6 @@ class DatabaseStorage(dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy])
       .sortBy(_.version)(Ord.desc)
       .map(_.version)
   }).map(_.headOption).map(_.map(_ + 1).getOrElse(1))
-
-  override def getGlobalCompatibility(): ConnectionIO[Option[CompatibilityType]] = dc.run(quote {
-    query[Config]
-      .filter(_.configName == "default.compatibility")
-      .map(_.configName)
-  }).map(_.headOption)
-    .map(_.map(CompatibilityType.findByName))
-
-  override def updateGlobalCompatibility(compatibilityType: CompatibilityType): doobie.ConnectionIO[Boolean] = dc.run(quote {
-    query[Config]
-      .filter(_.configName == "default.compatibility")
-      .update(_.configValue -> lift(compatibilityType.identifier))
-  }).map(_ > 0)
 }
 
 object DatabaseStorage {
