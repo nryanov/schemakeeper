@@ -4,8 +4,11 @@ import org.scalatest.{Matchers, WordSpec}
 import schemakeeper.api._
 import io.circe.syntax._
 import JsonProtocol._
+import org.junit.runner.RunWith
+import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.schema.{CompatibilityType, SchemaType}
 
+@RunWith(classOf[JUnitRunner])
 class JsonProtocolTest extends WordSpec with Matchers {
   "SchemaMetadata" should {
     "be encoded and decoded correctly" in {

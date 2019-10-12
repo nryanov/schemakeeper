@@ -3,15 +3,19 @@ package schemakeeper.kafka.serialization.thrift
 import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, ByteArraySerializer}
 import org.scalatest.WordSpec
+import org.junit.runner.RunWith
+import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.client.MockSchemaKeeperClient
 import schemakeeper.schema.thrift.SchemaKeeperThriftData
+import schemakeeper.serialization.SerDeConfig
 import schemakeeper.serialization.thrift.test.ThriftMsgV1
 import schemakeeper.serialization.thrift.{ThriftDeserializer, ThriftSerializer}
 
 import scala.collection.JavaConverters._
 
+@RunWith(classOf[JUnitRunner])
 class KafkaThriftSerDeTest extends WordSpec with EmbeddedKafka {
-  val config = new KafkaThriftSerDeConfig(Map.empty[String, AnyRef].asJava)
+  val config = new KafkaThriftSerDeConfig(Map[String, AnyRef](SerDeConfig.SCHEMAKEEPER_URL_CONFIG -> "mock").asJava)
   val client = new MockSchemaKeeperClient(config)
 
   implicit val byteSerializer = new ByteArraySerializer()

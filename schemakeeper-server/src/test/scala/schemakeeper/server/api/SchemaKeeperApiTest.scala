@@ -10,7 +10,9 @@ import io.finch.Error.{NotPresent, NotValid}
 import io.finch._
 import io.finch.circe._
 import org.apache.avro.Schema
+import org.junit.runner.RunWith
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.api._
 import schemakeeper.schema.{CompatibilityType, SchemaType}
 import schemakeeper.server.{Configuration, service}
@@ -20,6 +22,7 @@ import schemakeeper.server.service._
 
 import scala.concurrent.ExecutionContext
 
+@RunWith(classOf[JUnitRunner])
 class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach with BeforeAndAfterAll {
   implicit val ctx = IO.contextShift(ExecutionContext.global)
 

@@ -2,12 +2,15 @@ package schemakeeper.server.service
 
 import cats.Id
 import org.apache.avro.{Schema, SchemaBuilder}
+import org.junit.runner.RunWith
 import org.scalatest.{Matchers, WordSpec}
+import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.api.{SchemaMetadata, SubjectMetadata}
 import schemakeeper.schema.{CompatibilityType, SchemaType}
 import schemakeeper.server.service
 import schemakeeper.server.util.Utils
 
+@RunWith(classOf[JUnitRunner])
 abstract class ServiceTest extends WordSpec with Matchers {
   val schemaStorage: DBBackedService[Id]
 

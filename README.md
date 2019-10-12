@@ -27,6 +27,11 @@ gradle :schemakeeper-server:clean :schemakeeper-server:jar
 docker build -t <image-name> .
 ```
 
+## Test
+```bash
+gradle test
+```
+
 ## Run
 ```bash
 docker pull schemakeeper/server:<version>

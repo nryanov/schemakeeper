@@ -5,9 +5,12 @@ import java.util
 
 import cats.Id
 import com.typesafe.config.{Config, ConfigFactory}
+import org.junit.runner.RunWith
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.server.Configuration
 
+@RunWith(classOf[JUnitRunner])
 class H2StorageTest extends ServiceTest with BeforeAndAfterEach with BeforeAndAfterAll {
   lazy val schemaStorage: DBBackedService[Id] = {
     val map: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]

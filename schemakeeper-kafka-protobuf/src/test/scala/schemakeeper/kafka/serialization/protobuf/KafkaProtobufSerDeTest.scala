@@ -4,15 +4,18 @@ import net.manub.embeddedkafka.{EmbeddedKafka, EmbeddedKafkaConfig}
 import org.apache.avro.protobuf.ProtobufData
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, ByteArraySerializer}
 import org.scalatest.WordSpec
+import org.junit.runner.RunWith
+import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.client.MockSchemaKeeperClient
+import schemakeeper.serialization.SerDeConfig
 import schemakeeper.serialization.protobuf.test.Message
 import schemakeeper.serialization.protobuf.{ProtobufDeserializer, ProtobufSerializer}
 
 import scala.collection.JavaConverters._
 
-
+@RunWith(classOf[JUnitRunner])
 class KafkaProtobufSerDeTest extends WordSpec with EmbeddedKafka {
-  val config = new KafkaProtobufSerDeConfig(Map.empty[String, AnyRef].asJava)
+  val config = new KafkaProtobufSerDeConfig(Map[String, AnyRef](SerDeConfig.SCHEMAKEEPER_URL_CONFIG -> "mock").asJava)
   val client = new MockSchemaKeeperClient(config)
 
   implicit val byteSerializer = new ByteArraySerializer()

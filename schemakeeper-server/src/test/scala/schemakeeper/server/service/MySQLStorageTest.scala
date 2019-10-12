@@ -6,9 +6,12 @@ import java.util
 import cats.Id
 import com.dimafeng.testcontainers.{ForAllTestContainer, MySQLContainer}
 import com.typesafe.config.{Config, ConfigFactory}
+import org.junit.runner.RunWith
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.server.Configuration
 
+@RunWith(classOf[JUnitRunner])
 class MySQLStorageTest extends ServiceTest with ForAllTestContainer with BeforeAndAfterEach with BeforeAndAfterAll {
   override val container: MySQLContainer = MySQLContainer(mysqlImageVersion = "mysql:latest", databaseName = "schemakeeper")
 

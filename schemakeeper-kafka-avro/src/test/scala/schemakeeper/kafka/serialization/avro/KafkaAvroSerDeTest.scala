@@ -5,13 +5,17 @@ import org.apache.avro.SchemaBuilder
 import org.apache.avro.generic.GenericData
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, ByteArraySerializer}
 import org.scalatest.WordSpec
+import org.junit.runner.RunWith
+import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.client.MockSchemaKeeperClient
+import schemakeeper.serialization.SerDeConfig
 import schemakeeper.serialization.avro.{AvroDeserializer, AvroSerializer}
 
 import scala.collection.JavaConverters._
 
+@RunWith(classOf[JUnitRunner])
 class KafkaAvroSerDeTest extends WordSpec with EmbeddedKafka {
-  val config = new KafkaAvroSerDeConfig(Map.empty[String, AnyRef].asJava)
+  val config = new KafkaAvroSerDeConfig(Map[String, AnyRef](SerDeConfig.SCHEMAKEEPER_URL_CONFIG -> "mock").asJava)
   val client = new MockSchemaKeeperClient(config)
 
   implicit val byteSerializer = new ByteArraySerializer()

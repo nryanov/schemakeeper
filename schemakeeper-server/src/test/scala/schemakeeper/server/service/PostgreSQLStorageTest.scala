@@ -6,9 +6,12 @@ import java.util
 import cats.Id
 import com.dimafeng.testcontainers.{ForAllTestContainer, PostgreSQLContainer}
 import com.typesafe.config.{Config, ConfigFactory}
+import org.junit.runner.RunWith
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.server.Configuration
 
+@RunWith(classOf[JUnitRunner])
 class PostgreSQLStorageTest extends ServiceTest with ForAllTestContainer with BeforeAndAfterAll with BeforeAndAfterEach {
   override val container: PostgreSQLContainer = PostgreSQLContainer("postgres:latest")
   lazy val schemaStorage = {
