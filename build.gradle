@@ -99,7 +99,7 @@ subprojects {
                     pom {
                         name = it.name
                         description = 'Yet another schema registry for Avro, Thrift and Protobuf schemas'
-                        url = 'https://github.com/Gr1f0n6x/Schemakeeper'
+                        url = 'https://github.com/nryanov/Schemakeeper'
                         licenses {
                             license {
                                 name = 'The Apache License, Version 2.0'
@@ -108,15 +108,15 @@ subprojects {
                         }
                         developers {
                             developer {
-                                id = 'Gr1f0n6x'
+                                id = 'nryanov'
                                 name = 'Nikita Ryanov'
                                 email = 'ryanov.nikita@gmail.com'
                             }
                         }
                         scm {
-                            connection = 'scm:git:git@github.com:Gr1f0n6x/Schemakeeper.git'
-                            developerConnection = 'scm:git:git@github.com:Gr1f0n6x/Schemakeeper.git'
-                            url = 'https://github.com/Gr1f0n6x/Schemakeeper'
+                            connection = 'scm:git:git@github.com:nryanov/Schemakeeper.git'
+                            developerConnection = 'scm:git:git@github.com:nryanov/Schemakeeper.git'
+                            url = 'https://github.com/nryanov/Schemakeeper'
 
                         }
                     }
@@ -129,9 +129,11 @@ subprojects {
                     def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
                     url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
 
-                    credentials {
-                        username sonatypeUsername
-                        password sonatypePassword
+                    if (project.hasProperty("sonatypeUsername") && project.hasProperty("sonatypePassword")) {
+                        credentials {
+                            username sonatypeUsername
+                            password sonatypePassword
+                        }
                     }
                 }
             }

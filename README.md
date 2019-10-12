@@ -35,7 +35,7 @@ gradle test
 ## Run
 ```bash
 docker pull schemakeeper/server:<version>
-docker run --name=<container_name> -p 9080:9080 -p 9990:9990 -d schemakeeper/server:<version>
+docker run --name=<container_name> -p 9081:9081 -p 9990:9990 -d schemakeeper/server:<version>
 ```
 
 ## Settings
@@ -131,7 +131,7 @@ Also, the required property is `SerDeConfig.SCHEMAKEEPER_URL_CONFIG`. Other sett
 
 ## API
 ### subjects
-**GET /api/v1/subjects**
+**GET /v1/subjects**
 
 Get list of registered subjects
 
@@ -143,7 +143,7 @@ Get list of registered subjects
     - Code 1000 Backend error
 
 ### subjectMetadata
-**GET /api/v1/subjects/<subject_name>**
+**GET /v1/subjects/<subject_name>**
 
 Get subject metadata by name
 
@@ -159,7 +159,7 @@ Get subject metadata by name
 - Not found 404
     - Code 1001 Subject does not exist
 ### subjectVersions
-**GET /api/v1/subjects/<subject_name>/versions**
+**GET /v1/subjects/<subject_name>/versions**
 
 Get list of subject's schema versions
 
@@ -172,7 +172,7 @@ Get list of subject's schema versions
 - Not found 404
     - Code 1001 Subject does not exist
 ### subjectSchemasMetadata
-**GET /api/v1/subjects/<subject_name>/schemas**
+**GET /v1/subjects/<subject_name>/schemas**
 
 Get list of subject's schemas metadata
 
@@ -190,7 +190,7 @@ Get list of subject's schemas metadata
 - Not found 404
     - Code 1001 Subject does not exist
 ### subjectSchemaByVersion
-**GET /api/v1/subjects/<subject_name>/versions/<version>**
+**GET /v1/subjects/<subject_name>/versions/<version>**
 
 Get subject's schema metadata by version
 
@@ -209,7 +209,7 @@ Get subject's schema metadata by version
     - Code 1001 Subject does not exist
     - Code 1004 Subject schema with such version does not exist
 ### lockSubject
-**POST /api/v1/subjects/<subject_name>/lock**
+**POST /v1/subjects/<subject_name>/lock**
 
 Lock subject for adding new schemas to it
 
@@ -222,7 +222,7 @@ Lock subject for adding new schemas to it
 - Not found 404
     - Code 1001 Subject does not exist
 ### unlockSubject
-**POST /api/v1/subjects/<subject_name>/unlock**
+**POST /v1/subjects/<subject_name>/unlock**
 
 Unlock subject for adding new schemas to it
 
@@ -235,7 +235,7 @@ Unlock subject for adding new schemas to it
 - Not found 404
     - Code 1001 Subject does not exist
 ### schemaById
-**GET /api/v1/schemas/<id>**
+**GET /v1/schemas/<id>**
 
 Get schema by id
 
@@ -252,7 +252,7 @@ Get schema by id
 - Not found 404
     - Code 1005 Schema does not exist
 ### schemaIdBySubjectAndSchema
-**POST /api/v1/subjects/<subject_name>/schemas/id**
+**POST /v1/subjects/<subject_name>/schemas/id**
 
 **Body:**
 ```json
@@ -277,7 +277,7 @@ Check if schema is registered and connected with current subject and return it's
 - Bad request 400
     - Code 1007 Schema is not valid 
 ### deleteSubject
-**DELETE /api/v1/subjects/<subject_name>**
+**DELETE /v1/subjects/<subject_name>**
 
 Delete subject metadata
 
@@ -289,7 +289,7 @@ Delete subject metadata
     - Code 1000 Backend error
 
 ### deleteSubjectSchemaByVersion
-**GET /api/v1/subjects/<subject_name>/versions/<version>**
+**GET /v1/subjects/<subject_name>/versions/<version>**
 
 Delete subject schema by version
 
@@ -304,7 +304,7 @@ Delete subject schema by version
 - Bad request 400
     - Code 1004 Subject schrma with such version does not exist
 ### checkSubjectSchemaCompatibility
-**POST /api/v1/subjects/<subject_name>/compatibility/schemas**
+**POST /v1/subjects/<subject_name>/compatibility/schemas**
 
 **Body:**
 ```json
@@ -327,7 +327,7 @@ Check schema compatibility
 - Bad request 400
     - Code 1007 Schema is not valid
 ### updateSubjectCompatibility
-**POST /api/v1/subjects/<subject_name>/compatibility**
+**POST /v1/subjects/<subject_name>/compatibility**
 
 **Body:**
 ```json
@@ -347,7 +347,7 @@ Update subject compatibility type
 - Bad request 400
     - Code 1001 Subject does not exist
 ### getSubjectCompatibility
-**GET /api/v1/subjects/<subject_name>/compatibility**
+**GET /v1/subjects/<subject_name>/compatibility**
 
 Get subject compatibility type
 
@@ -361,7 +361,7 @@ Get subject compatibility type
 - Bad request 400
     - Code 1001 Subject does not exist
 ### registerSchema
-**PUT /api/v1/schemas**
+**PUT /v1/schemas**
 
 **Body:**
 ```json
@@ -385,7 +385,7 @@ Register new schema
     - Code 1008 Schema is already exist
 
 ### registerSchemaAndSubject
-**PUT /api/v1/subjects/<subject_name>/schemas**
+**PUT /v1/subjects/<subject_name>/schemas**
 
 **Body:**
 ```json
@@ -410,7 +410,7 @@ Register new subject (if not exists), schema (if not exists) and connect it to e
     - Code 1010 Schema is not compatible
     - Code 1013 Subject is locked
 ### registerSubject
-**PUT /api/v1/subjects**
+**PUT /v1/subjects**
 
 **Body:**
 ```json
@@ -435,7 +435,7 @@ Register new subject
 - Bad request 400
     - Code 1002 Subject is already exist
 ### addSchemaToSubject
-**PUT /api/v1/subjects/<subject_name>/schemas/<schema_id>**
+**PUT /v1/subjects/<subject_name>/schemas/<schema_id>**
 
 Connect schema to subject as next version
 
@@ -452,7 +452,7 @@ Connect schema to subject as next version
     - Code 1001 Subject does not exist
     - Code 1005 Schema does not exist
 ### isSubjectExist
-**POST /api/v1/subjects/<subject_name>**
+**POST /v1/subjects/<subject_name>**
 
 Check if subject exists
 
