@@ -13,6 +13,32 @@ It provides a RESTful interface for storing and retrieving Subjects and Schemas 
 ## Requirements
 - Java 8+
 
+## Modules
+- [`schemakeeper-common`](schemakeeper-common) - common classes for SerDe's and API
+- [`schemakeeper-client`](schemakeeper-client) - http client implementation
+- [`schemakeeper-avro`](schemakeeper-avro) - Avro SerDe
+- [`schemakeeper-thrift`](schemakeeper-thrift) - Thrift SerDe
+- [`schemakeeper-protobuf`](schemakeeper-protobuf) - Protobuf SerDe
+- [`schemakeeper-kafka-common`](schemakeeper-kafka-common) - common classes for Kafka SerDe
+- [`schemakeeper-kafka-avro`](schemakeeper-kafka-avro) - Avro SerDe for Kafka
+- [`schemakeeper-kafka-thrift`](schemakeeper-kafka-thrift) - Thrift SerDe for Kafka
+- [`schemakeeper-kafka-protobuf`](schemakeeper-kafka-protobuf) - Protobuf SerDe for Kafka
+
+## Installation
+Every Schemakeeper module is published at Maven Central
+
+```xml
+<dependency>
+  <groupId>com.nryanov.schemakeeper</groupId>
+  <artifactId>schemakeeper-${module.name}</artifactId>
+  <version>${module.version}</version>
+</dependency>
+```
+
+```groovy
+compile 'com.nryanov.schemakeeper:${module.name}:${module.version}'
+```
+
 ## Build
 ### Gradle
 ```bash
@@ -417,7 +443,7 @@ Register new subject (if not exists), schema (if not exists) and connect it to e
 {
  "subject": "subject name",
  "compatibilityType": "compatibility type name",
- "isLocked": <true or false> (default - false)
+ "isLocked": "false or true"
 }
 ```
 
