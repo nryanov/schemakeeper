@@ -84,6 +84,20 @@ schemakeeper {
   }
 }
 ```
+
+### CORS
+```hocon
+schemakeeper {
+  server {
+    cors {
+      allowsOrigin = "<ORIGIN>"
+      allowsMethods = "<Comma-separated methods>"
+      allowsHeaders = "<Comma-separated headers>"
+    }
+  }
+}
+```
+
 ### Jar
 If you using jar for starting server, you can configure your app using **-Dconfig.file** java option: 
 ```bash
@@ -99,6 +113,11 @@ To configure docker image you can use environment variables:
 - SCHEMAKEEPER_STORAGE_DRIVER - driver (org.h2.Driver, com.mysql.jdbc.Driver, org.postgresql.Driver)
 - SCHEMAKEEPER_STORAGE_SCHEMA - db schema
 - SCHEMAKEEPER_STORAGE_URL - jdbc connection url
+
+**Cors settings:**
+- SCHEMAKEEPER_ALLOWS_ORIGIN - Allowed origin
+- SCHEMAKEEPER_ALLOWS_METHODS - Comma-separated methods
+- SCHEMAKEEPER_ALLOWS_HEADER - Comma-separated headers
 
 ## Usage
 ### Avro

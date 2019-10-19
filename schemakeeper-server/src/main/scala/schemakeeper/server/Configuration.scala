@@ -26,6 +26,35 @@ class Configuration(config: Config) {
   def listeningPort: Int = config.getInt("schemakeeper.server.port")
 
   def adminPort: Int = config.getInt("schemakeeper.server.admin.port")
+
+  def allowsOrigin: Option[String] = {
+    val origin = config.getString("schemakeeper.server.cors.allowsOrigin")
+    if (origin.isEmpty) {
+      None
+    } else {
+      Some(origin)
+    }
+  }
+
+  def allowsMethods: Option[Seq[String]] = {
+    // to be able to use simple comma-separated values
+    val methods = config.getString("schemakeeper.server.cors.allowsMethods").split(",").toSeq
+    if (methods.isEmpty) {
+      None
+    } else {
+      Some(methods)
+    }
+  }
+
+  def allowsHeaders: Option[Seq[String]] = {
+    // to be able to use simple comma-separated values
+    val headers = config.getString("schemakeeper.server.cors.allowsHeaders").split(",").toSeq
+    if (headers.isEmpty) {
+      None
+    } else {
+      Some(headers)
+    }
+  }
 }
 
 object Configuration {

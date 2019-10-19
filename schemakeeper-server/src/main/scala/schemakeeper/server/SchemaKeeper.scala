@@ -11,6 +11,7 @@ import com.typesafe.config.ConfigFactory
 import schemakeeper.server.api.SchemaKeeperApi
 import schemakeeper.server.api.protocol.JsonProtocol._
 import schemakeeper.server.service.DBBackedService
+import schemakeeper.server.util.Filter
 
 import scala.concurrent.ExecutionContext
 
@@ -53,7 +54,7 @@ object SchemaKeeper extends TwitterServer {
 
     val server = Http.server
       .configured(Stats(statsReceiver))
-      .serve(s":${configuration.listeningPort}", bootstrap)
+      .serve(s":${configuration.listeningPort}", Filter.corsFilterPolicy(configuration).andThen(bootstrap))
 
     onExit {
       server.close()
