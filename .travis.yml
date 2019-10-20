@@ -13,7 +13,7 @@ before_install:
 - docker pull quay.io/testcontainers/ryuk:0.2.3
 - sudo apt-get update -qq
 - sudo apt-get install libboost-dev libboost-test-dev libboost-program-options-dev libevent-dev automake libtool flex bison pkg-config g++ libssl-dev
-- wget http://www.us.apache.org/dist/thrift/0.9.1/thrift-0.13.0.tar.gz
+- wget http://www.us.apache.org/dist/thrift/0.13.0/thrift-0.13.0.tar.gz
 - tar xfz thrift-0.0.13.0.tar.gz
 - cd thrift-0.13.0 && ./configure && sudo make install
 - cd ./..
@@ -32,5 +32,8 @@ cache:
   - $HOME/.gradle/caches/
   - $HOME/.gradle/wrapper/
 
+install:
+  - ./gradlew assemble
+
 script:
-  ./gradlew build
+  - ./gradlew build
