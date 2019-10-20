@@ -334,7 +334,7 @@ Delete subject metadata
     - Code 1000 Backend error
 
 ### deleteSubjectSchemaByVersion
-**GET /v1/subjects/<subject_name>/versions/<version>**
+**GET /v1/subjects/<subject_name>/versions/<version_number>**
 
 Delete subject schema by version
 
@@ -436,7 +436,8 @@ Register new schema
 ```json
 {
  "schemaText": "AVRO SCHEMA STRING",
- "schemaType": "IDENTIFIER Of SCHEMA TYPE [avro, thrift or protobuf]"
+ "schemaType": "IDENTIFIER Of SCHEMA TYPE [avro, thrift or protobuf]",
+ "compatibilityType": "SUBJECT COMPATIBILITY TYPE"
 }
 ```
 

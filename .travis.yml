@@ -1,0 +1,36 @@
+language: scala
+
+jdk:
+- openjdk8
+
+services:
+- docker
+
+before_install:
+- docker pull schemakeeper/server:0.1
+- docker pull postgres:9.6
+- docker pull mysql:5.7
+- docker pull quay.io/testcontainers/ryuk:0.2.3
+- sudo apt-get update -qq
+- sudo apt-get install libboost-dev libboost-test-dev libboost-program-options-dev libevent-dev automake libtool flex bison pkg-config g++ libssl-dev
+- wget http://www.us.apache.org/dist/thrift/0.9.1/thrift-0.13.0.tar.gz
+- tar xfz thrift-0.0.13.0.tar.gz
+- cd thrift-0.13.0 && ./configure && sudo make install
+- cd ./..
+- sudo apt-get install autoconf curl unzip
+- wget https://github.com/protocolbuffers/protobuf/releases/download/v3.10.0/protobuf-all-3.10.0.tar.gz
+- tar xfz protobuf-all-3.10.0.tar.gz
+- cd protobuf-all-3.10.0.tar.gz && ./configure && sudo make install && sudo ldconfig
+- cd ./..
+
+before_cache:
+- rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+- rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+
+cache:
+  directories:
+  - $HOME/.gradle/caches/
+  - $HOME/.gradle/wrapper/
+
+script:
+  ./gradlew build

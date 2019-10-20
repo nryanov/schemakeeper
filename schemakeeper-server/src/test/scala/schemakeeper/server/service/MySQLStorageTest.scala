@@ -13,7 +13,7 @@ import schemakeeper.server.Configuration
 
 @RunWith(classOf[JUnitRunner])
 class MySQLStorageTest extends ServiceTest with ForAllTestContainer with BeforeAndAfterEach with BeforeAndAfterAll {
-  override val container: MySQLContainer = MySQLContainer(mysqlImageVersion = "mysql:latest", databaseName = "schemakeeper")
+  override val container: MySQLContainer = MySQLContainer(mysqlImageVersion = "mysql:5.7", databaseName = "schemakeeper")
 
   override lazy val schemaStorage: DBBackedService[Id] = {
     val map: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]
