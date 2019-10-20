@@ -3,13 +3,6 @@ language: scala
 jdk:
 - openjdk8
 
-os: osx
-
-addons:
-  apt:
-    packages:
-      - ant
-
 services:
 - docker
 
@@ -18,8 +11,6 @@ before_install:
 - docker pull postgres:9.6
 - docker pull mysql:5.7
 - docker pull quay.io/testcontainers/ryuk:0.2.3
-- brew install thrift
-- brew install protobuf
 
 before_cache:
 - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
