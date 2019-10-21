@@ -18,7 +18,7 @@ before_install:
 - sudo apt-get install -y autoconf automake libtool curl make g++ unzip
 - wget https://github.com/protocolbuffers/protobuf/releases/download/v3.7.1/protobuf-java-3.7.1.tar.gz
 - tar xfz protobuf-java-3.7.1.tar.gz
-- cd protobuf-java-3.7.1.tar.gz && ./configure && sudo make install && sudo ldconfig
+- cd protobuf-java-3.7.1 && ./configure && sudo make install && sudo ldconfig
 - cd ./..
 
 before_cache:
