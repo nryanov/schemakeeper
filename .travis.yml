@@ -8,7 +8,6 @@ dist: trusty
 services:
 - docker
 
-
 before_install:
 - docker pull schemakeeper/server:0.1
 - docker pull postgres:9.6
@@ -16,9 +15,11 @@ before_install:
 - docker pull quay.io/testcontainers/ryuk:0.2.3
 - sudo apt-get install thrift-compiler
 - sudo apt-get install -y autoconf automake libtool curl make g++ unzip
-- wget https://github.com/protocolbuffers/protobuf/releases/download/v3.7.1/protobuf-java-3.7.1.tar.gz
-- tar xfz protobuf-java-3.7.1.tar.gz
-- cd protobuf-java-3.7.1 && ./configure && sudo make install && sudo ldconfig
+- wget https://github.com/protocolbuffers/protobuf/releases/download/v3.7.1/protobuf-all-3.7.1.tar.gz
+- ls -l
+- tar xfz protobuf-all-3.7.1.tar.gz
+- ls -l
+- cd protobuf-all-3.7.1 && ./configure && sudo make install && sudo ldconfig
 - cd ./..
 
 before_cache:
