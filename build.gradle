@@ -308,6 +308,10 @@ project(':schemakeeper-thrift') {
         sourceDir "$projectDir/src/test/thrift"
     }
 
+    compileJava {
+        compileThrift.enabled = false
+    }
+
     compileTestJava {
         dependsOn compileThrift
     }
