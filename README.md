@@ -2,6 +2,12 @@
 Schemakeeper - yet another schema registry for Avro, Thrift and Protobuf schemas. 
 It provides a RESTful interface for storing and retrieving Subjects and Schemas metadata.
 
+## Badges
+[![Build Status](https://img.shields.io/travis/nryanov/Schemakeeper/master.svg)](https://travis-ci.com/nryanov/Schemakeeper)
+[![codecov](https://codecov.io/gh/nryanov/Schemakeeper/branch/master/graph/badge.svg)](https://codecov.io/gh/nryanov/Schemakeeper)
+[![GitHub license](https://img.shields.io/github/license/nryanov/Schemakeeper)](https://github.com/nryanov/Schemakeeper/blob/master/LICENSE.txt)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.nryanov.schemakeeper/schemakeeper-common/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.nryanov.schemakeeper/schemakeeper-common)
+
 ## Features
 - Allows to store metadata for Avro, Thrift and Protobuf schemas
 - Allows to use PostgreSQL, MySQL or H2 as backend for server
@@ -334,7 +340,7 @@ Delete subject metadata
     - Code 1000 Backend error
 
 ### deleteSubjectSchemaByVersion
-**GET /v1/subjects/<subject_name>/versions/<version>**
+**GET /v1/subjects/<subject_name>/versions/<version_number>**
 
 Delete subject schema by version
 
@@ -436,7 +442,8 @@ Register new schema
 ```json
 {
  "schemaText": "AVRO SCHEMA STRING",
- "schemaType": "IDENTIFIER Of SCHEMA TYPE [avro, thrift or protobuf]"
+ "schemaType": "IDENTIFIER Of SCHEMA TYPE [avro, thrift or protobuf]",
+ "compatibilityType": "SUBJECT COMPATIBILITY TYPE"
 }
 ```
 

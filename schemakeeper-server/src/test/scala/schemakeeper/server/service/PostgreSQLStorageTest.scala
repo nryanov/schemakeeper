@@ -13,7 +13,7 @@ import schemakeeper.server.Configuration
 
 @RunWith(classOf[JUnitRunner])
 class PostgreSQLStorageTest extends ServiceTest with ForAllTestContainer with BeforeAndAfterAll with BeforeAndAfterEach {
-  override val container: PostgreSQLContainer = PostgreSQLContainer("postgres:latest")
+  override val container: PostgreSQLContainer = PostgreSQLContainer("postgres:9.6")
   lazy val schemaStorage = {
     val map: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]
     map.put("schemakeeper.storage.username", container.username)
