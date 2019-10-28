@@ -60,7 +60,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
 
   "Subject endpoint" should {
     "return subject list" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
       val api = SchemaKeeperApi(schemaStorage)
       val result = api.subjects(Input.get("/v1/subjects")).awaitValueUnsafe()
 
@@ -77,7 +77,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
 
   "SubjectMetadata endpoint" should {
     "return subject metadata" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
       val api = SchemaKeeperApi(schemaStorage)
       val result = api.subjectMetadata(Input.get("/v1/subjects/A1")).awaitValueUnsafe()
 
@@ -94,7 +94,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
 
   "LockSubject endpoint" should {
     "return true" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
       val api = SchemaKeeperApi(schemaStorage)
       val result = api.lockSubject(Input.post("/v1/subjects/A1/lock")).awaitValueUnsafe()
 
@@ -111,7 +111,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
 
   "UnlockSubject endpoint" should {
     "return true" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
       val api = SchemaKeeperApi(schemaStorage)
       val result = api.unlockSubject(Input.post("/v1/subjects/A1/unlock")).awaitValueUnsafe()
 
@@ -136,7 +136,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
     }
 
     "return empty versions list" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
       val api = SchemaKeeperApi(schemaStorage)
       val result = api.subjectVersions(Input.get("/v1/subjects/A1/versions")).awaitValueUnsafe()
 
@@ -161,7 +161,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
     }
 
     "return empty list" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
       val api = SchemaKeeperApi(schemaStorage)
       val result = api.subjectSchemasMetadata(Input.get("/v1/subjects/A1/schemas")).awaitValueUnsafe()
 
@@ -238,7 +238,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
     }
 
     "NotFound - schema is not registered" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
       val body = SchemaText.instance(Schema.create(Schema.Type.STRING))
       val api = SchemaKeeperApi(schemaStorage)
       val result = api.schemaIdBySubjectAndSchema(Input.post(s"/v1/subjects/A1/schemas/id").withBody[Application.Json](body)).awaitOutputUnsafe()
@@ -253,7 +253,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
     }
 
     "BadRequest - schema is not connected to subject" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
       val id = schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString(), SchemaType.AVRO).unsafeRunSync().right.get.getSchemaId
       val body = SchemaText.instance(Schema.create(Schema.Type.STRING))
       val api = SchemaKeeperApi(schemaStorage)
@@ -264,7 +264,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
 
   "DeleteSubject endpoint" should {
     "return true" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
       val api = SchemaKeeperApi(schemaStorage)
       val result = api.deleteSubject(Input.delete(s"/v1/subjects/A1")).awaitValueUnsafe()
 
@@ -345,7 +345,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
 
   "UpdateSubjectCompatibility endpoint" should {
     "return true" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
       val api = SchemaKeeperApi(schemaStorage)
       val body = CompatibilityType.FORWARD
       val result = api.updateSubjectCompatibility(Input.post("/v1/subjects/A1/compatibility").withBody[Application.Json](body)).awaitValueUnsafe()
@@ -362,7 +362,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
 
   "GetSubjectCompatibility endpoint" should {
     "return compatibilityType" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
       val api = SchemaKeeperApi(schemaStorage)
       val result = api.getSubjectCompatibility(Input.get("/v1/subjects/A1/compatibility")).awaitValueUnsafe()
       assertResult(CompatibilityType.BACKWARD)(result.get)
@@ -425,7 +425,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
 
     "BadRequest - subject is locked" in {
       val api = SchemaKeeperApi(schemaStorage)
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
       schemaStorage.lockSubject("A1").unsafeRunSync()
       val body = SubjectAndSchemaRequest.instance(Schema.create(Schema.Type.INT).toString, SchemaType.AVRO, CompatibilityType.BACKWARD)
       val result = api.registerSchemaAndSubject(Input.put("/v1/subjects/A1/schemas").withBody[Application.Json](body)).awaitOutputUnsafe()
@@ -449,8 +449,15 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
       assertResult(Ok(SubjectMetadata.instance("A1", CompatibilityType.BACKWARD)))(result.get)
     }
 
+    "return ok - register locked subject" in {
+      val api = SchemaKeeperApi(schemaStorage)
+      val body = SubjectMetadata.instance("A1", CompatibilityType.BACKWARD, true)
+      val result = api.registerSubject(Input.put("/v1/subjects").withBody[Application.Json](body)).awaitOutputUnsafe()
+      assertResult(Ok(SubjectMetadata.instance("A1", CompatibilityType.BACKWARD, true)))(result.get)
+    }
+
     "BadRequest - subject is already exist" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
       val api = SchemaKeeperApi(schemaStorage)
       val body = SubjectMetadata.instance("A1", CompatibilityType.BACKWARD)
       val result = api.registerSubject(Input.put("/v1/subjects").withBody[Application.Json](body)).awaitOutputUnsafe()
@@ -460,7 +467,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
 
   "AddSchemaToSubject endpoint" should {
     "return version number - first schema" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
       val id = schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO).unsafeRunSync().right.get.getSchemaId
       val api = SchemaKeeperApi(schemaStorage)
       val result = api.addSchemaToSubject(Input.put(s"/v1/subjects/A1/schemas/$id")).awaitValueUnsafe()
@@ -484,7 +491,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
 
     "BadRequest - subject is locked" in {
       val api = SchemaKeeperApi(schemaStorage)
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
       val id = schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO).unsafeRunSync().right.get.getSchemaId
       schemaStorage.lockSubject("A1").unsafeRunSync()
       val result = api.addSchemaToSubject(Input.put(s"/v1/subjects/A1/schemas/$id")).awaitOutputUnsafe()
@@ -499,7 +506,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
     }
 
     "NotFound - schema does not exist" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD).unsafeRunSync()
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
       val api = SchemaKeeperApi(schemaStorage)
       val result = api.addSchemaToSubject(Input.put(s"/v1/subjects/A1/schemas/123")).awaitOutputUnsafe()
       assertResult(Output.failure(ErrorInfo(SchemaIdDoesNotExist(123).msg, ErrorCode.SchemaIdDoesNotExistCode), Status.NotFound))(result.get)
@@ -513,7 +520,7 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
 
   "IsSubjectExist endpoint" should {
     "return true" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD)
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
       val api = SchemaKeeperApi(schemaStorage)
       val result = api.isSubjectExist(Input.post("/v1/subjects/A1")).awaitValueUnsafe()
       assert(result.get)

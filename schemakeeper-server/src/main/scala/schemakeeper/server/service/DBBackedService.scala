@@ -319,7 +319,7 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
           case None => storage.registerSchema(schemaText, schemaHash, schemaType)
           case Some(meta) => pure[Int](meta.getSchemaId)
         }.flatMap(schemaId => storage.subjectMetadata(subject).flatMap {
-          case None => storage.registerSubject(subject, compatibilityType).map(meta => (schemaId, meta))
+          case None => storage.registerSubject(subject, compatibilityType, isLocked = false).map(meta => (schemaId, meta))
           case Some(meta) => pure[(Int, SubjectMetadata)]((schemaId, meta))
         }).flatMap[Result[SchemaId]] {
           case (schemaId, subjectMeta) => if (subjectMeta.isLocked) {
@@ -346,13 +346,13 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
     }
   }
 
-  override def registerSubject(subject: String, compatibilityType: CompatibilityType): F[Result[SubjectMetadata]] = {
+  override def registerSubject(subject: String, compatibilityType: CompatibilityType, isLocked: Boolean): F[Result[SubjectMetadata]] = {
     logger.info(s"Register new subject: $subject, ${compatibilityType.identifier}")
 
     transaction {
       Monad[ConnectionIO].ifM[Result[SubjectMetadata]](storage.isSubjectExist(subject))(
         pure(Left(SubjectIsAlreadyExists(subject))),
-        storage.registerSubject(subject, compatibilityType).map(Right(_))
+        storage.registerSubject(subject, compatibilityType, isLocked).map(Right(_))
       )
     }.map {
       case Left(e) => Left(BackendError(e))

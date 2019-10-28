@@ -130,9 +130,10 @@ trait Service[F[_]] {
   /**
     * @param subject - subject name
     * @param compatibilityType - compatibility type
+    * @param isLocked - subject lock status
     * @return - subject metadata
     */
-  def registerSubject(subject: String, compatibilityType: CompatibilityType): F[Either[SchemaKeeperError, SubjectMetadata]]
+  def registerSubject(subject: String, compatibilityType: CompatibilityType, isLocked: Boolean): F[Either[SchemaKeeperError, SubjectMetadata]]
 
   /**
     * Add already registered schema to subject if schema is compatible.

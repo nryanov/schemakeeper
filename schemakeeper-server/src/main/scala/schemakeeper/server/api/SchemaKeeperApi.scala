@@ -281,7 +281,7 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: "subjects"
     :: jsonBody[SubjectMetadata]) { meta: SubjectMetadata =>
     logger.info(s"Register new subject: $meta")
-    storage.registerSubject(meta.getSubject, meta.getCompatibilityType).map {
+    storage.registerSubject(meta.getSubject, meta.getCompatibilityType, meta.isLocked).map {
       case Left(e) =>
         logger.error(s"Error while registering subject: $meta: ${e.msg}")
         e match {
