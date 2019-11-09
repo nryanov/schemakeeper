@@ -209,6 +209,32 @@ Get subject metadata by name
     - Code 1000 Backend error
 - Not found 404
     - Code 1001 Subject does not exist
+    
+### updateSubjectSettings
+**PUT /v1/subjects/<subject_name>**
+
+Update subject settings
+
+
+**Body:**
+```json
+{
+ "compatibilityType": "Compatibility type",
+ "isLocked": "true/false"
+}
+```
+
+**Response:**
+- Json object:
+    - subject (string)
+    - compatibilityType (string)
+    - isLocked (boolean)
+
+**Status codes:**
+- Internal server error 500 
+    - Code 1000 Backend error
+- Not found 404
+    - Code 1001 Subject does not exist
 ### subjectVersions
 **GET /v1/subjects/<subject_name>/versions**
 
@@ -259,32 +285,7 @@ Get subject's schema metadata by version
 - Not found 404
     - Code 1001 Subject does not exist
     - Code 1004 Subject schema with such version does not exist
-### lockSubject
-**POST /v1/subjects/<subject_name>/lock**
-
-Lock subject for adding new schemas to it
-
-**Response:**
-- Json boolean
-
-**Status codes:**
-- Internal server error 500 
-    - Code 1000 Backend error
-- Not found 404
-    - Code 1001 Subject does not exist
-### unlockSubject
-**POST /v1/subjects/<subject_name>/unlock**
-
-Unlock subject for adding new schemas to it
-
-**Response:**
-- Json boolean
-
-**Status codes:**
-- Internal server error 500 
-    - Code 1000 Backend error
-- Not found 404
-    - Code 1001 Subject does not exist
+    
 ### schemaById
 **GET /v1/schemas/<id>**
 
@@ -303,7 +304,7 @@ Get schema by id
 - Not found 404
     - Code 1005 Schema does not exist
 ### schemaIdBySubjectAndSchema
-**POST /v1/subjects/<subject_name>/schemas/id**
+**GET /v1/subjects/<subject_name>/schemas/id**
 
 **Body:**
 ```json
@@ -377,42 +378,9 @@ Check schema compatibility
     - Code 1001 Subject does not exist
 - Bad request 400
     - Code 1007 Schema is not valid
-### updateSubjectCompatibility
-**POST /v1/subjects/<subject_name>/compatibility**
-
-**Body:**
-```json
-{
- "compatibilityType": "<compatibility type name>"
-}
-```
-
-Update subject compatibility type
-
-**Response:**
-- Json boolean
-
-**Status codes:**
-- Internal server error 500 
-    - Code 1000 Backend error
-- Bad request 400
-    - Code 1001 Subject does not exist
-### getSubjectCompatibility
-**GET /v1/subjects/<subject_name>/compatibility**
-
-Get subject compatibility type
-
-**Response:**
-- Json object:
-    - compatibilityType (string)
-
-**Status codes:**
-- Internal server error 500 
-    - Code 1000 Backend error
-- Bad request 400
-    - Code 1001 Subject does not exist
+    
 ### registerSchema
-**PUT /v1/schemas**
+**POST /v1/schemas**
 
 **Body:**
 ```json
@@ -436,7 +404,7 @@ Register new schema
     - Code 1008 Schema is already exist
 
 ### registerSchemaAndSubject
-**PUT /v1/subjects/<subject_name>/schemas**
+**POST /v1/subjects/<subject_name>/schemas**
 
 **Body:**
 ```json
@@ -462,7 +430,7 @@ Register new subject (if not exists), schema (if not exists) and connect it to e
     - Code 1010 Schema is not compatible
     - Code 1013 Subject is locked
 ### registerSubject
-**PUT /v1/subjects**
+**POST /v1/subjects**
 
 **Body:**
 ```json
@@ -487,7 +455,7 @@ Register new subject
 - Bad request 400
     - Code 1002 Subject is already exist
 ### addSchemaToSubject
-**PUT /v1/subjects/<subject_name>/schemas/<schema_id>**
+**POST /v1/subjects/<subject_name>/schemas/<schema_id>**
 
 Connect schema to subject as next version
 
@@ -503,17 +471,6 @@ Connect schema to subject as next version
 - Not found 404
     - Code 1001 Subject does not exist
     - Code 1005 Schema does not exist
-### isSubjectExist
-**POST /v1/subjects/<subject_name>**
-
-Check if subject exists
-
-**Response:**
-- Json boolean
-
-**Status codes:**
-- Internal server error 500 
-    - Code 1000 Backend error
 
 ## ROADMAP
 - Add security
