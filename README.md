@@ -123,7 +123,7 @@ To configure docker image you can use environment variables:
 **Cors settings:**
 - SCHEMAKEEPER_ALLOWS_ORIGIN - Allowed origin
 - SCHEMAKEEPER_ALLOWS_METHODS - Comma-separated methods
-- SCHEMAKEEPER_ALLOWS_HEADER - Comma-separated headers
+- SCHEMAKEEPER_ALLOWS_HEADERS - Comma-separated headers
 
 ## Usage
 ### Avro
