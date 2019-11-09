@@ -4,6 +4,7 @@ import io.circe.Decoder.Result
 import io.circe.{Decoder, Encoder, HCursor, Json}
 import schemakeeper.api._
 import schemakeeper.schema.{CompatibilityType, SchemaType}
+import schemakeeper.server.api.internal.SubjectSettings
 
 object JsonProtocol {
     implicit val exceptionEncoder: Encoder[Exception] = Encoder.instance {
@@ -30,6 +31,19 @@ object JsonProtocol {
       schemaHash <- c.downField("schemaHash").as[String]
       schemaType <- c.downField("schemaType").as[String]
     } yield SchemaMetadata.instance(schemaId, schemaText, schemaHash, SchemaType.findByName(schemaType))
+  }
+
+  implicit val subjectSettingsEncoder: Encoder[SubjectSettings] = new Encoder[SubjectSettings] {
+    override def apply(a: SubjectSettings): Json = Json.obj(
+      ("compatibilityType", Json.fromString(a.compatibilityType.identifier)),
+      ("isLocked", Json.fromBoolean(a.isLocked)),
+    )
+  }
+  implicit val subjectSettingsDencoder: Decoder[SubjectSettings] = new Decoder[SubjectSettings] {
+    override def apply(c: HCursor): Result[SubjectSettings] = for {
+      compatibilityType <- c.downField("schemaId").as[String]
+      isLocked <- c.downField("schemaText").as[Boolean]
+    } yield SubjectSettings(CompatibilityType.findByName(compatibilityType), isLocked)
   }
 
   implicit val subjectSchemaMetadataEncoder: Encoder[SubjectSchemaMetadata] = new Encoder[SubjectSchemaMetadata] {

@@ -33,17 +33,14 @@ class DatabaseStorage(dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy])
       .map(_.version)
   })
 
-  override def lockSubject(subject: String): doobie.ConnectionIO[Boolean] = dc.run(quote {
+  override def updateSubjectSettings(subject: String, compatibilityType: CompatibilityType, isLocked: Boolean): doobie.ConnectionIO[SubjectMetadata] = dc.run(quote {
     query[Subject]
       .filter(_.subjectName == lift(subject))
-      .update(_.isLocked -> lift(true))
-  }).map(_ > 0)
-
-  override def unlockSubject(subject: String): doobie.ConnectionIO[Boolean] = dc.run(quote {
-    query[Subject]
-      .filter(_.subjectName == lift(subject))
-      .update(_.isLocked -> lift(false))
-  }).map(_ > 0)
+      .update(
+        _.isLocked -> lift(isLocked),
+        _.compatibilityTypeName -> lift(compatibilityType.identifier)
+      )
+  }).map(_ => SubjectMetadata.instance(subject, compatibilityType, isLocked))
 
   override def subjectSchemasMetadata(subject: String): doobie.ConnectionIO[List[SubjectSchemaMetadata]] = dc.run(quote {
     query[SubjectSchema]
@@ -84,12 +81,6 @@ class DatabaseStorage(dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy])
       .filter(_.subjectName == lift(subject))
       .filter(_.version == lift(version))
       .delete
-  }).map(_ > 0)
-
-  override def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): doobie.ConnectionIO[Boolean] = dc.run(quote {
-    query[Subject]
-      .filter(_.subjectName == lift(subject))
-      .update(_.compatibilityTypeName -> lift(compatibilityType.identifier))
   }).map(_ > 0)
 
   override def getSubjectCompatibility(subject: String): doobie.ConnectionIO[Option[CompatibilityType]] = dc.run(quote {

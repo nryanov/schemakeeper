@@ -46,41 +46,18 @@ abstract class ServiceTest extends WordSpec with Matchers {
     }
   }
 
-  "LockSubject" should {
+  "UpdateSubjectSettings" should {
     "return SubjectDoesNotExist" in {
-      val result = schemaStorage.lockSubject("A1")
+      val result = schemaStorage.updateSubjectSettings("A1", CompatibilityType.FULL, isLocked = false)
       assert(result.isLeft)
       assertResult(SubjectDoesNotExist("A1"))(result.left.get)
     }
 
-    "successfully lock subject" in {
+    "return updated subject metadata" in {
       schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
-      val result = schemaStorage.lockSubject("A1")
+      val result = schemaStorage.updateSubjectSettings("A1", CompatibilityType.FULL, isLocked = true)
       assert(result.isRight)
-      assert(result.right.get)
-
-      assertResult(SubjectMetadata.instance("A1", CompatibilityType.BACKWARD, true))(schemaStorage.subjectMetadata("A1").right.get)
-    }
-  }
-
-  "UnlockSubject" should {
-    "return SubjectDoesNotExist" in {
-      val result = schemaStorage.lockSubject("A1")
-      assert(result.isLeft)
-      assertResult(SubjectDoesNotExist("A1"))(result.left.get)
-    }
-
-    "successfully unlock subject" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
-      schemaStorage.lockSubject("A1")
-
-      assert(schemaStorage.subjectMetadata("A1").right.get.isLocked)
-
-      val result = schemaStorage.unlockSubject("A1")
-      assert(result.isRight)
-      assert(result.right.get)
-
-      assertResult(SubjectMetadata.instance("A1", CompatibilityType.BACKWARD))(schemaStorage.subjectMetadata("A1").right.get)
+      assertResult(SubjectMetadata.instance("A1", CompatibilityType.FULL, true))(result.right.get)
     }
   }
 
@@ -301,62 +278,6 @@ abstract class ServiceTest extends WordSpec with Matchers {
     }
   }
 
-  "UpdateSubjectCompatibility" should {
-    "return SubjectDoesNotExist" in {
-      val result = schemaStorage.updateSubjectCompatibility("A1", CompatibilityType.BACKWARD)
-      assert(result.isLeft)
-      assertResult(SubjectDoesNotExist("A1"))(result.left.get)
-    }
-
-    "return true" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
-      val result = schemaStorage.updateSubjectCompatibility("A1", CompatibilityType.BACKWARD)
-      assert(result.isRight)
-      assertResult(true)(result.right.get)
-    }
-  }
-
-  "GetSubjectCompatibility" should {
-    "return SubjectDoesNotExist" in {
-      val result = schemaStorage.getSubjectCompatibility("A1")
-      assert(result.isLeft)
-      assertResult(SubjectDoesNotExist("A1"))(result.left.get)
-    }
-
-    "return true" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
-      val result = schemaStorage.getSubjectCompatibility("A1")
-      assert(result.isRight)
-      assertResult(CompatibilityType.BACKWARD)(result.right.get)
-    }
-  }
-
-  "GetLastSubjectSchema" should {
-    "return SubjectDoesNotExist" in {
-      val result = schemaStorage.getLastSubjectSchema("A1")
-      assert(result.isLeft)
-      assertResult(SubjectDoesNotExist("A1"))(result.left.get)
-    }
-
-    "return SubjectHasNoRegisteredSchemas" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
-      val result = schemaStorage.getLastSubjectSchema("A1")
-      assert(result.isLeft)
-      assertResult(SubjectHasNoRegisteredSchemas("A1"))(result.left.get)
-    }
-
-    "return last schema" in {
-      schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString(), CompatibilityType.BACKWARD, SchemaType.AVRO)
-      val result = schemaStorage.getLastSubjectSchema("A1")
-      assert(result.isRight)
-
-      val meta = result.right.get
-
-      assertResult(SchemaType.AVRO)(meta.getSchemaType)
-      assertResult(Schema.create(Schema.Type.STRING).toString())(meta.getSchemaText)
-    }
-  }
-
   "GetSubjectSchemas" should {
     "return SubjectDoesNotExist" in {
       val result = schemaStorage.getSubjectSchemas("A1")
@@ -401,8 +322,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
 
   "RegisterSchema and subject if does not exist and connect to each other" should {
     "return SubjectIsLocked" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
-      schemaStorage.lockSubject("A1")
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = true)
       val result = schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD, SchemaType.AVRO)
       assert(result.isLeft)
       assertResult(SubjectIsLocked("A1"))(result.left.get)
@@ -419,7 +339,7 @@ abstract class ServiceTest extends WordSpec with Matchers {
       val result = schemaStorage.registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD, SchemaType.AVRO)
       assert(result.isRight)
       assert(schemaStorage.subjects().right.get.size == 1)
-      assertResult(result.right.get.getSchemaId)(schemaStorage.getLastSubjectSchema("A1").right.get.getSchemaId)
+      assertResult(result.right.get.getSchemaId)(schemaStorage.getSubjectSchemas("A1").right.get.head.getSchemaId)
     }
 
     "register subject, does not register new schema (because schema with the same hash is already exist) and return schema id of existing schema" in {
@@ -518,22 +438,10 @@ abstract class ServiceTest extends WordSpec with Matchers {
     }
 
     "return SubjectIsLocked" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
-      schemaStorage.lockSubject("A1")
+      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = true)
       val result = schemaStorage.addSchemaToSubject("A1", 1)
       assert(result.isLeft)
       assertResult(SubjectIsLocked("A1"))(result.left.get)
-    }
-  }
-
-  "IsSubjectExist" should {
-    "return true" in {
-      schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
-      assertResult(true)(schemaStorage.isSubjectExist("A1").right.get)
-    }
-
-    "return false" in {
-      assertResult(false)(schemaStorage.isSubjectExist("A1").right.get)
     }
   }
 }
