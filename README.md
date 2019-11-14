@@ -50,9 +50,9 @@ compile 'com.nryanov.schemakeeper:${module.name}:${module.version}'
 ```bash
 gradle build
 ```
-Only server:
+Server build:
 ```bash
-gradle :schemakeeper-server:clean :schemakeeper-server:jar
+gradle :schemakeeper-server:clean :schemakeeper-server:shadowJar
 ```
 ### Docker
 ```bash
