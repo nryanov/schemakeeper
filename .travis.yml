@@ -9,18 +9,16 @@ services:
 - docker
 
 before_install:
-- docker build -t schemakeeper/server:test .
 - docker pull postgres:9.6
 - docker pull mysql:5.7
 - docker pull quay.io/testcontainers/ryuk:0.2.3
 - docker pull gradle:jdk8-alpine
 - docker pull openjdk:8-jre-alpine
+- docker build -t schemakeeper/server:test .
 - sudo apt-get install thrift-compiler
 - sudo apt-get install -y autoconf automake libtool curl make g++ unzip
 - wget https://github.com/protocolbuffers/protobuf/releases/download/v3.7.1/protobuf-java-3.7.1.tar.gz
-- ls -l
 - tar xfz protobuf-java-3.7.1.tar.gz
-- ls -l
 - cd protobuf-3.7.1 && ./configure && sudo make install && sudo ldconfig
 - cd ./..
 
