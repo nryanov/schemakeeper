@@ -124,7 +124,7 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     }
   }
 
-  final val schemaIdBySubjectAndSchema: Endpoint[IO, SchemaId] = get(apiVersion
+  final val schemaIdBySubjectAndSchema: Endpoint[IO, SchemaId] = post(apiVersion
     :: "subjects"
     :: path[String]
     :: "schemas"

@@ -90,7 +90,7 @@ public class DefaultSchemaKeeperClient extends SchemaKeeperClient {
     public int getSchemaId(String subject, Schema schema, SchemaType schemaType) {
         logger.debug("Get schema id ({}) subject: {}", schema.toString(), subject);
 
-        HttpResponse<String> response = Unirest.request("GET", SCHEMAKEEPER_URL + "/v1/subjects/" + subject + "/schemas/id")
+        HttpResponse<String> response = Unirest.post(String.format("%s/%s/subjects/%s/schemas/id", SCHEMAKEEPER_URL, API_VERSION, subject))
                 .header("Content-Type", "application/json")
                 .body(SchemaText.instance(schema, schemaType))
                 .asString()

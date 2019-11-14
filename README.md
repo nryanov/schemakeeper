@@ -182,7 +182,7 @@ Also, the required property is `SerDeConfig.SCHEMAKEEPER_URL_CONFIG`. Other sett
 
 ## API
 ### subjects
-**GET /v1/subjects**
+**GET /v2/subjects**
 
 Get list of registered subjects
 
@@ -194,7 +194,7 @@ Get list of registered subjects
     - Code 1000 Backend error
 
 ### subjectMetadata
-**GET /v1/subjects/<subject_name>**
+**GET /v2/subjects/<subject_name>**
 
 Get subject metadata by name
 
@@ -211,7 +211,7 @@ Get subject metadata by name
     - Code 1001 Subject does not exist
     
 ### updateSubjectSettings
-**PUT /v1/subjects/<subject_name>**
+**PUT /v2/subjects/<subject_name>**
 
 Update subject settings
 
@@ -236,7 +236,7 @@ Update subject settings
 - Not found 404
     - Code 1001 Subject does not exist
 ### subjectVersions
-**GET /v1/subjects/<subject_name>/versions**
+**GET /v2/subjects/<subject_name>/versions**
 
 Get list of subject's schema versions
 
@@ -249,7 +249,7 @@ Get list of subject's schema versions
 - Not found 404
     - Code 1001 Subject does not exist
 ### subjectSchemasMetadata
-**GET /v1/subjects/<subject_name>/schemas**
+**GET /v2/subjects/<subject_name>/schemas**
 
 Get list of subject's schemas metadata
 
@@ -267,7 +267,7 @@ Get list of subject's schemas metadata
 - Not found 404
     - Code 1001 Subject does not exist
 ### subjectSchemaByVersion
-**GET /v1/subjects/<subject_name>/versions/<version>**
+**GET /v2/subjects/<subject_name>/versions/<version>**
 
 Get subject's schema metadata by version
 
@@ -287,7 +287,7 @@ Get subject's schema metadata by version
     - Code 1004 Subject schema with such version does not exist
     
 ### schemaById
-**GET /v1/schemas/<id>**
+**GET /v2/schemas/<id>**
 
 Get schema by id
 
@@ -304,7 +304,7 @@ Get schema by id
 - Not found 404
     - Code 1005 Schema does not exist
 ### schemaIdBySubjectAndSchema
-**GET /v1/subjects/<subject_name>/schemas/id**
+**POST /v2/subjects/<subject_name>/schemas/id**
 
 **Body:**
 ```json
@@ -329,7 +329,7 @@ Check if schema is registered and connected with current subject and return it's
 - Bad request 400
     - Code 1007 Schema is not valid 
 ### deleteSubject
-**DELETE /v1/subjects/<subject_name>**
+**DELETE /v2/subjects/<subject_name>**
 
 Delete subject metadata
 
@@ -341,7 +341,7 @@ Delete subject metadata
     - Code 1000 Backend error
 
 ### deleteSubjectSchemaByVersion
-**GET /v1/subjects/<subject_name>/versions/<version_number>**
+**DELETE /v2/subjects/<subject_name>/versions/<version_number>**
 
 Delete subject schema by version
 
@@ -356,7 +356,7 @@ Delete subject schema by version
 - Bad request 400
     - Code 1004 Subject schrma with such version does not exist
 ### checkSubjectSchemaCompatibility
-**POST /v1/subjects/<subject_name>/compatibility/schemas**
+**POST /v2/subjects/<subject_name>/compatibility/schemas**
 
 **Body:**
 ```json
@@ -380,7 +380,7 @@ Check schema compatibility
     - Code 1007 Schema is not valid
     
 ### registerSchema
-**POST /v1/schemas**
+**POST /v2/schemas**
 
 **Body:**
 ```json
@@ -404,7 +404,7 @@ Register new schema
     - Code 1008 Schema is already exist
 
 ### registerSchemaAndSubject
-**POST /v1/subjects/<subject_name>/schemas**
+**POST /v2/subjects/<subject_name>/schemas**
 
 **Body:**
 ```json
@@ -430,7 +430,7 @@ Register new subject (if not exists), schema (if not exists) and connect it to e
     - Code 1010 Schema is not compatible
     - Code 1013 Subject is locked
 ### registerSubject
-**POST /v1/subjects**
+**POST /v2/subjects**
 
 **Body:**
 ```json
@@ -455,7 +455,7 @@ Register new subject
 - Bad request 400
     - Code 1002 Subject is already exist
 ### addSchemaToSubject
-**POST /v1/subjects/<subject_name>/schemas/<schema_id>**
+**POST /v2/subjects/<subject_name>/schemas/<schema_id>**
 
 Connect schema to subject as next version
 
