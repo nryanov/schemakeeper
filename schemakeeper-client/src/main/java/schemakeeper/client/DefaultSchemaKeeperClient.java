@@ -46,7 +46,7 @@ public class DefaultSchemaKeeperClient extends SchemaKeeperClient {
     public Schema getSchemaById(int id) {
         logger.debug("Get schema by id: {}", id);
 
-        HttpResponse<String> response = Unirest.get(SCHEMAKEEPER_URL + "/v1/schemas/" + id)
+        HttpResponse<String> response = Unirest.get(String.format("%s/%s/schemas/%s", SCHEMAKEEPER_URL, API_VERSION, id))
                 .asString()
                 .ifFailure(res -> {
                     logger.error("Error: {}. Status: {}", res.getBody(), res.getStatus());
@@ -67,7 +67,7 @@ public class DefaultSchemaKeeperClient extends SchemaKeeperClient {
     public int registerNewSchema(String subject, Schema schema, SchemaType schemaType, CompatibilityType compatibilityType) {
         logger.debug("Get schema id ({}) or register new schema and add to subject: {}", schema.toString(), subject);
 
-        HttpResponse<String> response = Unirest.put(SCHEMAKEEPER_URL + "/v1/subjects/" + subject + "/schemas")
+           HttpResponse<String> response = Unirest.post(String.format("%s/%s/subjects/%s/schemas", SCHEMAKEEPER_URL, API_VERSION, subject))
                 .header("Content-Type", "application/json")
                 .body(SubjectAndSchemaRequest.instance(schema, schemaType, compatibilityType))
                 .asString()
@@ -90,7 +90,7 @@ public class DefaultSchemaKeeperClient extends SchemaKeeperClient {
     public int getSchemaId(String subject, Schema schema, SchemaType schemaType) {
         logger.debug("Get schema id ({}) subject: {}", schema.toString(), subject);
 
-        HttpResponse<String> response = Unirest.post(SCHEMAKEEPER_URL + "/v1/subjects/" + subject + "/schemas/id")
+        HttpResponse<String> response = Unirest.post(String.format("%s/%s/subjects/%s/schemas/id", SCHEMAKEEPER_URL, API_VERSION, subject))
                 .header("Content-Type", "application/json")
                 .body(SchemaText.instance(schema, schemaType))
                 .asString()

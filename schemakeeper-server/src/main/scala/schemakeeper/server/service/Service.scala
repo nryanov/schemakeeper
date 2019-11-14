@@ -16,22 +16,19 @@ trait Service[F[_]] {
   def subjectMetadata(subject: String): F[Either[SchemaKeeperError, SubjectMetadata]]
 
   /**
+    * Update settings for subject
+    * @param subject - subject name
+    * @param compatibilityType - new compatibilityType
+    * @param isLocked - lock/unlock subject
+    * @return - updated subject settings
+    */
+  def updateSubjectSettings(subject: String, compatibilityType: CompatibilityType, isLocked: Boolean): F[Either[SchemaKeeperError, SubjectMetadata]]
+
+  /**
     * @param subject - subject name
     * @return - registered schema versions
     */
   def subjectVersions(subject: String): F[Either[SchemaKeeperError, List[Int]]]
-
-  /**
-    * @param subject - subject name
-    * @return - operation result
-    */
-  def lockSubject(subject: String): F[Either[SchemaKeeperError, Boolean]]
-
-  /**
-    * @param subject - subject name
-    * @return - operation result
-    */
-  def unlockSubject(subject: String): F[Either[SchemaKeeperError, Boolean]]
 
   /**
     * @param subject - subject name
@@ -83,25 +80,6 @@ trait Service[F[_]] {
 
   /**
     * @param subject - subject name
-    * @param compatibilityType - new compatibility type
-    * @return - compatiiblity type if type was updated successfully otherwise none
-    */
-  def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): F[Either[SchemaKeeperError, Boolean]]
-
-  /**
-    * @param subject - subject name
-    * @return - compatibility type or none if subject with specified name does not exist
-    */
-  def getSubjectCompatibility(subject: String): F[Either[SchemaKeeperError, CompatibilityType]]
-
-  /**
-    * @param subject - subject name
-    * @return - last subject schema or none
-    */
-  def getLastSubjectSchema(subject: String): F[Either[SchemaKeeperError, SchemaMetadata]]
-
-  /**
-    * @param subject - subject name
     * @return - list of subject schemas or empty list
     */
   def getSubjectSchemas(subject: String): F[Either[SchemaKeeperError, List[SchemaMetadata]]]
@@ -142,10 +120,4 @@ trait Service[F[_]] {
     * @return - next version number
     */
   def addSchemaToSubject(subject: String, schemaId: Int): F[Either[SchemaKeeperError, Int]]
-
-  /**
-    * @param subject - subject name
-    * @return - true if subject exists otherwise false
-    */
-  def isSubjectExist(subject: String): F[Either[SchemaKeeperError, Boolean]]
 }

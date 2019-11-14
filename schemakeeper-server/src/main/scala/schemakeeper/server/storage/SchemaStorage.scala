@@ -24,15 +24,11 @@ trait SchemaStorage[F[_]] {
 
   /**
     * @param subject - subject name
-    * @return - operation result
+    * @param compatibilityType - compatibility type
+    * @param isLocked - subject lock status
+    * @return - subject metadata
     */
-  def lockSubject(subject: String): F[Boolean]
-
-  /**
-    * @param subject - subject name
-    * @return - operation result
-    */
-  def unlockSubject(subject: String): F[Boolean]
+  def updateSubjectSettings(subject: String, compatibilityType: CompatibilityType, isLocked: Boolean): F[SubjectMetadata]
 
   /**
     * @param subject - subject name
@@ -71,13 +67,6 @@ trait SchemaStorage[F[_]] {
     * @return - true if subject schema was deleted otherwise false
     */
   def deleteSubjectSchemaByVersion(subject: String, version: Int): F[Boolean]
-
-  /**
-    * @param subject - subject name
-    * @param compatibilityType - new compatibility type
-    * @return - true if compatibility type was updated otherwise false
-    */
-  def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): F[Boolean]
 
   /**
     * @param subject - subject name

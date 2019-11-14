@@ -10,6 +10,8 @@ import schemakeeper.serialization.SerDeConfig;
 public abstract class SchemaKeeperClient {
     protected final static Logger logger = LoggerFactory.getLogger(SchemaKeeperClient.class);
 
+    protected final static String API_VERSION = "v2";
+
     protected final String SCHEMAKEEPER_URL;
 
     protected SerDeConfig config;

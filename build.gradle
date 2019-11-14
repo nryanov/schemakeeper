@@ -12,6 +12,7 @@ buildscript {
         classpath "com.commercehub.gradle.plugin:gradle-avro-plugin:0.16.0"
         classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.10'
         classpath "gradle.plugin.org.jruyi.gradle:thrift-gradle-plugin:0.4.1"
+        classpath 'com.github.jengelman.gradle.plugins:shadow:5.2.0'
     }
 }
 
@@ -19,6 +20,7 @@ allprojects {
     apply plugin: 'java'
     apply plugin: 'idea'
     apply plugin: 'jacoco'
+    apply plugin: 'com.github.johnrengelman.shadow'
 
     repositories {
         mavenCentral()
@@ -206,14 +208,10 @@ project(':schemakeeper-server') {
                 '-language:existentials'
         ]
     }
-
-    jar {
+    
+    shadowJar {
         manifest {
             attributes "Main-Class": "schemakeeper.server.SchemaKeeper"
-        }
-
-        from {
-            configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
         }
     }
 }

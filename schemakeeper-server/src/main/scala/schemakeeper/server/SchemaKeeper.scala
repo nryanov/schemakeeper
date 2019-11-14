@@ -32,21 +32,17 @@ object SchemaKeeper extends TwitterServer {
       :+: api.subjectMetadata
       :+: api.subjectVersions
       :+: api.subjectSchemasMetadata
+      :+: api.updateSubjectSettings
       :+: api.subjectSchemaByVersion
-      :+: api.lockSubject
-      :+: api.unlockSubject
       :+: api.schemaIdBySubjectAndSchema
       :+: api.schemaById
       :+: api.deleteSubject
       :+: api.deleteSubjectSchemaByVersion
       :+: api.checkSubjectSchemaCompatibility
-      :+: api.updateSubjectCompatibility
-      :+: api.getSubjectCompatibility
       :+: api.registerSchema
       :+: api.registerSchemaAndSubject
       :+: api.registerSubject
       :+: api.addSchemaToSubject
-      :+: api.isSubjectExist
     )
       .toService
 

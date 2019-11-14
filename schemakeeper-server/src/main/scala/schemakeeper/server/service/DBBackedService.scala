@@ -51,46 +51,30 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
     }
   }
 
+  //todo: we need to restrict to change subject compatibility freely from one type to another
+  override def updateSubjectSettings(subject: String, compatibilityType: CompatibilityType, isLocked: Boolean): F[Result[SubjectMetadata]] = {
+    logger.info(s"Update subject settings: $subject -> (${compatibilityType.identifier}, $isLocked)")
+
+    transaction {
+      Monad[ConnectionIO].ifM[Result[SubjectMetadata]](storage.isSubjectExist(subject))(
+        storage.updateSubjectSettings(subject, compatibilityType, isLocked).map(Right(_)),
+        pure(Left(SubjectDoesNotExist(subject)))
+      )
+    }.map {
+      case Left(e) => Left(BackendError(e))
+      case Right(r) => r match {
+        case Left(e) => Left(e)
+        case Right(v) => Right(v)
+      }
+    }
+  }
+
   override def subjectVersions(subject: String): F[Result[List[Int]]] = {
     logger.info(s"Get subject version list")
 
     transaction {
       Monad[ConnectionIO].ifM[Result[List[Int]]](storage.isSubjectExist(subject))(
         storage.subjectVersions(subject).map(Right(_)),
-        pure(Left(SubjectDoesNotExist(subject)))
-      )
-    }.map {
-      case Left(e) => Left(BackendError(e))
-      case Right(r) => r match {
-        case Left(e) => Left(e)
-        case Right(v) => Right(v)
-      }
-    }
-  }
-
-  override def lockSubject(subject: String): F[Either[SchemaKeeperError, Boolean]] = {
-    logger.info(s"Lock subject: $subject")
-
-    transaction {
-      Monad[ConnectionIO].ifM[Result[Boolean]](storage.isSubjectExist(subject))(
-        storage.lockSubject(subject).map(Right(_)),
-        pure(Left(SubjectDoesNotExist(subject)))
-      )
-    }.map {
-      case Left(e) => Left(BackendError(e))
-      case Right(r) => r match {
-        case Left(e) => Left(e)
-        case Right(v) => Right(v)
-      }
-    }
-  }
-
-  override def unlockSubject(subject: String): F[Either[SchemaKeeperError, Boolean]] = {
-    logger.info(s"Unlock subject: $subject")
-
-    transaction {
-      Monad[ConnectionIO].ifM[Result[Boolean]](storage.isSubjectExist(subject))(
-        storage.unlockSubject(subject).map(Right(_)),
         pure(Left(SubjectDoesNotExist(subject)))
       )
     }.map {
@@ -222,53 +206,6 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
     }
   }
 
-  override def updateSubjectCompatibility(subject: String, compatibilityType: CompatibilityType): F[Result[Boolean]] = {
-    logger.info(s"Update subject: $subject compatibility type: ${compatibilityType.identifier}")
-
-    transaction {
-      Monad[ConnectionIO].ifM[Result[Boolean]](storage.isSubjectExist(subject))(
-        storage.updateSubjectCompatibility(subject, compatibilityType).map(Right(_)),
-        pure[Result[Boolean]](Left(SubjectDoesNotExist(subject)))
-      )
-    }.map {
-      case Left(e) => Left(BackendError(e))
-      case Right(tx) => tx match {
-        case Left(e) => Left(e)
-        case Right(v) => Right(v) //todo: we need to restrict to change subject compatibility freely from one type to another
-      }
-    }
-  }
-
-  override def getSubjectCompatibility(subject: String): F[Result[CompatibilityType]] = {
-    logger.info(s"Get subject compatibility type: $subject")
-
-    transaction {
-      storage.getSubjectCompatibility(subject)
-    }.map {
-      case Left(e) => Left(BackendError(e))
-      case Right(None) => Left(SubjectDoesNotExist(subject))
-      case Right(Some(v)) => Right(v)
-    }
-  }
-
-  override def getLastSubjectSchema(subject: String): F[Result[SchemaMetadata]] = {
-    logger.info(s"Get last subject schema: $subject")
-
-    transaction {
-      Monad[ConnectionIO].ifM[Result[Option[SchemaMetadata]]](storage.isSubjectExist(subject))(
-        storage.getLastSubjectSchema(subject).map(Right(_)),
-        pure(Left(SubjectDoesNotExist(subject)))
-      )
-    }.map {
-      case Left(e) => Left(BackendError(e))
-      case Right(tx) => tx match {
-        case Left(e) => Left(e)
-        case Right(None) => Left(SubjectHasNoRegisteredSchemas(subject))
-        case Right(Some(schema)) => Right(schema)
-      }
-    }
-  }
-
   override def getSubjectSchemas(subject: String): F[Result[List[SchemaMetadata]]] = {
     logger.info(s"Get last subject schemas: $subject")
 
@@ -396,17 +333,6 @@ class DBBackedService[F[_] : Monad](config: Configuration) extends Service[F] {
         case Left(e) => Left(e)
         case Right(v) => Right(v)
       }
-    }
-  }
-
-  override def isSubjectExist(subject: String): F[Result[Boolean]] = {
-    logger.info(s"Check if subject: $subject exists")
-
-    transaction {
-      storage.isSubjectExist(subject)
-    }.map {
-      case Left(e) => Left(BackendError(e))
-      case Right(v) => Right(v)
     }
   }
 

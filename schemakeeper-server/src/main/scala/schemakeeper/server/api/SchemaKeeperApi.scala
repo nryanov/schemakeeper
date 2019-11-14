@@ -8,6 +8,7 @@ import com.twitter.finagle.http.Status
 import Validation._
 import schemakeeper.api._
 import schemakeeper.schema.CompatibilityType
+import schemakeeper.server.api.internal.SubjectSettings
 import schemakeeper.server.api.protocol.{ErrorCode, ErrorInfo}
 import schemakeeper.server.service._
 import schemakeeper.server.api.protocol.JsonProtocol._
@@ -32,6 +33,22 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     :: path[String]) { subject: String =>
     logger.info(s"Get subject metadata: $subject")
     storage.subjectMetadata(subject).map {
+      case Left(e) =>
+        logger.error(s"Error while getting subject: $subject metadata: ${e.msg}")
+        e match {
+          case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
+          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
+        }
+      case Right(v) => Ok(v)
+    }
+  }
+
+  final val updateSubjectSettings: Endpoint[IO, SubjectMetadata] = put(apiVersion
+    :: "subjects"
+    :: path[String]
+    :: jsonBody[SubjectSettings]) { (subject: String, settings: SubjectSettings) =>
+    logger.info(s"Update subject settings: $subject - $settings")
+    storage.updateSubjectSettings(subject, settings.compatibilityType, settings.isLocked).map {
       case Left(e) =>
         logger.error(s"Error while getting subject: $subject metadata: ${e.msg}")
         e match {
@@ -86,38 +103,6 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
         e match {
           case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
           case s: SubjectSchemaVersionDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectSchemaVersionDoesNotExistCode), Status.NotFound)
-          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
-        }
-      case Right(v) => Ok(v)
-    }
-  }
-
-  final val lockSubject: Endpoint[IO, Boolean] = post(apiVersion
-    :: "subjects"
-    :: path[String]
-    :: "lock") { subject: String =>
-    logger.info(s"Lock subjecT: $subject")
-    storage.lockSubject(subject).map {
-      case Left(e) =>
-        logger.error(s"Error while locking subject: $subject: ${e.msg}")
-        e match {
-          case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
-          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
-        }
-      case Right(v) => Ok(v)
-    }
-  }
-
-  final val unlockSubject: Endpoint[IO, Boolean] = post(apiVersion
-    :: "subjects"
-    :: path[String]
-    :: "unlock") { subject: String =>
-    logger.info(s"Lock subject: $subject")
-    storage.unlockSubject(subject).map {
-      case Left(e) =>
-        logger.error(s"Error while unlocking subject: $subject: ${e.msg}")
-        e match {
-          case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
           case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
         }
       case Right(v) => Ok(v)
@@ -208,40 +193,7 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     }
   }
 
-  final val updateSubjectCompatibility: Endpoint[IO, Boolean] = post(apiVersion
-    :: "subjects"
-    :: path[String]
-    :: "compatibility"
-    :: jsonBody[CompatibilityType]) { (subject: String, compatibilityType: CompatibilityType) =>
-    logger.info(s"Update subject compatibility: $subject - ${compatibilityType.identifier}")
-    storage.updateSubjectCompatibility(subject, compatibilityType).map {
-      case Left(e) =>
-        logger.error(s"Error while updating subject compatibility: $subject-${compatibilityType.identifier}: ${e.msg}")
-        e match {
-          case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
-          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
-        }
-      case Right(v) => Ok(v)
-    }
-  }
-
-  final val getSubjectCompatibility: Endpoint[IO, CompatibilityType] = get(apiVersion
-    :: "subjects"
-    :: path[String]
-    :: "compatibility") { subject: String =>
-    logger.info(s"Get subject compatibility type: $subject")
-    storage.getSubjectCompatibility(subject).map {
-      case Left(e) =>
-        logger.error(s"Error while getting subject compatibility: $subject: ${e.msg}")
-        e match {
-          case s: SubjectDoesNotExist => Output.failure(ErrorInfo(s.msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
-          case e: SchemaKeeperError => Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
-        }
-      case Right(v) => Ok(v)
-    }
-  }
-
-  final val registerSchema: Endpoint[IO, SchemaId] = put(apiVersion
+  final val registerSchema: Endpoint[IO, SchemaId] = post(apiVersion
     :: "schemas"
     :: jsonBody[SchemaText]) { schemaText: SchemaText =>
     logger.info(s"Register new schema: $schemaText")
@@ -257,7 +209,7 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     }
   }
 
-  final val registerSchemaAndSubject: Endpoint[IO, SchemaId] = put(apiVersion
+  final val registerSchemaAndSubject: Endpoint[IO, SchemaId] = post(apiVersion
     :: "subjects"
     :: path[String]
     :: "schemas"
@@ -277,7 +229,7 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     }
   }
 
-  final val registerSubject: Endpoint[IO, SubjectMetadata] = put(apiVersion
+  final val registerSubject: Endpoint[IO, SubjectMetadata] = post(apiVersion
     :: "subjects"
     :: jsonBody[SubjectMetadata]) { meta: SubjectMetadata =>
     logger.info(s"Register new subject: $meta")
@@ -292,7 +244,7 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
     }
   }
 
-  final val addSchemaToSubject: Endpoint[IO, Int] = put(apiVersion
+  final val addSchemaToSubject: Endpoint[IO, Int] = post(apiVersion
     :: "subjects"
     :: path[String]
     :: "schemas"
@@ -311,23 +263,11 @@ class SchemaKeeperApi(storage: Service[IO])(implicit S: ContextShift[IO]) extend
       case Right(v) => Ok(v)
     }
   }
-
-  final val isSubjectExist: Endpoint[IO, Boolean] = post(apiVersion
-    :: "subjects"
-    :: path[String]) { subject: String =>
-    logger.info(s"Check if subject: $subject exists")
-    storage.isSubjectExist(subject).map {
-      case Left(e) =>
-        logger.error(s"Error while checking subject existencee: $subject: ${e.msg}")
-        Output.failure(ErrorInfo(e.msg, ErrorCode.BackendErrorCode), Status.InternalServerError)
-      case Right(v) => Ok(v)
-    }
-  }
 }
 
 object SchemaKeeperApi {
   private val logger = LoggerFactory.getLogger(SchemaKeeperApi.getClass)
-  private val apiVersion = "v1"
+  private val apiVersion = "v2"
 
   def apply(service: Service[IO])(implicit S: ContextShift[IO]): SchemaKeeperApi = new SchemaKeeperApi(service)
 }

@@ -7,9 +7,19 @@ import JsonProtocol._
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.schema.{CompatibilityType, SchemaType}
+import schemakeeper.server.api.internal.SubjectSettings
 
 @RunWith(classOf[JUnitRunner])
 class JsonProtocolTest extends WordSpec with Matchers {
+  "SubjectSettings" should {
+    "be encoded and decoded correctly" in {
+      val meta = SubjectSettings(CompatibilityType.BACKWARD, isLocked = true)
+      val json = meta.asJson
+
+      assert(json.as[SubjectSettings].contains(meta))
+    }
+  }
+
   "SchemaMetadata" should {
     "be encoded and decoded correctly" in {
       val meta = SchemaMetadata.instance(1, "b", "c")
