@@ -39,10 +39,10 @@ object JsonProtocol {
       ("isLocked", Json.fromBoolean(a.isLocked)),
     )
   }
-  implicit val subjectSettingsDencoder: Decoder[SubjectSettings] = new Decoder[SubjectSettings] {
+  implicit val subjectSettingsDecoder: Decoder[SubjectSettings] = new Decoder[SubjectSettings] {
     override def apply(c: HCursor): Result[SubjectSettings] = for {
-      compatibilityType <- c.downField("schemaId").as[String]
-      isLocked <- c.downField("schemaText").as[Boolean]
+      compatibilityType <- c.downField("compatibilityType").as[String]
+      isLocked <- c.downField("isLocked").as[Boolean]
     } yield SubjectSettings(CompatibilityType.findByName(compatibilityType), isLocked)
   }
 

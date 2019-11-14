@@ -98,15 +98,15 @@ class SchemaKeeperApiTest extends WordSpec with Matchers with BeforeAndAfterEach
       schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
       val api = SchemaKeeperApi(schemaStorage)
       val body = SubjectSettings(CompatibilityType.FORWARD, isLocked = true)
-      val result = api.subjectMetadata(Input.put("/v2/subjects/A1").withBody[Application.Json](body)).awaitValueUnsafe()
+      val result = api.updateSubjectSettings(Input.put("/v2/subjects/A1").withBody[Application.Json](body)).awaitValueUnsafe()
 
-      assertResult(body)(result.get)
+      assertResult(SubjectMetadata.instance("A1", CompatibilityType.FORWARD, true))(result.get)
     }
 
     "NotFound - subject does not exist" in {
       val api = SchemaKeeperApi(schemaStorage)
       val body = SubjectSettings(CompatibilityType.FORWARD, isLocked = true)
-      val result = api.subjectMetadata(Input.put("/v2/subjects/A1")).awaitOutputUnsafe()
+      val result = api.updateSubjectSettings(Input.put("/v2/subjects/A1").withBody[Application.Json](body)).awaitOutputUnsafe()
 
       assertResult(Output.failure(ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound))(result.get)
     }
