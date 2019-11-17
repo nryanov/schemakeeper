@@ -1,7 +1,7 @@
 package schemakeeper.kafka.serialization.avro;
 
-import schemakeeper.kafka.DefaultNamingStrategy;
-import schemakeeper.kafka.NamingStrategy;
+import schemakeeper.kafka.naming.TopicNamingStrategy;
+import schemakeeper.kafka.naming.NamingStrategy;
 import schemakeeper.kafka.serialization.KafkaSerDeConfig;
 import schemakeeper.serialization.avro.AvroSerDeConfig;
 
@@ -13,10 +13,10 @@ public class KafkaAvroSerDeConfig extends AvroSerDeConfig implements KafkaSerDeC
     }
 
     public NamingStrategy getKeyNamingStrategy() {
-        return (NamingStrategy) config.getOrDefault(KEY_NAMING_STRATEGY_CONFIG, DefaultNamingStrategy.INSTANCE);
+        return (NamingStrategy) config.getOrDefault(KEY_NAMING_STRATEGY_CONFIG, TopicNamingStrategy.INSTANCE);
     }
 
     public NamingStrategy getValueNamingStrategy() {
-        return (NamingStrategy) config.getOrDefault(VALUE_NAMING_STRATEGY_CONFIG, DefaultNamingStrategy.INSTANCE);
+        return (NamingStrategy) config.getOrDefault(VALUE_NAMING_STRATEGY_CONFIG, TopicNamingStrategy.INSTANCE);
     }
 }

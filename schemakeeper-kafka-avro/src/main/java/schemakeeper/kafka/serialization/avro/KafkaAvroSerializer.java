@@ -1,8 +1,9 @@
 package schemakeeper.kafka.serialization.avro;
 
 import org.apache.kafka.common.serialization.Serializer;
-import schemakeeper.kafka.DefaultNamingStrategy;
-import schemakeeper.kafka.NamingStrategy;
+import schemakeeper.kafka.naming.TopicNamingStrategy;
+import schemakeeper.kafka.naming.NamingStrategy;
+import schemakeeper.schema.AvroSchemaUtils;
 import schemakeeper.serialization.avro.AvroSerializer;
 
 import java.util.Map;
@@ -17,7 +18,7 @@ public class KafkaAvroSerializer implements Serializer<Object> {
 
     public KafkaAvroSerializer(AvroSerializer serializer) {
         this.serializer = serializer;
-        this.namingStrategy = DefaultNamingStrategy.INSTANCE;
+        this.namingStrategy = TopicNamingStrategy.INSTANCE;
     }
 
     @SuppressWarnings("unchecked")
@@ -31,7 +32,7 @@ public class KafkaAvroSerializer implements Serializer<Object> {
 
     @Override
     public byte[] serialize(String topic, Object data) {
-        return serializer.serialize(namingStrategy.resolveSubjectName(topic, isKey), data);
+        return serializer.serialize(namingStrategy.resolveSubjectName(topic, isKey, AvroSchemaUtils.getSchema(data)), data);
     }
 
     @Override
