@@ -1,6 +1,6 @@
 package schemakeeper.kafka.serialization;
 
-import schemakeeper.kafka.NamingStrategy;
+import schemakeeper.kafka.naming.NamingStrategy;
 
 public interface KafkaSerDeConfig {
     String KEY_NAMING_STRATEGY_CONFIG = "key.naming.strategy";
