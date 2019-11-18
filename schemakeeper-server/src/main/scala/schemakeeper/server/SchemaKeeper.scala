@@ -8,7 +8,7 @@ import com.twitter.server.TwitterServer
 import com.twitter.finagle.Http
 import com.twitter.util.Await
 import com.typesafe.config.ConfigFactory
-import schemakeeper.server.api.SchemaKeeperApi
+import schemakeeper.server.api.{SchemaKeeperApi, SwaggerApi}
 import schemakeeper.server.api.protocol.JsonProtocol._
 import schemakeeper.server.service.DBBackedService
 import schemakeeper.server.util.Filter
@@ -25,6 +25,7 @@ object SchemaKeeper extends TwitterServer {
     val service = DBBackedService[IO](configuration)
 
     val api = SchemaKeeperApi(service)
+    val swaggerApi = new SwaggerApi()
 
     val bootstrap = Bootstrap
       .configure()
@@ -42,8 +43,16 @@ object SchemaKeeper extends TwitterServer {
       :+: api.registerSchema
       :+: api.registerSchemaAndSubject
       :+: api.registerSubject
-      :+: api.addSchemaToSubject
-    )
+      :+: api.addSchemaToSubject)
+      .serve[Text.Plain](swaggerApi.swaggerDocRedirect
+      :+: swaggerApi.swaggerDoc)
+      .serve[Text.Html](swaggerApi.swaggerUi
+      :+: swaggerApi.swaggerUiRedirect)
+      .serve[Application.Javascript](swaggerApi.swaggerUiBundleJs
+      :+: swaggerApi.swaggerUiStandalonePresetJs)
+      .serve[Image.Png](swaggerApi.swaggerUiIcon32
+      :+: swaggerApi.swaggerUiIcon16)
+      .serve[Text.Css](swaggerApi.swaggerUiCss)
       .toService
 
     logger.info(s"Listening port: ${configuration.listeningPort}")

@@ -1,0 +1,873 @@
+openapi: 3.0.1
+info:
+  title: Schemakeeper
+  description: Schemakeeper - yet another schema registry for Avro, Thrift and Protobuf schemas
+  termsOfService: https://github.com/nryanov/Schemakeeper
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: "0.2"
+servers:
+- url: /v2/
+tags:
+- name: api
+  description: Schemakeeper API
+paths:
+  /subjects:
+    get:
+      tags:
+      - api
+      summary: Get all registered subjects name
+      operationId: subjects
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1000":
+                  value:
+                    code: 1000
+                    reason: Backend error
+    post:
+      tags:
+      - api
+      summary: Register new subject
+      operationId: registerSubject
+      requestBody:
+        description: Subject settings
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubjectMetadata'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubjectMetadata'
+        400:
+          description: Service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1002":
+                  value:
+                    code: 1002
+                    reason: Subject is already exist
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1000":
+                  value:
+                    code: 1000
+                    reason: Backend error
+  /subjects/{subjectName}:
+    get:
+      tags:
+      - api
+      summary: Get subject metadata by name
+      operationId: subjectMetadata
+      parameters:
+      - name: subjectName
+        in: path
+        description: Subject name
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubjectMetadata'
+        404:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1001":
+                  value:
+                    code: 1001
+                    reason: Subject does not exist
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1000":
+                  value:
+                    code: 1000
+                    reason: Backend error
+    put:
+      tags:
+      - api
+      summary: Update subject settings
+      operationId: updateSubjectSettings
+      parameters:
+      - name: subjectName
+        in: path
+        description: Subject name
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Subject settings
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubjectSettings'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubjectMetadata'
+        404:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1002":
+                  value:
+                    code: 1002
+                    reason: Subject is already exist
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1000":
+                  value:
+                    code: 1000
+                    reason: Backend error
+    delete:
+      tags:
+      - api
+      summary: Delete subject by name
+      operationId: deleteSubject
+      parameters:
+      - name: subjectName
+        in: path
+        description: Subject name
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: boolean
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1000":
+                  value:
+                    code: 1000
+                    reason: Backend error
+  /subjects/{subjectName}/versions:
+    get:
+      tags:
+      - api
+      summary: Get subject metadata by name
+      operationId: subjectVersions
+      parameters:
+      - name: subjectName
+        in: path
+        description: Subject name
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+                  format: int64
+        404:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1001":
+                  value:
+                    code: 1001
+                    reason: Subject does not exist
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1000":
+                  value:
+                    code: 1000
+                    reason: Backend error
+  /subjects/{subjectName}/schemas:
+    get:
+      tags:
+      - api
+      summary: Get all subjects schemas
+      operationId: subjectSchemasMetadata
+      parameters:
+      - name: subjectName
+        in: path
+        description: Subject name
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubjectSchemaMetadata'
+        404:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1001":
+                  value:
+                    code: 1001
+                    reason: Subject does not exist
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1000":
+                  value:
+                    code: 1000
+                    reason: Backend error
+    post:
+      tags:
+      - api
+      summary: Register new subject (if not exists), schema (if not exists) and connect
+        it to each other
+      operationId: registerSchemaAndSubject
+      parameters:
+      - name: subjectName
+        in: path
+        description: Subject name
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Subject settings
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewSubjectRequest'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaId'
+        400:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1007":
+                  value:
+                    code: 1007
+                    reason: Schema is not valid
+                "Code 1008":
+                  value:
+                    code: 1008
+                    reason: Schema is already exist
+                "Code 1010":
+                  value:
+                    code: 1010
+                    reason: Schema is not compatible
+                "Code 1013":
+                  value:
+                    code: 1013
+                    reason: Subject is locked
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1000":
+                  value:
+                    code: 1000
+                    reason: Backend error
+  /subjects/{subjectName}/versions/{version}:
+    get:
+      tags:
+      - api
+      summary: Get subject schema metadata by version
+      operationId: subjectSchemaByVersion
+      parameters:
+      - name: subjectName
+        in: path
+        description: Subject name
+        required: true
+        schema:
+          type: string
+      - name: version
+        in: path
+        description: version number
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubjectSchemaMetadata'
+        404:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1001":
+                  value:
+                    code: 1001
+                    reason: Subject does not exist
+                "Code 1004":
+                  value:
+                    code: 1004
+                    reason: Subject schema with such version does not exist
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1000":
+                  value:
+                    code: 1000
+                    reason: Backend error
+    delete:
+      tags:
+      - api
+      summary: Delete subject's schema by version number
+      operationId: deleteSubjectSchemaByVersion
+      parameters:
+      - name: subjectName
+        in: path
+        description: Subject name
+        required: true
+        schema:
+          type: string
+      - name: version
+        in: path
+        description: version number
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: boolean
+        404:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1001":
+                  value:
+                    code: 1001
+                    reason: Subject does not exist
+        400:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1004":
+                  value:
+                    code: 1004
+                    reason: Subject schema with such version does not exist
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1000":
+                  value:
+                    code: 1000
+                    reason: Backend error
+  /schemas/{schemaId}:
+    get:
+      tags:
+      - api
+      summary: Get schema by id
+      operationId: schemaById
+      parameters:
+      - name: schemaId
+        in: path
+        description: unique schema id
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaMetadata'
+        404:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1005":
+                  value:
+                    code: 1005
+                    reason: Schema does not exist
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1000":
+                  value:
+                    code: 1000
+                    reason: Backend error
+  /subjects/{subjectName}/schemas/id:
+    post:
+      tags:
+      - api
+      summary: Check if subject connected to specfied schema. Return schema id
+      operationId: schemaIdBySubjectAndSchema
+      parameters:
+      - name: subjectName
+        in: path
+        description: Subject name
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaId'
+        400:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1007":
+                  value:
+                    code: 1007
+                    reason: Schema is not valid
+        404:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1011":
+                  value:
+                    code: 1011
+                    reason: Schema is not registered
+                "Code 1012":
+                  value:
+                    code: 1012
+                    reason: Schema is not connected to subject
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1000":
+                  value:
+                    code: 1000
+                    reason: Backend error
+  /subjects/{subjectName}/compatibility/schemas:
+    post:
+      tags:
+      - api
+      summary: Check if schema is compatible with already registered schemas
+      operationId: checkSubjectSchemaCompatibility
+      parameters:
+      - name: subjectName
+        in: path
+        description: Subject name
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Subject settings
+        content:
+          application/json':
+            schema:
+              $ref: '#/components/schemas/SchemaText'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: boolean
+        400:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1007":
+                  value:
+                    code: 1007
+                    reason: Schema is not valid
+        404:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1001":
+                  value:
+                    code: 1001
+                    reason: Subject does not exist
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1000":
+                  value:
+                    code: 1000
+                    reason: Backend error
+  /schemas:
+    post:
+      tags:
+      - api
+      summary: Register new schema
+      operationId: registerSchema
+      requestBody:
+        description: Subject settings
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchemaText'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaId'
+        400:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1007":
+                  value:
+                    code: 1007
+                    reason: Schema is not valid
+                "Code 1008":
+                  value:
+                    code: 1008
+                    reason: Schema is already exist
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1000":
+                  value:
+                    code: 1000
+                    reason: Backend error
+  /subjects/{subjectName}/schemas/{schemaId}:
+    post:
+      tags:
+      - api
+      summary: Connect schema to subject as next version
+      operationId: addSchemaToSubject
+      parameters:
+      - name: subjectName
+        in: path
+        description: Subject name
+        required: true
+        schema:
+          type: string
+      - name: schemaId
+        in: path
+        description: Unique schema id
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        200:
+          description: Version number
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+        400:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1009":
+                  value:
+                    code: 1009
+                    reason: Schema is already connected to subject
+                "Code 1013":
+                  value:
+                    code: 1013
+                    reason: Subject is locked
+        404:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1001":
+                  value:
+                    code: 1001
+                    reason: Subject does not exist
+                "Code 1005":
+                  value:
+                    code: 1005
+                    reason: Schema does not exist
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInfo'
+              examples:
+                "Code 1000":
+                  value:
+                    code: 1000
+                    reason: Backend error
+components:
+  schemas:
+    SchemaMetadata:
+      type: object
+      properties:
+        schemaId:
+          type: integer
+          description: Unique schema id
+          format: int64
+        schemaText:
+          type: string
+          description: String representation of avro schema
+        schemaHash:
+          type: string
+          description: MD5 hash
+        schemaType:
+          type: string
+          description: Schema type (avro, protobuf, thrift)
+          enum:
+          - avro
+          - protobuf
+          - thrift
+    SubjectSettings:
+      type: object
+      properties:
+        compatibilityType:
+          type: string
+          description: Avro compatibility type
+          enum:
+          - none
+          - backward
+          - forward
+          - full
+          - backward_transitive
+          - forward_transitive
+          - full_transitive
+        isLocked:
+          type: boolean
+    SubjectSchemaMetadata:
+      type: object
+      properties:
+        schemaId:
+          type: integer
+          description: Unique schema id
+          format: int64
+        version:
+          type: integer
+          description: Version number
+          format: int64
+        schemaText:
+          type: string
+          description: String representation of avro schema
+        schemaHash:
+          type: string
+          description: MD5 hash
+        schemaType:
+          type: string
+          description: Schema type (avro, protobuf, thrift)
+          enum:
+          - avro
+          - protobuf
+          - thrift
+    SubjectMetadata:
+      type: object
+      properties:
+        subject:
+          type: string
+          description: Subject name
+        compatibilityType:
+          type: string
+          description: Avro compatibility type
+          enum:
+          - none
+          - backward
+          - forward
+          - full
+          - backward_transitive
+          - forward_transitive
+          - full_transitive
+        isLocked:
+          type: boolean
+          description: Subject lock status
+    NewSubjectRequest:
+      type: object
+      properties:
+        schemaText:
+          type: string
+          description: String representation of avro schema
+        schemaType:
+          type: string
+          description: Schema type (avro, protobuf, thrift)
+          enum:
+          - avro
+          - protobuf
+          - thrift
+        compatibilityType:
+          type: string
+          description: Avro compatibility type
+          enum:
+          - none
+          - backward
+          - forward
+          - full
+          - backward_transitive
+          - forward_transitive
+          - full_transitive
+    SchemaText:
+      type: object
+      properties:
+        schemaText:
+          type: string
+          description: String representation of avro schema
+        schemaType:
+          type: string
+          description: Schema type (avro, protobuf, thrift)
+          enum:
+          - avro
+          - protobuf
+          - thrift
+    SchemaId:
+      type: object
+      properties:
+        schemaId:
+          type: integer
+          description: unique schema id
+          format: int64
+    ErrorInfo:
+      type: object
+      properties:
+        reason:
+          type: string
+        code:
+          type: integer
+          format: int64
