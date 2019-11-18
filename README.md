@@ -13,6 +13,7 @@ It provides a RESTful interface for storing and retrieving Subjects and Schemas 
 - Allows to use PostgreSQL, MySQL or H2 as backend for server
 - Can easily be used not only with Kafka 
 - Rich REST api
+- Swagger doc & swagger ui
 - More control on existing subjects - you can lock it to prevent adding new schemas to this subject
 - Server was developed using [finch](https://github.com/finagle/finch) and [twitter-server](https://github.com/twitter/twitter-server)
 
@@ -56,7 +57,7 @@ gradle :schemakeeper-server:clean :schemakeeper-server:shadowJar
 ```
 ### Docker
 ```bash
-docker build -t <image-name> .
+docker build -t {image-name} .
 ```
 
 ## Test
@@ -66,8 +67,8 @@ gradle test
 
 ## Run
 ```bash
-docker pull schemakeeper/server:<version>
-docker run --name=<container_name> -p 9081:9081 -p 9990:9990 -d schemakeeper/server:<version>
+docker pull schemakeeper/server:{version}
+docker run --name={container_name} -p 9081:9081 -p 9990:9990 -d schemakeeper/server:{version}
 ```
 
 ## Settings
@@ -180,6 +181,11 @@ Object r = deserializer.deserialize(b);
 Use `KafkaProtobufSerializer.class` and `KafkaProtobufDeserializer.class`.
 Also, the required property is `SerDeConfig.SCHEMAKEEPER_URL_CONFIG`. Other settings are optional for SerDe.
 
+## Swagger
+Swagger DOC: **/swagger/doc**
+
+Swagger UI: **/swagger/ui**
+
 ## API
 ### subjects
 **GET /v2/subjects**
@@ -194,7 +200,7 @@ Get list of registered subjects
     - Code 1000 Backend error
 
 ### subjectMetadata
-**GET /v2/subjects/<subject_name>**
+**GET /v2/subjects/{subject_name}**
 
 Get subject metadata by name
 
@@ -211,7 +217,7 @@ Get subject metadata by name
     - Code 1001 Subject does not exist
     
 ### updateSubjectSettings
-**PUT /v2/subjects/<subject_name>**
+**PUT /v2/subjects/{subject_name}**
 
 Update subject settings
 
@@ -236,7 +242,7 @@ Update subject settings
 - Not found 404
     - Code 1001 Subject does not exist
 ### subjectVersions
-**GET /v2/subjects/<subject_name>/versions**
+**GET /v2/subjects/{subject_name}/versions**
 
 Get list of subject's schema versions
 
@@ -249,7 +255,7 @@ Get list of subject's schema versions
 - Not found 404
     - Code 1001 Subject does not exist
 ### subjectSchemasMetadata
-**GET /v2/subjects/<subject_name>/schemas**
+**GET /v2/subjects/{subject_name}/schemas**
 
 Get list of subject's schemas metadata
 
@@ -267,7 +273,7 @@ Get list of subject's schemas metadata
 - Not found 404
     - Code 1001 Subject does not exist
 ### subjectSchemaByVersion
-**GET /v2/subjects/<subject_name>/versions/<version>**
+**GET /v2/subjects/{subject_name}/versions/{version}**
 
 Get subject's schema metadata by version
 
@@ -287,7 +293,7 @@ Get subject's schema metadata by version
     - Code 1004 Subject schema with such version does not exist
     
 ### schemaById
-**GET /v2/schemas/<id>**
+**GET /v2/schemas/{id}**
 
 Get schema by id
 
@@ -304,7 +310,7 @@ Get schema by id
 - Not found 404
     - Code 1005 Schema does not exist
 ### schemaIdBySubjectAndSchema
-**POST /v2/subjects/<subject_name>/schemas/id**
+**POST /v2/subjects/{subject_name}/schemas/id**
 
 **Body:**
 ```json
@@ -329,7 +335,7 @@ Check if schema is registered and connected with current subject and return it's
 - Bad request 400
     - Code 1007 Schema is not valid 
 ### deleteSubject
-**DELETE /v2/subjects/<subject_name>**
+**DELETE /v2/subjects/{subject_name}**
 
 Delete subject metadata
 
@@ -341,7 +347,7 @@ Delete subject metadata
     - Code 1000 Backend error
 
 ### deleteSubjectSchemaByVersion
-**DELETE /v2/subjects/<subject_name>/versions/<version_number>**
+**DELETE /v2/subjects/{subject_name}/versions/{version_number}**
 
 Delete subject schema by version
 
@@ -354,9 +360,9 @@ Delete subject schema by version
 - Not found 404
     - Code 1001 Subject does not exist
 - Bad request 400
-    - Code 1004 Subject schrma with such version does not exist
+    - Code 1004 Subject schema with such version does not exist
 ### checkSubjectSchemaCompatibility
-**POST /v2/subjects/<subject_name>/compatibility/schemas**
+**POST /v2/subjects/{subject_name}/compatibility/schemas**
 
 **Body:**
 ```json
@@ -404,7 +410,7 @@ Register new schema
     - Code 1008 Schema is already exist
 
 ### registerSchemaAndSubject
-**POST /v2/subjects/<subject_name>/schemas**
+**POST /v2/subjects/{subject_name}/schemas**
 
 **Body:**
 ```json
@@ -455,7 +461,7 @@ Register new subject
 - Bad request 400
     - Code 1002 Subject is already exist
 ### addSchemaToSubject
-**POST /v2/subjects/<subject_name>/schemas/<schema_id>**
+**POST /v2/subjects/{subject_name}/schemas/{schema_id}**
 
 Connect schema to subject as next version
 

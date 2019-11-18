@@ -194,6 +194,8 @@ project(':schemakeeper-server') {
         compile group: 'org.postgresql', name: 'postgresql', version: '42.2.6'
         compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.17'
 
+        compile group: 'org.webjars', name: 'swagger-ui', version: '3.24.0'
+
         testCompile group: 'org.scalatest', name: 'scalatest_2.12', version: '3.0.8'
         testCompile group: 'org.testcontainers', name: 'postgresql', version: '1.12.0'
         testCompile group: 'org.testcontainers', name: 'mysql', version: '1.12.0'
