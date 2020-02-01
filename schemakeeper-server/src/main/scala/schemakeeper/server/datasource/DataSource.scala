@@ -37,9 +37,13 @@ object DataSource {
     } yield xa
   }
 
-  def context(configuration: Configuration): DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy] = DataSourceUtils.detectDatabaseProvider(configuration.databaseConnectionString) match {
-    case SupportedDatabaseProvider.PostgreSQL => new DoobieContext.Postgres(SnakeCase)
-    case SupportedDatabaseProvider.MySQL => new DoobieContext.MySQL(SnakeCase)
-    case SupportedDatabaseProvider.H2 => new DoobieContext.H2(SnakeCase)
-  }
+  def context(configuration: Configuration): DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy] =
+    DataSourceUtils.detectDatabaseProvider(configuration.databaseConnectionString) match {
+      case SupportedDatabaseProvider.PostgreSQL => new DoobieContext.Postgres(SnakeCase)
+      case SupportedDatabaseProvider.MySQL      => new DoobieContext.MySQL(SnakeCase)
+      case SupportedDatabaseProvider.H2         => new DoobieContext.H2(SnakeCase)
+      // currently, doobie-quill has no explicit MariaDB context
+      case SupportedDatabaseProvider.MariaDB => new DoobieContext.MySQL(SnakeCase)
+      case SupportedDatabaseProvider.Oracle  => new DoobieContext.Oracle(SnakeCase)
+    }
 }

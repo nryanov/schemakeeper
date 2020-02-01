@@ -13,20 +13,31 @@ object FlywayMigrationTool {
       .configure()
       .configuration(
         Map(
-          ConfigUtils.LOCATIONS -> getMigrationLocation(DataSourceUtils.detectDatabaseProvider(configuration.databaseConnectionString)),
+          ConfigUtils.LOCATIONS -> getMigrationLocation(
+            DataSourceUtils
+              .detectDatabaseProvider(configuration.databaseConnectionString)
+          ),
           ConfigUtils.SCHEMAS -> configuration.databaseSchema,
           s"${ConfigUtils.PLACEHOLDERS_PROPERTY_PREFIX}schemakeeper_schema" -> configuration.databaseSchema
         ).asJava
       )
-      .dataSource(configuration.databaseConnectionString, configuration.databaseUsername, configuration.databasePassword)
+      .dataSource(
+        configuration.databaseConnectionString,
+        configuration.databaseUsername,
+        configuration.databasePassword
+      )
       .load()
 
     flyway.migrate()
   }
 
-  private def getMigrationLocation(provider: SupportedDatabaseProvider): String = provider match {
+  private def getMigrationLocation(
+    provider: SupportedDatabaseProvider
+  ): String = provider match {
     case SupportedDatabaseProvider.PostgreSQL => "db/migration/postgresql"
-    case SupportedDatabaseProvider.MySQL => "db/migration/mysql"
-    case SupportedDatabaseProvider.H2 => "db/migration/h2"
+    case SupportedDatabaseProvider.MySQL      => "db/migration/mysql"
+    case SupportedDatabaseProvider.H2         => "db/migration/h2"
+    case SupportedDatabaseProvider.MariaDB    => "db/migration/mariadb"
+    case SupportedDatabaseProvider.Oracle     => "db/migration/oracle"
   }
 }

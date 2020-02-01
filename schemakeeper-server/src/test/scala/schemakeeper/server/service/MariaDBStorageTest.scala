@@ -4,8 +4,8 @@ import java.sql.{Connection, DriverManager}
 import java.util
 
 import cats.Id
+import com.dimafeng.testcontainers.MariaDBContainer
 import com.dimafeng.testcontainers.scalatest.TestContainerForAll
-import com.dimafeng.testcontainers.PostgreSQLContainer
 import com.typesafe.config.{Config, ConfigFactory}
 import org.junit.runner.RunWith
 import org.scalatest.BeforeAndAfterEach
@@ -13,12 +13,13 @@ import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.server.Configuration
 
 @RunWith(classOf[JUnitRunner])
-class PostgreSQLStorageTest extends ServiceTest with TestContainerForAll with BeforeAndAfterEach {
-  override val containerDef: PostgreSQLContainer.Def = PostgreSQLContainer.Def(dockerImageName = "postgres:9.6")
+private class MariaDBStorageTest extends ServiceTest with TestContainerForAll with BeforeAndAfterEach {
+  override val containerDef: MariaDBContainer.Def =
+    MariaDBContainer.Def(dockerImageName = "mariadb:10.3.6", dbName = "schemakeeper")
   override var schemaStorage: DBBackedService[Id] = _
   var connection: Connection = _
 
-  override def afterContainersStart(container: PostgreSQLContainer): Unit = {
+  override def afterContainersStart(container: MariaDBContainer): Unit = {
     val map: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]
     map.put("schemakeeper.storage.username", container.username)
     map.put("schemakeeper.storage.password", container.password)
@@ -41,5 +42,5 @@ class PostgreSQLStorageTest extends ServiceTest with TestContainerForAll with Be
     connection.commit()
   }
 
-  override def beforeContainersStop(containers: PostgreSQLContainer): Unit = connection.close()
+  override def beforeContainersStop(containers: MariaDBContainer): Unit = connection.close()
 }
