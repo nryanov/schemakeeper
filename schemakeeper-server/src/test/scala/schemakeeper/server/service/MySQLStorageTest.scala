@@ -28,7 +28,7 @@ class MySQLStorageTest extends ServiceTest with TestContainerForAll with BeforeA
     map.put("schemakeeper.storage.url", container.jdbcUrl)
 
     val config: Config = ConfigFactory.parseMap(map)
-    DBBackedService.apply[Id](Configuration.apply(config))
+    schemaStorage = DBBackedService.apply[Id](Configuration.apply(config))
 
     Class.forName(container.driverClassName)
     connection = DriverManager.getConnection(container.jdbcUrl, container.username, container.password)

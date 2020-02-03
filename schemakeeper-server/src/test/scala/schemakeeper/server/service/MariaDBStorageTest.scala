@@ -13,7 +13,7 @@ import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.server.Configuration
 
 @RunWith(classOf[JUnitRunner])
-private class MariaDBStorageTest extends ServiceTest with TestContainerForAll with BeforeAndAfterEach {
+class MariaDBStorageTest extends ServiceTest with TestContainerForAll with BeforeAndAfterEach {
   override val containerDef: MariaDBContainer.Def =
     MariaDBContainer.Def(dockerImageName = "mariadb:10.3.6", dbName = "schemakeeper")
   override var schemaStorage: DBBackedService[Id] = _
@@ -28,7 +28,7 @@ private class MariaDBStorageTest extends ServiceTest with TestContainerForAll wi
     map.put("schemakeeper.storage.url", container.jdbcUrl)
 
     val config: Config = ConfigFactory.parseMap(map)
-    DBBackedService.apply[Id](Configuration.apply(config))
+    schemaStorage = DBBackedService.apply[Id](Configuration.apply(config))
 
     Class.forName(container.driverClassName)
     connection = DriverManager.getConnection(container.jdbcUrl, container.username, container.password)
