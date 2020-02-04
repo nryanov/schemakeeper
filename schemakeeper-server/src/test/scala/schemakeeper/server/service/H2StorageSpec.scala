@@ -3,7 +3,6 @@ package schemakeeper.server.service
 import java.sql.DriverManager
 import java.util
 
-import cats.Id
 import com.typesafe.config.{Config, ConfigFactory}
 import org.junit.runner.RunWith
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -11,8 +10,8 @@ import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.server.Configuration
 
 @RunWith(classOf[JUnitRunner])
-class H2StorageTest extends ServiceTest with BeforeAndAfterEach with BeforeAndAfterAll {
-  var schemaStorage: DBBackedService[Id] = {
+class H2StorageSpec extends ServiceSpec with BeforeAndAfterEach with BeforeAndAfterAll {
+  var schemaStorage: DBBackedService[F] = {
     val map: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]
     map.put("schemakeeper.storage.username", "")
     map.put("schemakeeper.storage.password", "")
@@ -22,7 +21,7 @@ class H2StorageTest extends ServiceTest with BeforeAndAfterEach with BeforeAndAf
     map.put("schemakeeper.storage.url", "jdbc:h2:mem:schemakeeper;DB_CLOSE_DELAY=-1")
 
     val config: Config = ConfigFactory.parseMap(map)
-    DBBackedService.apply[Id](Configuration.apply(config))
+    DBBackedService.apply[F](Configuration.apply(config))
   }
 
   lazy val connection = {

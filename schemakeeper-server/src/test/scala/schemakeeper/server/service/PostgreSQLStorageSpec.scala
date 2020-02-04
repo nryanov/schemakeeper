@@ -5,7 +5,7 @@ import java.util
 
 import cats.Id
 import com.dimafeng.testcontainers.scalatest.TestContainerForAll
-import com.dimafeng.testcontainers.MySQLContainer
+import com.dimafeng.testcontainers.PostgreSQLContainer
 import com.typesafe.config.{Config, ConfigFactory}
 import org.junit.runner.RunWith
 import org.scalatest.BeforeAndAfterEach
@@ -13,13 +13,12 @@ import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.server.Configuration
 
 @RunWith(classOf[JUnitRunner])
-class MySQLStorageTest extends ServiceTest with TestContainerForAll with BeforeAndAfterEach {
-  override val containerDef: MySQLContainer.Def =
-    MySQLContainer.Def(dockerImageName = "mysql:5.7", databaseName = "schemakeeper")
-  override var schemaStorage: DBBackedService[Id] = _
+class PostgreSQLStorageSpec extends ServiceSpec with TestContainerForAll with BeforeAndAfterEach {
+  override val containerDef: PostgreSQLContainer.Def = PostgreSQLContainer.Def(dockerImageName = "postgres:9.6")
+  override var schemaStorage: DBBackedService[F] = _
   var connection: Connection = _
 
-  override def afterContainersStart(container: MySQLContainer): Unit = {
+  override def afterContainersStart(container: PostgreSQLContainer): Unit = {
     val map: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]
     map.put("schemakeeper.storage.username", container.username)
     map.put("schemakeeper.storage.password", container.password)
@@ -28,7 +27,7 @@ class MySQLStorageTest extends ServiceTest with TestContainerForAll with BeforeA
     map.put("schemakeeper.storage.url", container.jdbcUrl)
 
     val config: Config = ConfigFactory.parseMap(map)
-    schemaStorage = DBBackedService.apply[Id](Configuration.apply(config))
+    schemaStorage = DBBackedService.apply[F](Configuration.apply(config))
 
     Class.forName(container.driverClassName)
     connection = DriverManager.getConnection(container.jdbcUrl, container.username, container.password)
@@ -42,5 +41,5 @@ class MySQLStorageTest extends ServiceTest with TestContainerForAll with BeforeA
     connection.commit()
   }
 
-  override def beforeContainersStop(containers: MySQLContainer): Unit = connection.close()
+  override def beforeContainersStop(containers: PostgreSQLContainer): Unit = connection.close()
 }

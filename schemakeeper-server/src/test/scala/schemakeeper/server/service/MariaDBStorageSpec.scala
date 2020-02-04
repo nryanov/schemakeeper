@@ -13,14 +13,14 @@ import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.server.Configuration
 
 @RunWith(classOf[JUnitRunner])
-class MariaDBStorageTest extends ServiceTest with TestContainerForAll with BeforeAndAfterEach {
-  override val containerDef: MariaDBStorageTest.MariaDBContainer.Def =
-    MariaDBStorageTest.MariaDBContainer.Def(dbName = "schemakeeper")
+class MariaDBStorageSpec extends ServiceSpec with TestContainerForAll with BeforeAndAfterEach {
+  override val containerDef: MariaDBStorageSpec.MariaDBContainer.Def =
+    MariaDBStorageSpec.MariaDBContainer.Def(dbName = "schemakeeper")
 
-  override var schemaStorage: DBBackedService[Id] = _
+  override var schemaStorage: DBBackedService[F] = _
   var connection: Connection = _
 
-  override def afterContainersStart(container: MariaDBStorageTest.MariaDBContainer): Unit = {
+  override def afterContainersStart(container: MariaDBStorageSpec.MariaDBContainer): Unit = {
     val map: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]
     map.put("schemakeeper.storage.username", container.username)
     map.put("schemakeeper.storage.password", container.password)
@@ -29,7 +29,7 @@ class MariaDBStorageTest extends ServiceTest with TestContainerForAll with Befor
     map.put("schemakeeper.storage.url", container.jdbcUrl)
 
     val config: Config = ConfigFactory.parseMap(map)
-    schemaStorage = DBBackedService.apply[Id](Configuration.apply(config))
+    schemaStorage = DBBackedService.apply[F](Configuration.apply(config))
 
     Class.forName(container.driverClassName)
     connection = DriverManager.getConnection(container.jdbcUrl, container.username, container.password)
@@ -43,10 +43,10 @@ class MariaDBStorageTest extends ServiceTest with TestContainerForAll with Befor
     connection.commit()
   }
 
-  override def beforeContainersStop(containers: MariaDBStorageTest.MariaDBContainer): Unit = connection.close()
+  override def beforeContainersStop(containers: MariaDBStorageSpec.MariaDBContainer): Unit = connection.close()
 }
 
-object MariaDBStorageTest {
+object MariaDBStorageSpec {
   import org.testcontainers.containers.{MariaDBContainer => JavaMariaDBContainer}
 
   case class MariaDBContainer(
