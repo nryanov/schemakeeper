@@ -1,21 +1,25 @@
 package schemakeeper.server.service
 
-import java.sql.DriverManager
+import java.sql.{Connection, DriverManager}
 import java.util
 
 import cats.Id
-import com.dimafeng.testcontainers.{ForAllTestContainer, MySQLContainer}
+import com.dimafeng.testcontainers.scalatest.TestContainerForAll
+import com.dimafeng.testcontainers.MySQLContainer
 import com.typesafe.config.{Config, ConfigFactory}
 import org.junit.runner.RunWith
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.server.Configuration
 
 @RunWith(classOf[JUnitRunner])
-class MySQLStorageTest extends ServiceTest with ForAllTestContainer with BeforeAndAfterEach with BeforeAndAfterAll {
-  override val container: MySQLContainer = MySQLContainer(mysqlImageVersion = "mysql:5.7", databaseName = "schemakeeper")
+class MySQLStorageTest extends ServiceTest with TestContainerForAll with BeforeAndAfterEach {
+  override val containerDef: MySQLContainer.Def =
+    MySQLContainer.Def(dockerImageName = "mysql:5.7", databaseName = "schemakeeper")
+  override var schemaStorage: DBBackedService[Id] = _
+  var connection: Connection = _
 
-  override lazy val schemaStorage: DBBackedService[Id] = {
+  override def afterContainersStart(container: MySQLContainer): Unit = {
     val map: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]
     map.put("schemakeeper.storage.username", container.username)
     map.put("schemakeeper.storage.password", container.password)
@@ -24,14 +28,11 @@ class MySQLStorageTest extends ServiceTest with ForAllTestContainer with BeforeA
     map.put("schemakeeper.storage.url", container.jdbcUrl)
 
     val config: Config = ConfigFactory.parseMap(map)
-    DBBackedService.apply[Id](Configuration.apply(config))
-  }
+    schemaStorage = DBBackedService.apply[Id](Configuration.apply(config))
 
-  lazy val connection = {
     Class.forName(container.driverClassName)
-    val connection = DriverManager.getConnection(container.jdbcUrl, container.username, container.password)
+    connection = DriverManager.getConnection(container.jdbcUrl, container.username, container.password)
     connection.setAutoCommit(false)
-    connection
   }
 
   override protected def afterEach(): Unit = {
@@ -41,7 +42,5 @@ class MySQLStorageTest extends ServiceTest with ForAllTestContainer with BeforeA
     connection.commit()
   }
 
-  override protected def afterAll(): Unit = {
-    connection.close()
-  }
+  override def beforeContainersStop(containers: MySQLContainer): Unit = connection.close()
 }

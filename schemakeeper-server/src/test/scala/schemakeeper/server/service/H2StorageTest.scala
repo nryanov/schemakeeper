@@ -12,7 +12,7 @@ import schemakeeper.server.Configuration
 
 @RunWith(classOf[JUnitRunner])
 class H2StorageTest extends ServiceTest with BeforeAndAfterEach with BeforeAndAfterAll {
-  lazy val schemaStorage: DBBackedService[Id] = {
+  var schemaStorage: DBBackedService[Id] = {
     val map: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]
     map.put("schemakeeper.storage.username", "")
     map.put("schemakeeper.storage.password", "")
@@ -40,7 +40,6 @@ class H2StorageTest extends ServiceTest with BeforeAndAfterEach with BeforeAndAf
     connection.commit()
   }
 
-  override protected def afterAll(): Unit = {
+  override protected def afterAll(): Unit =
     connection.close()
-  }
 }

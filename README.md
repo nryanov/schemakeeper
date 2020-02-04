@@ -10,12 +10,18 @@ It provides a RESTful interface for storing and retrieving Subjects and Schemas 
 
 ## Features
 - Allows to store metadata for Avro, Thrift and Protobuf schemas
-- Allows to use PostgreSQL, MySQL or H2 as backend for server
+- Allows to use PostgreSQL, MySQL, H2, MariaDB or Oracle as backend for server
 - Can easily be used not only with Kafka 
 - Rich REST api
 - Swagger doc & swagger ui
 - More control on existing subjects - you can lock it to prevent adding new schemas to this subject
 - Server was developed using [finch](https://github.com/finagle/finch) and [twitter-server](https://github.com/twitter/twitter-server)
+
+### Oracle notes
+To be able to use Oracle as your backend for schemas it is required to install ojdbc jar manually. You can do it using maven (or any other tool):
+```text
+mvn install:install-file -Dfile=path/to/your/ojdbc8.jar -DgroupId=com.oracle -DartifactId=ojdbc8 -Dversion=19.3.0.0 -Dpackaging=jar
+```
 
 ## Requirements
 - Java 8+
@@ -117,7 +123,7 @@ To configure docker image you can use environment variables:
 - SCHEMAKEEPER_DEFAULT_ADMIN_PORT - listening port for admin panel
 - SCHEMAKEEPER_STORAGE_USERNAME - db username
 - SCHEMAKEEPER_STORAGE_PASSWORD - db password
-- SCHEMAKEEPER_STORAGE_DRIVER - driver (org.h2.Driver, com.mysql.jdbc.Driver, org.postgresql.Driver)
+- SCHEMAKEEPER_STORAGE_DRIVER - driver (org.h2.Driver, com.mysql.jdbc.Driver, org.postgresql.Driver, org.mariadb.jdbc.Driver, oracle.jdbc.driver.OracleDriver)
 - SCHEMAKEEPER_STORAGE_SCHEMA - db schema
 - SCHEMAKEEPER_STORAGE_URL - jdbc connection url
 

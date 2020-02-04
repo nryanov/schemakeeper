@@ -1,20 +1,24 @@
 package schemakeeper.server.service
 
-import java.sql.DriverManager
+import java.sql.{Connection, DriverManager}
 import java.util
 
 import cats.Id
-import com.dimafeng.testcontainers.{ForAllTestContainer, PostgreSQLContainer}
+import com.dimafeng.testcontainers.scalatest.TestContainerForAll
+import com.dimafeng.testcontainers.PostgreSQLContainer
 import com.typesafe.config.{Config, ConfigFactory}
 import org.junit.runner.RunWith
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.server.Configuration
 
 @RunWith(classOf[JUnitRunner])
-class PostgreSQLStorageTest extends ServiceTest with ForAllTestContainer with BeforeAndAfterAll with BeforeAndAfterEach {
-  override val container: PostgreSQLContainer = PostgreSQLContainer("postgres:9.6")
-  lazy val schemaStorage = {
+class PostgreSQLStorageTest extends ServiceTest with TestContainerForAll with BeforeAndAfterEach {
+  override val containerDef: PostgreSQLContainer.Def = PostgreSQLContainer.Def(dockerImageName = "postgres:9.6")
+  override var schemaStorage: DBBackedService[Id] = _
+  var connection: Connection = _
+
+  override def afterContainersStart(container: PostgreSQLContainer): Unit = {
     val map: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]
     map.put("schemakeeper.storage.username", container.username)
     map.put("schemakeeper.storage.password", container.password)
@@ -23,14 +27,11 @@ class PostgreSQLStorageTest extends ServiceTest with ForAllTestContainer with Be
     map.put("schemakeeper.storage.url", container.jdbcUrl)
 
     val config: Config = ConfigFactory.parseMap(map)
-    DBBackedService.apply[Id](Configuration.apply(config))
-  }
+    schemaStorage = DBBackedService.apply[Id](Configuration.apply(config))
 
-  lazy val connection = {
     Class.forName(container.driverClassName)
-    val connection = DriverManager.getConnection(container.jdbcUrl, container.username, container.password)
+    connection = DriverManager.getConnection(container.jdbcUrl, container.username, container.password)
     connection.setAutoCommit(false)
-    connection
   }
 
   override protected def afterEach(): Unit = {
@@ -40,7 +41,5 @@ class PostgreSQLStorageTest extends ServiceTest with ForAllTestContainer with Be
     connection.commit()
   }
 
-  override protected def afterAll(): Unit = {
-    connection.close()
-  }
+  override def beforeContainersStop(containers: PostgreSQLContainer): Unit = connection.close()
 }
