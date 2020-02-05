@@ -2,11 +2,11 @@ package schemakeeper.server.service
 
 import schemakeeper.schema.CompatibilityType
 
-sealed abstract class SchemaKeeperError(val msg: String) {
-  def this(e: Throwable) = this(e.getLocalizedMessage)
-}
+import scala.util.control.NoStackTrace
 
-final case class BackendError(e: Throwable) extends SchemaKeeperError(e)
+sealed abstract class SchemaKeeperError(val msg: String) extends RuntimeException(msg) with NoStackTrace
+
+final case class BackendError(e: Throwable) extends SchemaKeeperError(e.getLocalizedMessage)
 
 final case class SubjectDoesNotExist(subject: String) extends SchemaKeeperError(s"Subject $subject does not exist")
 
