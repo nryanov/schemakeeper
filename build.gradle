@@ -175,14 +175,20 @@ project(':schemakeeper-server') {
     dependencies {
         compile project(':schemakeeper-common')
 
-        implementation 'org.scala-lang:scala-library:2.12.8'
+        implementation 'org.scala-lang:scala-library:2.12.10'
 
-        compile group: 'com.github.finagle', name: 'finchx-core_2.12', version: '0.29.0'
-        compile group: 'com.github.finagle', name: 'finchx-circe_2.12', version: '0.29.0'
+        compile group: 'org.http4s', name: 'http4s-blaze-server_2.12', version: '0.20.17'
+        compile group: 'org.http4s', name: 'http4s-blaze-client_2.12', version: '0.20.17'
+        compile group: 'org.http4s', name: 'http4s-dsl_2.12', version: '0.20.17'
+
+        compile group: 'com.softwaremill.tapir', name: 'tapir-swagger-ui-http4s_2.12', version: '0.11.9'
+        compile group: 'com.softwaremill.tapir', name: 'tapir-http4s-server_2.12', version: '0.11.9'
+        compile group: 'com.softwaremill.tapir', name: 'tapir-openapi-circe-yaml_2.12', version: '0.11.9'
+
         compile group: 'io.circe', name: 'circe-generic_2.12', version: '0.11.1'
-        compile group: 'com.twitter', name: 'twitter-server_2.12', version: '19.8.0'
+
         compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
-        compile group: 'com.typesafe', name: 'config', version: '1.3.4'
+        compile group: 'com.github.pureconfig', name: 'pureconfig_2.12', version: '0.12.2'
         compile group: 'com.beachape', name: 'enumeratum_2.12', version: '1.5.13'
         compile group: 'io.chrisdavenport', name: 'log4cats-slf4j_2.12', version: '1.0.1'
 
@@ -206,11 +212,23 @@ project(':schemakeeper-server') {
     }
 
     tasks.withType(ScalaCompile) {
+        scalaCompileOptions.forkOptions.with {
+            memoryMaximumSize = '1g'
+            jvmArgs = ['-Xss16m']
+        }
+    }
+
+    tasks.withType(ScalaCompile) {
         scalaCompileOptions.additionalParameters = [
                 '-feature',
+                '-encoding',
+                'utf8',
+//                '-Xfatal-warnings',
+                '-deprecation',
+                '-unchecked',
                 '-language:implicitConversions',
                 '-language:higherKinds',
-                '-language:existentials'
+                '-language:existentials',
         ]
     }
     
