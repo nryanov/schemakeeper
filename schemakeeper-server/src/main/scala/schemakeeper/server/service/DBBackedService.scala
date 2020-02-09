@@ -121,6 +121,7 @@ class DBBackedService[F[_]: Sync](
   override def getSubjectSchemas(subject: String): F[List[SchemaMetadata]] = for {
     _ <- Logger[F].info(s"Get last subject schemas: $subject")
     result <- transact(isSubjectExists(subject) *> storage.getSubjectSchemas(subject))
+      .ensure(SubjectHasNoRegisteredSchemas(subject))(_.nonEmpty)
   } yield result
 
   override def registerSchema(schemaText: String, schemaType: SchemaType): F[SchemaId] = for {

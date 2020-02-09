@@ -2,6 +2,7 @@ package schemakeeper.server.service
 
 import org.apache.avro.{Schema, SchemaBuilder}
 import org.junit.runner.RunWith
+import org.scalatest.EitherValues
 import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.api.{SchemaMetadata, SubjectMetadata}
 import schemakeeper.schema.{CompatibilityType, SchemaType}
@@ -9,7 +10,7 @@ import schemakeeper.server.{IOSpec, service}
 import schemakeeper.server.util.Utils
 
 @RunWith(classOf[JUnitRunner])
-abstract class ServiceSpec extends IOSpec {
+abstract class ServiceSpec extends IOSpec with EitherValues {
   var schemaStorage: DBBackedService[F]
 
   "Subjects" should {
@@ -18,8 +19,7 @@ abstract class ServiceSpec extends IOSpec {
         for {
           result <- schemaStorage.subjects()
         } yield {
-          assert(result.isRight)
-          assert(result.right.get.isEmpty)
+          assert(result.isEmpty)
         }
       }
     }
@@ -29,8 +29,7 @@ abstract class ServiceSpec extends IOSpec {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         result <- schemaStorage.subjects()
       } yield {
-        assert(result.isRight)
-        assertResult(List("A1"))(result.right.get)
+        assertResult(List("A1"))(result)
       }
     }
   }
@@ -38,10 +37,9 @@ abstract class ServiceSpec extends IOSpec {
   "SubjectMetadata" should {
     "return SubjectDoesNotExist" in runF {
       for {
-        result <- schemaStorage.subjectMetadata("A1")
+        result <- schemaStorage.subjectMetadata("A1").attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SubjectDoesNotExist("A1"))(result.left.get)
+        assertResult(SubjectDoesNotExist("A1"))(result.left.value)
       }
     }
 
@@ -50,8 +48,7 @@ abstract class ServiceSpec extends IOSpec {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         result <- schemaStorage.subjectMetadata("A1")
       } yield {
-        assert(result.isRight)
-        assertResult(SubjectMetadata.instance("A1", CompatibilityType.BACKWARD))(result.right.get)
+        assertResult(SubjectMetadata.instance("A1", CompatibilityType.BACKWARD))(result)
       }
     }
   }
@@ -59,10 +56,9 @@ abstract class ServiceSpec extends IOSpec {
   "UpdateSubjectSettings" should {
     "return SubjectDoesNotExist" in runF {
       for {
-        result <- schemaStorage.updateSubjectSettings("A1", CompatibilityType.FULL, isLocked = false)
+        result <- schemaStorage.updateSubjectSettings("A1", CompatibilityType.FULL, isLocked = false).attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SubjectDoesNotExist("A1"))(result.left.get)
+        assertResult(SubjectDoesNotExist("A1"))(result.left.value)
       }
     }
 
@@ -71,8 +67,7 @@ abstract class ServiceSpec extends IOSpec {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         result <- schemaStorage.updateSubjectSettings("A1", CompatibilityType.FULL, isLocked = true)
       } yield {
-        assert(result.isRight)
-        assertResult(SubjectMetadata.instance("A1", CompatibilityType.FULL, true))(result.right.get)
+        assertResult(SubjectMetadata.instance("A1", CompatibilityType.FULL, true))(result)
       }
     }
   }
@@ -80,10 +75,9 @@ abstract class ServiceSpec extends IOSpec {
   "SubjectVersions" should {
     "return SubjectDoesNotExist" in runF {
       for {
-        result <- schemaStorage.subjectVersions("A1")
+        result <- schemaStorage.subjectVersions("A1").attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SubjectDoesNotExist("A1"))(result.left.get)
+        assertResult(SubjectDoesNotExist("A1"))(result.left.value)
       }
     }
 
@@ -92,8 +86,7 @@ abstract class ServiceSpec extends IOSpec {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         result <- schemaStorage.subjectVersions("A1")
       } yield {
-        assert(result.isRight)
-        assert(result.right.get.isEmpty)
+        assert(result.isEmpty)
       }
     }
 
@@ -107,8 +100,7 @@ abstract class ServiceSpec extends IOSpec {
         )
         result <- schemaStorage.subjectVersions("A1")
       } yield {
-        assert(result.isRight)
-        assertResult(List(1))(result.right.get)
+        assertResult(List(1))(result)
       }
     }
   }
@@ -116,20 +108,18 @@ abstract class ServiceSpec extends IOSpec {
   "SubjectSchemasMetadata" should {
     "return SubjectDoesNotExist" in runF {
       for {
-        result <- schemaStorage.subjectSchemasMetadata("A1")
+        result <- schemaStorage.subjectSchemasMetadata("A1").attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SubjectDoesNotExist("A1"))(result.left.get)
+        assertResult(SubjectDoesNotExist("A1"))(result.left.value)
       }
     }
 
     "return SubjectHasNoRegisteredSchemas" in runF {
       for {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
-        result <- schemaStorage.subjectSchemasMetadata("A1")
+        result <- schemaStorage.subjectSchemasMetadata("A1").attempt
       } yield {
-        assert(result.isRight)
-        assert(result.right.get.isEmpty)
+        assertResult(SubjectHasNoRegisteredSchemas("A1"))(result.left.value)
       }
     }
 
@@ -143,9 +133,7 @@ abstract class ServiceSpec extends IOSpec {
         )
         result <- schemaStorage.subjectSchemasMetadata("A1")
       } yield {
-        assert(result.isRight)
-
-        val meta = result.right.get.head
+        val meta = result.head
 
         assertResult(Schema.create(Schema.Type.STRING).toString)(meta.getSchemaText)
         assertResult(Utils.toMD5Hex(Schema.create(Schema.Type.STRING).toString))(meta.getSchemaHash)
@@ -157,20 +145,18 @@ abstract class ServiceSpec extends IOSpec {
   "SubjectSchemaByVersion" should {
     "return SubjectDoesNotExist" in runF {
       for {
-        result <- schemaStorage.subjectSchemaByVersion("A1", 1)
+        result <- schemaStorage.subjectSchemaByVersion("A1", 1).attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SubjectDoesNotExist("A1"))(result.left.get)
+        assertResult(SubjectDoesNotExist("A1"))(result.left.value)
       }
     }
 
     "return SubjectSchemaVersionDoesNotExist" in runF {
       for {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
-        result <- schemaStorage.subjectSchemaByVersion("A1", 1)
+        result <- schemaStorage.subjectSchemaByVersion("A1", 1).attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SubjectSchemaVersionDoesNotExist("A1", 1))(result.left.get)
+        assertResult(SubjectSchemaVersionDoesNotExist("A1", 1))(result.left.value)
       }
     }
 
@@ -184,9 +170,7 @@ abstract class ServiceSpec extends IOSpec {
         )
         result <- schemaStorage.subjectSchemaByVersion("A1", 1)
       } yield {
-        assert(result.isRight)
-
-        val meta = result.right.get
+        val meta = result
 
         assertResult(Schema.create(Schema.Type.STRING).toString)(meta.getSchemaText)
         assertResult(Utils.toMD5Hex(Schema.create(Schema.Type.STRING).toString))(meta.getSchemaHash)
@@ -198,20 +182,18 @@ abstract class ServiceSpec extends IOSpec {
   "SchemaById" should {
     "return SchemaDoesNotExist" in runF {
       for {
-        result <- schemaStorage.schemaById(1)
+        result <- schemaStorage.schemaById(1).attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SchemaIdDoesNotExist(1))(result.left.get)
+        assertResult(SchemaIdDoesNotExist(1))(result.left.value)
       }
     }
 
     "return SchemaMetadata" in runF {
       for {
         schema <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
-        id = schema.right.get.getSchemaId
+        id = schema.getSchemaId
         result <- schemaStorage.schemaById(id)
       } yield {
-        assert(result.isRight)
         assertResult(
           SchemaMetadata.instance(
             id,
@@ -219,7 +201,7 @@ abstract class ServiceSpec extends IOSpec {
             Utils.toMD5Hex(Schema.create(Schema.Type.STRING).toString),
             SchemaType.AVRO
           )
-        )(result.right.get)
+        )(result)
       }
     }
   }
@@ -227,19 +209,17 @@ abstract class ServiceSpec extends IOSpec {
   "SchemaIdBySubjectAndSchema" should {
     "return SchemaIsNotValid" in runF {
       for {
-        result <- schemaStorage.schemaIdBySubjectAndSchema("A1", "not valid schema")
+        result <- schemaStorage.schemaIdBySubjectAndSchema("A1", "not valid schema").attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SchemaIsNotValid("not valid schema"))(result.left.get)
+        assertResult(SchemaIsNotValid("not valid schema"))(result.left.value)
       }
     }
 
     "return SchemaIsNotRegistered" in runF {
       for {
-        result <- schemaStorage.schemaIdBySubjectAndSchema("A1", Schema.create(Schema.Type.STRING).toString())
+        result <- schemaStorage.schemaIdBySubjectAndSchema("A1", Schema.create(Schema.Type.STRING).toString()).attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SchemaIsNotRegistered(Schema.create(Schema.Type.STRING).toString()))(result.left.get)
+        assertResult(SchemaIsNotRegistered(Schema.create(Schema.Type.STRING).toString()))(result.left.value)
       }
     }
 
@@ -247,11 +227,10 @@ abstract class ServiceSpec extends IOSpec {
       for {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         schema <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString(), SchemaType.AVRO)
-        id = schema.right.get.getSchemaId
-        result <- schemaStorage.schemaIdBySubjectAndSchema("A1", Schema.create(Schema.Type.STRING).toString())
+        id = schema.getSchemaId
+        result <- schemaStorage.schemaIdBySubjectAndSchema("A1", Schema.create(Schema.Type.STRING).toString()).attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SubjectIsNotConnectedToSchema("A1", id))(result.left.get)
+        assertResult(SubjectIsNotConnectedToSchema("A1", id))(result.left.value)
       }
     }
 
@@ -263,11 +242,9 @@ abstract class ServiceSpec extends IOSpec {
           CompatibilityType.BACKWARD,
           SchemaType.AVRO
         )
-        id = schemaId.right.get.getSchemaId
         result <- schemaStorage.schemaIdBySubjectAndSchema("A1", Schema.create(Schema.Type.STRING).toString())
       } yield {
-        assert(result.isRight)
-        assertResult(schemaId.right.get)(result.right.get)
+        assertResult(schemaId)(result)
       }
     }
   }
@@ -278,8 +255,7 @@ abstract class ServiceSpec extends IOSpec {
         for {
           result <- schemaStorage.deleteSubject("A1")
         } yield {
-          assert(result.isRight)
-          assertResult(false)(result.right.get)
+          assertResult(false)(result)
         }
       }
     }
@@ -289,8 +265,7 @@ abstract class ServiceSpec extends IOSpec {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         result <- schemaStorage.deleteSubject("A1")
       } yield {
-        assert(result.isRight)
-        assertResult(true)(result.right.get)
+        assertResult(true)(result)
       }
     }
   }
@@ -298,20 +273,18 @@ abstract class ServiceSpec extends IOSpec {
   "DeleteSubjectSchemaByVersion" should {
     "return SubjectDoesNotExist" in runF {
       for {
-        result <- schemaStorage.deleteSubjectSchemaByVersion("A1", 1)
+        result <- schemaStorage.deleteSubjectSchemaByVersion("A1", 1).attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SubjectDoesNotExist("A1"))(result.left.get)
+        assertResult(SubjectDoesNotExist("A1"))(result.left.value)
       }
     }
 
     "return SubjectSchemaVersionDoesNotExist" in runF {
       for {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
-        result <- schemaStorage.deleteSubjectSchemaByVersion("A1", 1)
+        result <- schemaStorage.deleteSubjectSchemaByVersion("A1", 1).attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(service.SubjectSchemaVersionDoesNotExist("A1", 1))(result.left.get)
+        assertResult(service.SubjectSchemaVersionDoesNotExist("A1", 1))(result.left.value)
       }
     }
 
@@ -325,8 +298,7 @@ abstract class ServiceSpec extends IOSpec {
         )
         result <- schemaStorage.deleteSubjectSchemaByVersion("A1", 1)
       } yield {
-        assert(result.isRight)
-        assertResult(true)(result.right.get)
+        assert(result)
       }
     }
   }
@@ -334,19 +306,19 @@ abstract class ServiceSpec extends IOSpec {
   "CheckSubjectCompatibility" should {
     "return SchemaIsNotValid" in runF {
       for {
-        result <- schemaStorage.checkSubjectSchemaCompatibility("A1", "SCHEMA")
+        result <- schemaStorage.checkSubjectSchemaCompatibility("A1", "SCHEMA").attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SchemaIsNotValid("SCHEMA"))(result.left.get)
+        assertResult(SchemaIsNotValid("SCHEMA"))(result.left.value)
       }
     }
 
     "return SubjectDoesNotExist" in runF {
       for {
-        result <- schemaStorage.checkSubjectSchemaCompatibility("A1", Schema.create(Schema.Type.STRING).toString())
+        result <- schemaStorage
+          .checkSubjectSchemaCompatibility("A1", Schema.create(Schema.Type.STRING).toString())
+          .attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SubjectDoesNotExist("A1"))(result.left.get)
+        assertResult(SubjectDoesNotExist("A1"))(result.left.value)
       }
     }
 
@@ -360,8 +332,7 @@ abstract class ServiceSpec extends IOSpec {
         _ <- schemaStorage.registerSchema("A1", schema1.toString(), CompatibilityType.BACKWARD, SchemaType.AVRO)
         result <- schemaStorage.checkSubjectSchemaCompatibility("A1", schema2.toString())
       } yield {
-        assert(result.isRight)
-        assertResult(true)(result.right.get)
+        assert(result)
       }
     }
 
@@ -373,8 +344,7 @@ abstract class ServiceSpec extends IOSpec {
         _ <- schemaStorage.registerSchema("A1", schema1.toString(), CompatibilityType.FORWARD, SchemaType.AVRO)
         result <- schemaStorage.checkSubjectSchemaCompatibility("A1", schema2.toString())
       } yield {
-        assert(result.isRight)
-        assertResult(false)(result.right.get)
+        assert(!result)
       }
     }
   }
@@ -382,20 +352,18 @@ abstract class ServiceSpec extends IOSpec {
   "GetSubjectSchemas" should {
     "return SubjectDoesNotExist" in runF {
       for {
-        result <- schemaStorage.getSubjectSchemas("A1")
+        result <- schemaStorage.getSubjectSchemas("A1").attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SubjectDoesNotExist("A1"))(result.left.get)
+        assertResult(SubjectDoesNotExist("A1"))(result.left.value)
       }
     }
 
     "return SubjectHasNoRegisteredSchemas" in runF {
       for {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
-        result <- schemaStorage.getSubjectSchemas("A1")
+        result <- schemaStorage.getSubjectSchemas("A1").attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SubjectHasNoRegisteredSchemas("A1"))(result.left.get)
+        assertResult(SubjectHasNoRegisteredSchemas("A1"))(result.left.value)
       }
     }
 
@@ -409,8 +377,7 @@ abstract class ServiceSpec extends IOSpec {
         )
         result <- schemaStorage.getSubjectSchemas("A1")
       } yield {
-        assert(result.isRight)
-        assert(result.right.get.size == 1)
+        assert(result.size == 1)
       }
     }
   }
@@ -418,16 +385,15 @@ abstract class ServiceSpec extends IOSpec {
   "RegisterSchema (only)" should {
     "do not register new schema due to schema is not a valid avro schema" in runF {
       for {
-        result <- schemaStorage.registerSchema("SCHEMA", SchemaType.AVRO)
+        result <- schemaStorage.registerSchema("SCHEMA", SchemaType.AVRO).attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SchemaIsNotValid("SCHEMA"))(result.left.get)
+        assertResult(SchemaIsNotValid("SCHEMA"))(result.left.value)
       }
     }
 
     "register new schema and return schemaId" in runF {
       for {
-        result <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
+        result <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO).attempt
       } yield {
         assert(result.isRight)
       }
@@ -436,11 +402,10 @@ abstract class ServiceSpec extends IOSpec {
     "does not register new schema (because schema with the same hash is already exist) and return schema id of existing schema" in runF {
       for {
         schema <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
-        id = schema.right.get.getSchemaId
-        result <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
+        id = schema.getSchemaId
+        result <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO).attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SchemaIsAlreadyExist(id, Schema.create(Schema.Type.STRING).toString))(result.left.get)
+        assertResult(SchemaIsAlreadyExist(id, Schema.create(Schema.Type.STRING).toString))(result.left.value)
       }
     }
   }
@@ -449,26 +414,26 @@ abstract class ServiceSpec extends IOSpec {
     "return SubjectIsLocked" in runF {
       for {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = true)
-        result <- schemaStorage.registerSchema(
-          "A1",
-          Schema.create(Schema.Type.STRING).toString,
-          CompatibilityType.BACKWARD,
-          SchemaType.AVRO
-        )
+        result <- schemaStorage
+          .registerSchema(
+            "A1",
+            Schema.create(Schema.Type.STRING).toString,
+            CompatibilityType.BACKWARD,
+            SchemaType.AVRO
+          )
+          .attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SubjectIsLocked("A1"))(result.left.get)
+        assertResult(SubjectIsLocked("A1"))(result.left.value)
       }
     }
 
     "do not register new schema and subject due to schema is not a valid avro schema" in runF {
       for {
-        result <- schemaStorage.registerSchema("A1", "SCHEMA", CompatibilityType.BACKWARD, SchemaType.AVRO)
+        result <- schemaStorage.registerSchema("A1", "SCHEMA", CompatibilityType.BACKWARD, SchemaType.AVRO).attempt
         subjects <- schemaStorage.subjects()
       } yield {
-        assert(result.isLeft)
-        assertResult(SchemaIsNotValid("SCHEMA"))(result.left.get)
-        assert(subjects.right.get.isEmpty)
+        assertResult(SchemaIsNotValid("SCHEMA"))(result.left.value)
+        assert(subjects.isEmpty)
       }
     }
 
@@ -483,16 +448,15 @@ abstract class ServiceSpec extends IOSpec {
         subjects <- schemaStorage.subjects()
         a1 <- schemaStorage.getSubjectSchemas("A1")
       } yield {
-        assert(result.isRight)
-        assert(subjects.right.get.size == 1)
-        assertResult(result.right.get.getSchemaId)(a1.right.get.head.getSchemaId)
+        assert(subjects.size == 1)
+        assertResult(result.getSchemaId)(a1.head.getSchemaId)
       }
     }
 
     "register subject, does not register new schema (because schema with the same hash is already exist) and return schema id of existing schema" in runF {
       for {
         schema <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
-        id = schema.right.get.getSchemaId
+        id = schema.getSchemaId
         result <- schemaStorage.registerSchema(
           "A1",
           Schema.create(Schema.Type.STRING).toString,
@@ -501,9 +465,8 @@ abstract class ServiceSpec extends IOSpec {
         )
         subjects <- schemaStorage.subjects()
       } yield {
-        assert(result.isRight)
-        assert(subjects.right.get.size == 1)
-        assertResult(result.right.get.getSchemaId)(id)
+        assert(subjects.size == 1)
+        assertResult(result.getSchemaId)(id)
       }
     }
 
@@ -511,16 +474,17 @@ abstract class ServiceSpec extends IOSpec {
       for {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         id <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString(), SchemaType.AVRO)
-        _ <- schemaStorage.addSchemaToSubject("A1", id.right.get.getSchemaId)
-        result <- schemaStorage.registerSchema(
-          "A1",
-          Schema.create(Schema.Type.STRING).toString,
-          CompatibilityType.BACKWARD,
-          SchemaType.AVRO
-        )
+        _ <- schemaStorage.addSchemaToSubject("A1", id.getSchemaId)
+        result <- schemaStorage
+          .registerSchema(
+            "A1",
+            Schema.create(Schema.Type.STRING).toString,
+            CompatibilityType.BACKWARD,
+            SchemaType.AVRO
+          )
+          .attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SubjectIsAlreadyConnectedToSchema("A1", id.right.get.getSchemaId))(result.left.get)
+        assertResult(SubjectIsAlreadyConnectedToSchema("A1", id.getSchemaId))(result.left.value)
       }
     }
 
@@ -533,16 +497,17 @@ abstract class ServiceSpec extends IOSpec {
           SchemaType.AVRO
         )
         // CompatibilityType should not be changed from BACKWARD to NONE
-        result <- schemaStorage.registerSchema(
-          "A1",
-          Schema.create(Schema.Type.INT).toString,
-          CompatibilityType.NONE,
-          SchemaType.AVRO
-        )
+        result <- schemaStorage
+          .registerSchema(
+            "A1",
+            Schema.create(Schema.Type.INT).toString,
+            CompatibilityType.NONE,
+            SchemaType.AVRO
+          )
+          .attempt
       } yield {
-        assert(result.isLeft)
         assertResult(SchemaIsNotCompatible("A1", Schema.create(Schema.Type.INT).toString, CompatibilityType.BACKWARD))(
-          result.left.get
+          result.left.value
         )
       }
     }
@@ -555,9 +520,9 @@ abstract class ServiceSpec extends IOSpec {
         result <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         after <- schemaStorage.subjects()
       } yield {
-        assert(before.right.get.isEmpty)
-        assertResult(after.right.get)(List("A1"))
-        assertResult(SubjectMetadata.instance("A1", CompatibilityType.BACKWARD))(result.right.get)
+        assert(before.isEmpty)
+        assertResult(after)(List("A1"))
+        assertResult(SubjectMetadata.instance("A1", CompatibilityType.BACKWARD))(result)
       }
     }
 
@@ -567,19 +532,18 @@ abstract class ServiceSpec extends IOSpec {
         result <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = true)
         after <- schemaStorage.subjects()
       } yield {
-        assert(before.right.get.isEmpty)
-        assertResult(after.right.get)(List("A1"))
-        assertResult(SubjectMetadata.instance("A1", CompatibilityType.BACKWARD, true))(result.right.get)
+        assert(before.isEmpty)
+        assertResult(after)(List("A1"))
+        assertResult(SubjectMetadata.instance("A1", CompatibilityType.BACKWARD, true))(result)
       }
     }
 
     "return SubjectIsAlreadyExists" in runF {
       for {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
-        result <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
+        result <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SubjectIsAlreadyExists("A1"))(result.left.get)
+        assertResult(SubjectIsAlreadyExists("A1"))(result.left.value)
       }
     }
   }
@@ -589,12 +553,11 @@ abstract class ServiceSpec extends IOSpec {
       for {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         schema <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString(), SchemaType.AVRO)
-        id = schema.right.get.getSchemaId
+        id = schema.getSchemaId
         result <- schemaStorage.addSchemaToSubject("A1", id)
       } yield {
-        assert(result.isRight)
         // 1 - version
-        assertResult(1)(result.right.get)
+        assertResult(1)(result)
       }
     }
 
@@ -607,22 +570,20 @@ abstract class ServiceSpec extends IOSpec {
           SchemaType.AVRO
         )
         schema <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString(), SchemaType.AVRO)
-        id = schema.right.get.getSchemaId
-        result <- schemaStorage.addSchemaToSubject("A1", id)
+        id = schema.getSchemaId
+        result <- schemaStorage.addSchemaToSubject("A1", id).attempt
       } yield {
-        assert(result.isLeft)
         assertResult(
           SchemaIsNotCompatible("A1", Schema.create(Schema.Type.STRING).toString(), CompatibilityType.BACKWARD)
-        )(result.left.get)
+        )(result.left.value)
       }
     }
 
     "return SubjectDoesNotExist" in runF {
       for {
-        result <- schemaStorage.addSchemaToSubject("A1", 1)
+        result <- schemaStorage.addSchemaToSubject("A1", 1).attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SubjectDoesNotExist("A1"))(result.left.get)
+        assertResult(SubjectDoesNotExist("A1"))(result.left.value)
       }
     }
 
@@ -630,32 +591,29 @@ abstract class ServiceSpec extends IOSpec {
       for {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         schema <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString(), SchemaType.AVRO)
-        id = schema.right.get.getSchemaId
+        id = schema.getSchemaId
         _ <- schemaStorage.addSchemaToSubject("A1", id)
-        result <- schemaStorage.addSchemaToSubject("A1", id)
+        result <- schemaStorage.addSchemaToSubject("A1", id).attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SubjectIsAlreadyConnectedToSchema("A1", id))(result.left.get)
+        assertResult(SubjectIsAlreadyConnectedToSchema("A1", id))(result.left.value)
       }
     }
 
     "return SchemaDoesNotExist" in runF {
       for {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
-        result <- schemaStorage.addSchemaToSubject("A1", 1)
+        result <- schemaStorage.addSchemaToSubject("A1", 1).attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SchemaIdDoesNotExist(1))(result.left.get)
+        assertResult(SchemaIdDoesNotExist(1))(result.left.value)
       }
     }
 
     "return SubjectIsLocked" in runF {
       for {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = true)
-        result <- schemaStorage.addSchemaToSubject("A1", 1)
+        result <- schemaStorage.addSchemaToSubject("A1", 1).attempt
       } yield {
-        assert(result.isLeft)
-        assertResult(SubjectIsLocked("A1"))(result.left.get)
+        assertResult(SubjectIsLocked("A1"))(result.left.value)
       }
     }
   }
