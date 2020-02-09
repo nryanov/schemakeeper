@@ -153,8 +153,8 @@ class DBBackedService[F[_]: Sync](
           case Some(value) => pure(value.getSchemaId)
           case None        => storage.registerSchema(schemaText, schemaHash, schemaType)
         }
-        subjectMeta <- storage.subjectMetadata(subject).flatMap {
-          case Some(meta) if meta.isLocked => liftF(SubjectIsLocked(subject).raiseError)
+        subjectMeta <- storage.subjectMetadata(subject).flatMap[SubjectMetadata] {
+          case Some(meta) if meta.isLocked => raiseErrorF(SubjectIsLocked(subject))
           case Some(meta)                  => pure(meta)
           case None                        => storage.registerSubject(subject, compatibilityType, isLocked = false)
         }
@@ -182,13 +182,13 @@ class DBBackedService[F[_]: Sync](
     _ <- Logger[F].info(s"Add schema: $schemaId to subject: $subject")
     result <- transact {
       for {
-        meta <- storage.subjectMetadata(subject).flatMap {
-          case None                        => liftF(SubjectDoesNotExist(subject).raiseError)
-          case Some(meta) if meta.isLocked => liftF(SubjectIsLocked(subject).raiseError)
+        meta <- storage.subjectMetadata(subject).flatMap[SubjectMetadata] {
+          case None                        => raiseErrorF(SubjectDoesNotExist(subject))
+          case Some(meta) if meta.isLocked => raiseErrorF(SubjectIsLocked(subject))
           case Some(meta)                  => pure(meta)
         }
-        schemaMeta <- storage.schemaById(schemaId).flatMap {
-          case None             => liftF(SchemaIdDoesNotExist(schemaId).raiseError)
+        schemaMeta <- storage.schemaById(schemaId).flatMap[SchemaMetadata] {
+          case None             => raiseErrorF(SchemaIdDoesNotExist(schemaId))
           case Some(schemaMeta) => pure(schemaMeta)
         }
         _ <- storage
@@ -255,10 +255,13 @@ class DBBackedService[F[_]: Sync](
 
   private def pure[A](a: A): Free[connection.ConnectionOp, A] = Free.pure(a)
 
-  private def liftF[A](a: F[A]): Free[connection.ConnectionOp, A] = Free.liftF(a)
+  private def raiseErrorF[A](err: Throwable): Free[connection.ConnectionOp, A] = connection.raiseError(err)
 }
 
 object DBBackedService {
   def apply[F[_]: Sync](storage: SchemaStorage[ConnectionIO], transact: ConnectionIO ~> F): DBBackedService[F] =
     new DBBackedService(storage, transact)
+
+  def create[F[_]: Sync](storage: SchemaStorage[ConnectionIO], transact: ConnectionIO ~> F): DBBackedService[F] =
+    DBBackedService(storage, transact)
 }
