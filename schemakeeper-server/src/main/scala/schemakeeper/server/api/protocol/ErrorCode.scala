@@ -1,6 +1,6 @@
 package schemakeeper.server.api.protocol
 
-case class ErrorCode(code: Int)
+final case class ErrorCode(code: Int)
 
 object ErrorCode {
   def fromCode(code: Int): ErrorCode = code match {

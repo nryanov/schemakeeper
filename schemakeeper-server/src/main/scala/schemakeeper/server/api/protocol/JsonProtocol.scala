@@ -7,21 +7,21 @@ import schemakeeper.schema.{CompatibilityType, SchemaType}
 import schemakeeper.server.api.internal.SubjectSettings
 
 object JsonProtocol {
-    implicit val exceptionEncoder: Encoder[Exception] = Encoder.instance {
-          case e: ErrorInfo =>
-            Json.obj(
-              ("reason", Json.fromString(e.reason)),
-              ("code", Json.fromInt(e.code.code))
-            )
-      case e => Json.fromString(e.getLocalizedMessage)
-    }
+  implicit val exceptionEncoder: Encoder[Exception] = Encoder.instance {
+    case e: ErrorInfo =>
+      Json.obj(
+        ("reason", Json.fromString(e.reason)),
+        ("code", Json.fromInt(e.code.code))
+      )
+    case e => Json.fromString(e.getLocalizedMessage)
+  }
 
   implicit val schemaMetadataEncoder: Encoder[SchemaMetadata] = new Encoder[SchemaMetadata] {
     override def apply(a: SchemaMetadata): Json = Json.obj(
       ("schemaId", Json.fromInt(a.getSchemaId)),
       ("schemaText", Json.fromString(a.getSchemaText)),
       ("schemaHash", Json.fromString(a.getSchemaHash)),
-      ("schemaType", Json.fromString(a.getSchemaType.identifier)),
+      ("schemaType", Json.fromString(a.getSchemaType.identifier))
     )
   }
   implicit val schemaMetadataDecoder: Decoder[SchemaMetadata] = new Decoder[SchemaMetadata] {
@@ -36,7 +36,7 @@ object JsonProtocol {
   implicit val subjectSettingsEncoder: Encoder[SubjectSettings] = new Encoder[SubjectSettings] {
     override def apply(a: SubjectSettings): Json = Json.obj(
       ("compatibilityType", Json.fromString(a.compatibilityType.identifier)),
-      ("isLocked", Json.fromBoolean(a.isLocked)),
+      ("isLocked", Json.fromBoolean(a.isLocked))
     )
   }
   implicit val subjectSettingsDecoder: Decoder[SubjectSettings] = new Decoder[SubjectSettings] {
@@ -52,7 +52,7 @@ object JsonProtocol {
       ("version", Json.fromInt(a.getVersion)),
       ("schemaText", Json.fromString(a.getSchemaText)),
       ("schemaHash", Json.fromString(a.getSchemaHash)),
-      ("schemaType", Json.fromString(a.getSchemaType.identifier)),
+      ("schemaType", Json.fromString(a.getSchemaType.identifier))
     )
   }
   implicit val subjectSchemaMetadataDecoder: Decoder[SubjectSchemaMetadata] = new Decoder[SubjectSchemaMetadata] {
@@ -80,7 +80,7 @@ object JsonProtocol {
     override def apply(a: SubjectMetadata): Json = Json.obj(
       ("subject", Json.fromString(a.getSubject)),
       ("compatibilityType", Json.fromString(a.getCompatibilityType.identifier)),
-      ("isLocked", Json.fromBoolean(a.isLocked)),
+      ("isLocked", Json.fromBoolean(a.isLocked))
     )
   }
   implicit val subjectMetadataDecoder: Decoder[SubjectMetadata] = new Decoder[SubjectMetadata] {
@@ -127,6 +127,10 @@ object JsonProtocol {
       schemaType <- c.downField("schemaType").as[String]
       compatibilityType <- c.downField("compatibilityType").as[String]
       schemaText <- c.downField("schemaText").as[String]
-    } yield SubjectAndSchemaRequest.instance(schemaText, SchemaType.findByName(schemaType), CompatibilityType.findByName(compatibilityType))
+    } yield SubjectAndSchemaRequest.instance(
+      schemaText,
+      SchemaType.findByName(schemaType),
+      CompatibilityType.findByName(compatibilityType)
+    )
   }
 }

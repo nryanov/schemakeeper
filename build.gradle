@@ -185,9 +185,10 @@ project(':schemakeeper-server') {
 
         compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-core_2.12', version: '0.12.20'
         compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-json-circe_2.12', version: '0.12.20'
-        compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-openapi-circe-yaml_2.12', version: '0.12.20'
         compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-http4s-server_2.12', version: '0.12.20'
         compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-swagger-ui-http4s_2.12', version: '0.12.20'
+        compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-openapi-docs_2.12', version: '0.12.20'
+        compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-openapi-circe-yaml_2.12', version: '0.12.20'
         compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-openapi-circe_2.12', version: '0.12.20'
 
         compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
