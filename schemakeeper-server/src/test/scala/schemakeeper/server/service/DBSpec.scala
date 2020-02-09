@@ -11,6 +11,7 @@ import schemakeeper.server.datasource.DataSource
 import schemakeeper.server.datasource.migration.FlywayMigrationTool
 import schemakeeper.server.storage.DatabaseStorage
 import schemakeeper.server.storage.exception.StorageExceptionHandler
+import schemakeeper.server.storage.lock.StorageLock
 import schemakeeper.server.{Configuration, IOSpec}
 
 import scala.concurrent.ExecutionContext
@@ -36,11 +37,12 @@ trait DBSpec extends IOSpec with BeforeAndAfterAll {
     context = DataSource.context(cfg)
     storage = DatabaseStorage.create(context, StorageExceptionHandler(cfg))
     flyway = FlywayMigrationTool.build(cfg)
+    lock = StorageLock.create(cfg)
     _ <- IO.delay(flyway.migrate())
     resource <- DataSource.resource[F](cfg).allocated
   } yield {
     this.finalizer = resource._2
     this.flyway = flyway
-    DBBackedService.create[F](storage, resource._1)
+    DBBackedService.create[F](storage, resource._1, lock)
   }
 }

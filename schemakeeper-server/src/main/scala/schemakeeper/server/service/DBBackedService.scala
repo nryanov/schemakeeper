@@ -20,12 +20,14 @@ import schemakeeper.server.storage.SchemaStorage
 import schemakeeper.api.{SchemaId, SchemaMetadata, SubjectMetadata, SubjectSchemaMetadata}
 import schemakeeper.schema.{AvroSchemaCompatibility, AvroSchemaUtils, CompatibilityType, SchemaType}
 import schemakeeper.server.SchemaKeeperError._
+import schemakeeper.server.storage.lock.StorageLock
 
 import scala.collection.JavaConverters._
 
 class DBBackedService[F[_]](
   storage: SchemaStorage[ConnectionIO],
-  transact: ConnectionIO ~> F
+  transact: ConnectionIO ~> F,
+  storageLock: StorageLock[ConnectionIO]
 )(implicit F: Sync[F])
     extends Service[F] {
   implicit def unsafeLogger: SelfAwareStructuredLogger[F] = Slf4jLogger.getLogger[F]
@@ -153,6 +155,7 @@ class DBBackedService[F[_]](
     schemaHash <- Utils.toMD5Hex(schemaText).pure[F]
     result <- transact {
       for {
+        _ <- storageLock.lockForUpdate()
         schemaId <- storage.schemaByHash(schemaHash).flatMap {
           case Some(value) => pure(value.getSchemaId)
           case None        => storage.registerSchema(schemaText, schemaHash, schemaType)
@@ -186,6 +189,7 @@ class DBBackedService[F[_]](
     _ <- Logger[F].info(s"Add schema: $schemaId to subject: $subject")
     result <- transact {
       for {
+        _ <- storageLock.lockForUpdate()
         meta <- storage.subjectMetadata(subject).flatMap[SubjectMetadata] {
           case None                        => raiseErrorF(SubjectDoesNotExist(subject))
           case Some(meta) if meta.isLocked => raiseErrorF(SubjectIsLocked(subject))
@@ -260,7 +264,8 @@ class DBBackedService[F[_]](
 object DBBackedService {
   def create[F[_]: Sync](
     storage: SchemaStorage[ConnectionIO],
-    transact: ConnectionIO ~> F
+    transact: ConnectionIO ~> F,
+    storageLock: StorageLock[ConnectionIO]
   ): DBBackedService[F] =
-    new DBBackedService(storage, transact)
+    new DBBackedService(storage, transact, storageLock)
 }
