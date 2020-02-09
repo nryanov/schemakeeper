@@ -8,28 +8,23 @@ import schemakeeper.server.datasource.DataSourceUtils
 import scala.collection.JavaConverters._
 
 object FlywayMigrationTool {
-  def migrate(configuration: Configuration): Unit = {
-    val flyway = Flyway
-      .configure()
-      .configuration(
-        Map(
-          ConfigUtils.LOCATIONS -> getMigrationLocation(
-            DataSourceUtils
-              .detectDatabaseProvider(configuration.databaseConnectionString)
-          ),
-          ConfigUtils.SCHEMAS -> configuration.databaseSchema,
-          s"${ConfigUtils.PLACEHOLDERS_PROPERTY_PREFIX}schemakeeper_schema" -> configuration.databaseSchema
-        ).asJava
-      )
-      .dataSource(
-        configuration.databaseConnectionString,
-        configuration.databaseUsername,
-        configuration.databasePassword
-      )
-      .load()
-
-    flyway.migrate()
-  }
+  def build(configuration: Configuration): Flyway = Flyway
+    .configure()
+    .configuration(
+      Map(
+        ConfigUtils.LOCATIONS -> getMigrationLocation(
+          DataSourceUtils.detectDatabaseProvider(configuration.storage.url)
+        ),
+        ConfigUtils.SCHEMAS -> configuration.storage.schema,
+        s"${ConfigUtils.PLACEHOLDERS_PROPERTY_PREFIX}schemakeeper_schema" -> configuration.storage.schema
+      ).asJava
+    )
+    .dataSource(
+      configuration.storage.url,
+      configuration.storage.username,
+      configuration.storage.password
+    )
+    .load()
 
   private def getMigrationLocation(
     provider: SupportedDatabaseProvider

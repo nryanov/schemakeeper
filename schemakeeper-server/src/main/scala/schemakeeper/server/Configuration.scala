@@ -12,7 +12,7 @@ final case class Storage(
   url: String,
   driver: String,
   username: String,
-  password: Option[String] = None,
+  password: String = "",
   maxConnections: Int = Runtime.getRuntime.availableProcessors(),
   schema: String
 )

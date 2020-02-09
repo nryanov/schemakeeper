@@ -13,7 +13,6 @@ import cats.syntax.flatMap._
 import cats.syntax.applicative._
 import cats.syntax.option._
 import cats.syntax.monadError._
-import cats.syntax.applicativeError._
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 import io.chrisdavenport.log4cats.{Logger, SelfAwareStructuredLogger}
 import schemakeeper.server.util.Utils
@@ -259,9 +258,6 @@ class DBBackedService[F[_]: Sync](
 }
 
 object DBBackedService {
-  def apply[F[_]: Sync](storage: SchemaStorage[ConnectionIO], transact: ConnectionIO ~> F): DBBackedService[F] =
-    new DBBackedService(storage, transact)
-
   def create[F[_]: Sync](storage: SchemaStorage[ConnectionIO], transact: ConnectionIO ~> F): DBBackedService[F] =
-    DBBackedService(storage, transact)
+    new DBBackedService(storage, transact)
 }

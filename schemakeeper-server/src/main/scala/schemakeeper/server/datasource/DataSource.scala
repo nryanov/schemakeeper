@@ -4,6 +4,7 @@ import cats.arrow.FunctionK
 import cats.effect.{Async, Blocker, ContextShift, Resource}
 import com.zaxxer.hikari.HikariConfig
 import doobie.ExecutionContexts
+import doobie.h2.H2Transactor
 import doobie.hikari.HikariTransactor
 import doobie.quill.{DoobieContext, DoobieContextBase}
 import doobie.util.transactor.Transactor
@@ -24,8 +25,13 @@ object DataSource {
       case SupportedDatabaseProvider.Oracle  => new DoobieContext.Oracle(SnakeCase)
     }
 
-  def resource[F[_]: Async: ContextShift](config: Configuration): Resource[F, FunctionK[doobie.ConnectionIO, F]] =
-    transactor[F](config).map { tx =>
+  def resource[F[_]: Async: ContextShift](config: Configuration): Resource[F, FunctionK[doobie.ConnectionIO, F]] = {
+    val transactor: Resource[F, Transactor[F]] = DataSourceUtils.detectDatabaseProvider(config.storage.url) match {
+      case SupportedDatabaseProvider.H2 => hikariTransactor(config)
+      case _                            => hikariTransactor(config)
+    }
+
+    transactor.map { tx =>
       def transact[A](tx: Transactor[F])(sql: doobie.ConnectionIO[A]): F[A] =
         sql.transact(tx)
 
@@ -33,8 +39,9 @@ object DataSource {
         def apply[A](l: doobie.ConnectionIO[A]): F[A] = transact(tx)(l)
       }
     }
+  }
 
-  private def transactor[F[_]: Async: ContextShift](config: Configuration): Resource[F, Transactor[F]] =
+  private def hikariTransactor[F[_]: Async: ContextShift](config: Configuration): Resource[F, Transactor[F]] =
     for {
       connectionExecutionPool <- ExecutionContexts.fixedThreadPool[F](Runtime.getRuntime.availableProcessors())
       transactionExecutionPool <- Blocker[F]
@@ -46,13 +53,26 @@ object DataSource {
       )
     } yield xa
 
+  private def h2Transactor[F[_]: Async: ContextShift](config: Configuration): Resource[F, Transactor[F]] =
+    for {
+      connectionExecutionPool <- ExecutionContexts.fixedThreadPool[F](Runtime.getRuntime.availableProcessors())
+      transactionExecutionPool <- Blocker[F]
+      xa <- H2Transactor.newH2Transactor[F](
+        url = config.storage.url,
+        user = config.storage.username,
+        pass = config.storage.password,
+        connectionExecutionPool,
+        transactionExecutionPool
+      )
+    } yield xa
+
   private def hikariConfig(storage: Storage): HikariConfig = {
     val cfg = new HikariConfig()
     cfg.setMaximumPoolSize(storage.maxConnections)
     cfg.setDriverClassName(storage.driver)
     cfg.setJdbcUrl(storage.url)
     cfg.setUsername(storage.username)
-    cfg.setPassword(storage.password.orNull)
+    cfg.setPassword(storage.password)
     cfg.setSchema(storage.schema)
     cfg.setMinimumIdle(1)
 
