@@ -19,6 +19,7 @@ import schemakeeper.server.util.Utils
 import schemakeeper.server.storage.SchemaStorage
 import schemakeeper.api.{SchemaId, SchemaMetadata, SubjectMetadata, SubjectSchemaMetadata}
 import schemakeeper.schema.{AvroSchemaCompatibility, AvroSchemaUtils, CompatibilityType, SchemaType}
+import schemakeeper.server.SchemaKeeperError._
 
 import scala.collection.JavaConverters._
 
@@ -257,6 +258,9 @@ class DBBackedService[F[_]](
 }
 
 object DBBackedService {
-  def create[F[_]: Sync](storage: SchemaStorage[ConnectionIO], transact: ConnectionIO ~> F): DBBackedService[F] =
+  def create[F[_]: Sync](
+    storage: SchemaStorage[ConnectionIO],
+    transact: ConnectionIO ~> F
+  ): DBBackedService[F] =
     new DBBackedService(storage, transact)
 }

@@ -1,6 +1,7 @@
 package schemakeeper.server.service
 
 import java.util.concurrent.Executors
+
 import cats.syntax.apply._
 import cats.effect.{ContextShift, IO}
 import com.typesafe.config.Config
@@ -9,6 +10,7 @@ import org.scalatest.{Assertion, BeforeAndAfterAll}
 import schemakeeper.server.datasource.DataSource
 import schemakeeper.server.datasource.migration.FlywayMigrationTool
 import schemakeeper.server.storage.DatabaseStorage
+import schemakeeper.server.storage.exception.StorageExceptionHandler
 import schemakeeper.server.{Configuration, IOSpec}
 
 import scala.concurrent.ExecutionContext
@@ -32,7 +34,7 @@ trait DBSpec extends IOSpec with BeforeAndAfterAll {
   private def createService0(config: Config): F[DBBackedService[F]] = for {
     cfg <- Configuration.create[F](config)
     context = DataSource.context(cfg)
-    storage = DatabaseStorage.create(context)
+    storage = DatabaseStorage.create(context, StorageExceptionHandler(cfg))
     flyway = FlywayMigrationTool.build(cfg)
     _ <- IO.delay(flyway.migrate())
     resource <- DataSource.resource[F](cfg).allocated

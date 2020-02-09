@@ -1,15 +1,22 @@
 package schemakeeper.server.storage
 
 import doobie._
+import doobie.free.connection
+import doobie.implicits._
 import doobie.quill.DoobieContextBase
 import io.getquill.context.sql.idiom.SqlIdiom
 import io.getquill._
 import schemakeeper.api.{SchemaMetadata, SubjectMetadata, SubjectSchemaMetadata}
 import schemakeeper.schema.{CompatibilityType, SchemaType}
+import schemakeeper.server.SchemaKeeperError._
+import schemakeeper.server.storage.exception.StorageExceptionHandler
 import schemakeeper.server.storage.model.{SchemaInfo, Subject, SubjectSchema}
 import schemakeeper.server.storage.model.Converters._
 
-class DatabaseStorage(dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy]) extends SchemaStorage[ConnectionIO] {
+class DatabaseStorage(
+  dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy],
+  storageExceptionHandler: StorageExceptionHandler
+) extends SchemaStorage[ConnectionIO] {
   private implicit val logHandler: LogHandler = LogHandler.jdkLogHandler
 
   import dc._
@@ -173,10 +180,15 @@ class DatabaseStorage(dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy])
 
   override def registerSchema(schema: String, schemaHash: String, schemaType: SchemaType): doobie.ConnectionIO[Int] =
     dc.run(quote {
-      query[SchemaInfo]
-        .insert(lift(SchemaInfo(0, schemaType.identifier, schema, schemaHash)))
-        .returningGenerated(_.schemaId)
-    })
+        query[SchemaInfo]
+          .insert(lift(SchemaInfo(0, schemaType.identifier, schema, schemaHash)))
+          .returningGenerated(_.schemaId)
+      })
+      .exceptSql {
+        case err if storageExceptionHandler.isUniqueViolation(err) =>
+          connection.raiseError(SchemaIsAlreadyExist(-1, schema))
+        case err => connection.raiseError(BackendError(err))
+      }
 
   override def registerSubject(
     subject: String,
@@ -186,6 +198,11 @@ class DatabaseStorage(dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy])
     .run(quote {
       query[Subject].insert(lift(Subject(subject, compatibilityType.identifier, isLocked)))
     })
+    .exceptSql {
+      case err if storageExceptionHandler.isUniqueViolation(err) =>
+        connection.raiseError(SubjectIsAlreadyExists(subject))
+      case err => connection.raiseError(BackendError(err))
+    }
     .map(_ => SubjectMetadata.instance(subject, compatibilityType, isLocked))
 
   override def addSchemaToSubject(subject: String, schemaId: Index, version: Index): doobie.ConnectionIO[Unit] = dc
@@ -212,5 +229,8 @@ class DatabaseStorage(dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy])
 }
 
 object DatabaseStorage {
-  def create(dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy]): DatabaseStorage = new DatabaseStorage(dc)
+  def create(
+    dc: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy],
+    storageExceptionHandler: StorageExceptionHandler
+  ): DatabaseStorage = new DatabaseStorage(dc, storageExceptionHandler)
 }

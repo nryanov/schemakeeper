@@ -1,7 +1,7 @@
 package schemakeeper.server.storage.exception
 
 class H2ExceptionHandler extends StorageExceptionHandler {
-  override def isRecoverable(e: Throwable): Boolean = e match {
+  override def isUniqueViolation(e: Throwable): Boolean = e match {
     case duplicate: org.h2.jdbc.JdbcSQLIntegrityConstraintViolationException =>
       if (duplicate.getErrorCode == 23505) {
         true

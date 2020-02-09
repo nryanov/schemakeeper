@@ -6,6 +6,7 @@ import org.scalatest.EitherValues
 import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.api.{SchemaMetadata, SubjectMetadata}
 import schemakeeper.schema.{CompatibilityType, SchemaType}
+import schemakeeper.server.SchemaKeeperError._
 import schemakeeper.server.{IOSpec, service}
 import schemakeeper.server.util.Utils
 
@@ -284,7 +285,7 @@ abstract class ServiceSpec extends IOSpec with EitherValues {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         result <- schemaStorage.deleteSubjectSchemaByVersion("A1", 1).attempt
       } yield {
-        assertResult(service.SubjectSchemaVersionDoesNotExist("A1", 1))(result.left.value)
+        assertResult(SubjectSchemaVersionDoesNotExist("A1", 1))(result.left.value)
       }
     }
 
