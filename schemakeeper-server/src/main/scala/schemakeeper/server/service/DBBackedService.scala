@@ -1,6 +1,5 @@
 package schemakeeper.server.service
 
-import cats.data.OptionT
 import doobie.ConnectionIO
 import doobie.free.connection
 import doobie.implicits._
@@ -15,7 +14,6 @@ import cats.syntax.applicative._
 import cats.syntax.option._
 import cats.syntax.monadError._
 import cats.syntax.applicativeError._
-import doobie.free.connection.ConnectionOp
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 import io.chrisdavenport.log4cats.{Logger, SelfAwareStructuredLogger}
 import schemakeeper.server.util.Utils
@@ -131,11 +129,9 @@ class DBBackedService[F[_]: Sync](
     schemaHash <- Utils.toMD5Hex(schemaText).pure[F]
     result <- transact {
       for {
-        schemaMetadataOptional <- storage.schemaByHash(schemaHash)
-        _ <- pure(schemaMetadataOptional match {
-          case Some(value) => SchemaIsAlreadyExist(value.getSchemaId, schemaText).raiseError
-          case None        => Unit.pure[F]
-        })
+        _ <- storage.schemaByHash(schemaHash).reject {
+          case Some(value) => SchemaIsAlreadyExist(value.getSchemaId, schemaText)
+        }
         newSchema <- storage.registerSchema(schemaText, schemaHash, schemaType).map(SchemaId.instance)
       } yield newSchema
     }
@@ -148,55 +144,27 @@ class DBBackedService[F[_]: Sync](
     schemaType: SchemaType
   ): F[SchemaId] = for {
     _ <- Logger[F].info(s"Register schema: $schemaText and add to subject: $subject")
-    result <- validateSchema(schemaText).flatMap[Result[SchemaId]] {
-      case Left(e) => Monad[F].pure(Left(e))
-      case Right(schema) =>
-        transaction {
-          val schemaHash = Utils.toMD5Hex(schemaText)
-          storage
-            .schemaByHash(schemaHash)
-            .flatMap {
-              case None       => storage.registerSchema(schemaText, schemaHash, schemaType)
-              case Some(meta) => pure[Int](meta.getSchemaId)
-            }
-            .flatMap(schemaId =>
-              storage.subjectMetadata(subject).flatMap {
-                case None =>
-                  storage.registerSubject(subject, compatibilityType, isLocked = false).map(meta => (schemaId, meta))
-                case Some(meta) => pure[(Int, SubjectMetadata)]((schemaId, meta))
-              }
-            )
-            .flatMap[Result[SchemaId]] {
-              case (schemaId, subjectMeta) =>
-                if (subjectMeta.isLocked) {
-                  pure(Left(SubjectIsLocked(subject)))
-                } else {
-                  Monad[ConnectionIO].ifM[Result[SchemaId]](
-                    isSchemaCompatible(subject, schema, subjectMeta.getCompatibilityType)
-                  )(
-                    Monad[ConnectionIO].ifM(storage.isSubjectConnectedToSchema(subject, schemaId))(
-                      pure(Left(SubjectIsAlreadyConnectedToSchema(subject, schemaId))),
-                      storage
-                        .getNextVersionNumber(subject)
-                        .flatMap(version =>
-                          storage
-                            .addSchemaToSubject(subject, schemaId, version)
-                            .map(_ => Right(SchemaId.instance(schemaId)))
-                        )
-                    ),
-                    pure(Left(SchemaIsNotCompatible(subject, schemaText, subjectMeta.getCompatibilityType)))
-                  )
-                }
-            }
-        }.flatMap {
-          case Left(e) =>
-            if (exceptionHandler.isRecoverable(e)) {
-              registerSchema(subject, schemaText, compatibilityType, schemaType)
-            } else {
-              Monad[F].pure(Left(BackendError(e)))
-            }
-          case Right(v) => Monad[F].pure(v)
+    schema <- validateSchema(schemaText)
+    schemaHash <- Utils.toMD5Hex(schemaText).pure[F]
+    result <- transact {
+      for {
+        schemaId <- storage.schemaByHash(schemaHash).flatMap {
+          case Some(value) => pure(value.getSchemaId)
+          case None        => storage.registerSchema(schemaText, schemaHash, schemaType)
         }
+        subjectMeta <- storage.subjectMetadata(subject).flatMap {
+          case Some(meta) if meta.isLocked => liftF(SubjectIsLocked(subject).raiseError)
+          case Some(meta)                  => pure(meta)
+          case None                        => storage.registerSubject(subject, compatibilityType, isLocked = false)
+        }
+        _ <- isSchemaCompatible(subject, schema, subjectMeta.getCompatibilityType)
+          .ensure(SchemaIsNotCompatible(subject, schemaText, subjectMeta.getCompatibilityType))(identity)
+        _ <- storage
+          .isSubjectConnectedToSchema(subject, schemaId)
+          .ensure(SubjectIsAlreadyConnectedToSchema(subject, schemaId))(identity)
+        nextVersion <- storage.getNextVersionNumber(subject)
+        _ <- storage.addSchemaToSubject(subject, schemaId, nextVersion)
+      } yield SchemaId.instance(schemaId)
     }
   } yield result
 
@@ -206,64 +174,30 @@ class DBBackedService[F[_]: Sync](
     isLocked: Boolean
   ): F[SubjectMetadata] = for {
     _ <- Logger[F].info(s"Register new subject: $subject, ${compatibilityType.identifier}")
-    result <- transaction {
-      Monad[ConnectionIO].ifM[Result[SubjectMetadata]](storage.isSubjectExist(subject))(
-        pure(Left(SubjectIsAlreadyExists(subject))),
-        storage.registerSubject(subject, compatibilityType, isLocked).map(Right(_))
-      )
-    }.map {
-      case Left(e) => Left(BackendError(e))
-      case Right(tx) =>
-        tx match {
-          case Left(e)  => Left(e)
-          case Right(v) => Right(v)
-        }
-    }
+    result <- transact(storage.registerSubject(subject, compatibilityType, isLocked))
   } yield result
 
   override def addSchemaToSubject(subject: String, schemaId: Int): F[Int] = for {
     _ <- Logger[F].info(s"Add schema: $schemaId to subject: $subject")
-    result <- transaction {
-      storage.subjectMetadata(subject).flatMap {
-        case None => pure[Result[Int]](Left(SubjectDoesNotExist(subject)))
-        case Some(meta) =>
-          if (meta.isLocked) {
-            pure[Result[Int]](Left(SubjectIsLocked(subject)))
-          } else {
-            storage.schemaById(schemaId).flatMap {
-              case None => pure[Result[Int]](Left(SchemaIdDoesNotExist(schemaId)))
-              case Some(schemaMetadata) =>
-                Monad[ConnectionIO].ifM[Result[Int]](storage.isSubjectConnectedToSchema(subject, schemaId))(
-                  pure(Left(SubjectIsAlreadyConnectedToSchema(subject, schemaId))),
-                  Monad[ConnectionIO]
-                    .ifM(isSchemaCompatible(subject, schemaMetadata.getSchema, meta.getCompatibilityType))(
-                      storage
-                        .getNextVersionNumber(subject)
-                        .flatMap(version =>
-                          storage.addSchemaToSubject(subject, schemaId, version).map(_ => Right(version))
-                        ),
-                      pure(
-                        Left(SchemaIsNotCompatible(subject, schemaMetadata.getSchemaText, meta.getCompatibilityType))
-                      )
-                    )
-                )
-            }
-          }
-      }
-    }.map {
-      case Left(e) =>
-        if (exceptionHandler.isRecoverable(e)) {
-          // it may happen if multiple transactions will try to add schema to subject.
-          // in this case the constraint violation error will be thrown which is recoverable
-          Left(SubjectIsAlreadyConnectedToSchema(subject, schemaId))
-        } else {
-          Left(BackendError(e))
+    result <- transact {
+      for {
+        meta <- storage.subjectMetadata(subject).flatMap {
+          case None                        => liftF(SubjectDoesNotExist(subject).raiseError)
+          case Some(meta) if meta.isLocked => liftF(SubjectIsLocked(subject).raiseError)
+          case Some(meta)                  => pure(meta)
         }
-      case Right(tx) =>
-        tx match {
-          case Left(e)  => Left(e)
-          case Right(v) => Right(v)
+        schemaMeta <- storage.schemaById(schemaId).flatMap {
+          case None             => liftF(SchemaIdDoesNotExist(schemaId).raiseError)
+          case Some(schemaMeta) => pure(schemaMeta)
         }
+        _ <- storage
+          .isSubjectConnectedToSchema(subject, schemaId)
+          .ensure(SubjectIsAlreadyConnectedToSchema(subject, schemaId))(identity)
+        _ <- isSchemaCompatible(subject, schemaMeta.getSchema, meta.getCompatibilityType)
+          .ensure(SchemaIsNotCompatible(subject, schemaMeta.getSchemaText, meta.getCompatibilityType))(identity)
+        nextVersion <- storage.getNextVersionNumber(subject)
+        _ <- storage.addSchemaToSubject(subject, schemaId, nextVersion)
+      } yield nextVersion
     }
   } yield result
 
@@ -318,7 +252,9 @@ class DBBackedService[F[_]: Sync](
   private def getLastSchemasParsed(subject: String): ConnectionIO[List[Schema]] =
     storage.getSubjectSchemas(subject).map(_.map(_.getSchema))
 
-  private def pure[A](a: A): Free[connection.ConnectionOp, A] = Free.pure[connection.ConnectionOp, A](a)
+  private def pure[A](a: A): Free[connection.ConnectionOp, A] = Free.pure(a)
+
+  private def liftF[A](a: F[A]): Free[connection.ConnectionOp, A] = Free.liftF(a)
 }
 
 object DBBackedService {
