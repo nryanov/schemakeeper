@@ -177,27 +177,30 @@ project(':schemakeeper-server') {
 
         implementation 'org.scala-lang:scala-library:2.12.10'
 
+        compile group: 'io.circe', name: 'circe-generic_2.12', version: '0.12.3'
+
         compile group: 'org.http4s', name: 'http4s-blaze-server_2.12', version: '0.20.17'
         compile group: 'org.http4s', name: 'http4s-blaze-client_2.12', version: '0.20.17'
         compile group: 'org.http4s', name: 'http4s-dsl_2.12', version: '0.20.17'
 
-        compile group: 'com.softwaremill.tapir', name: 'tapir-swagger-ui-http4s_2.12', version: '0.11.9'
-        compile group: 'com.softwaremill.tapir', name: 'tapir-http4s-server_2.12', version: '0.11.9'
-        compile group: 'com.softwaremill.tapir', name: 'tapir-openapi-circe-yaml_2.12', version: '0.11.9'
-
-        compile group: 'io.circe', name: 'circe-generic_2.12', version: '0.11.1'
+        compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-core_2.12', version: '0.12.20'
+        compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-json-circe_2.12', version: '0.12.20'
+        compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-openapi-circe-yaml_2.12', version: '0.12.20'
+        compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-http4s-server_2.12', version: '0.12.20'
+        compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-swagger-ui-http4s_2.12', version: '0.12.20'
+        compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-openapi-circe_2.12', version: '0.12.20'
 
         compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
         compile group: 'com.github.pureconfig', name: 'pureconfig_2.12', version: '0.12.2'
         compile group: 'com.beachape', name: 'enumeratum_2.12', version: '1.5.13'
         compile group: 'io.chrisdavenport', name: 'log4cats-slf4j_2.12', version: '1.0.1'
 
+        compile group: 'org.tpolecat', name: 'doobie-quill_2.12', version: '0.8.8'
+        compile group: 'org.tpolecat', name: 'doobie-h2_2.12', version: '0.8.8'
         compile group: 'org.tpolecat', name: 'doobie-core_2.12', version: '0.8.8'
         compile group: 'org.tpolecat', name: 'doobie-hikari_2.12', version: '0.8.8'
         compile group: 'org.flywaydb', name: 'flyway-core', version: '6.0.1'
 
-        compile group: 'org.tpolecat', name: 'doobie-quill_2.12', version: '0.8.8'
-        compile group: 'org.tpolecat', name: 'doobie-h2_2.12', version: '0.8.8'
         compile group: 'org.postgresql', name: 'postgresql', version: '42.2.6'
         compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.17'
         compile group: 'org.mariadb.jdbc', name: 'mariadb-java-client', version: '2.5.4'

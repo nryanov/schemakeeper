@@ -18,7 +18,7 @@ object ErrorCode {
     case 1011 => SchemaIsNotRegisteredCode
     case 1012 => SubjectIsNotConnectedToSchemaCode
     case 1013 => SubjectIsLockedErrorCode
-    case x => unknownCode(x)
+    case x    => unknownCode(x)
   }
 
   def unknownCode(code: Int): ErrorCode = ErrorCode(code)
