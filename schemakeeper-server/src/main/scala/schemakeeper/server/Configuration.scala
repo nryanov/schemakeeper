@@ -2,6 +2,7 @@ package schemakeeper.server
 
 import cats.effect.Sync
 import cats.syntax.functor._
+import com.typesafe.config.Config
 import pureconfig.ConfigSource
 import pureconfig._
 import pureconfig.generic.ProductHint
@@ -24,16 +25,18 @@ final case class Cors(
 
 final case class Server(port: Int = 9090, cors: Option[Cors] = None)
 
-final case class Schemakeeper(storage: Storage, server: Server)
-
-case class Configuration(schemakeeper: Schemakeeper)
+final case class Configuration(storage: Storage, server: Server)
 
 object Configuration {
-  implicit def hint[T]: ProductHint[T] = ProductHint[T](ConfigFieldMapping(CamelCase, CamelCase))
+  implicit def hint[T]: ProductHint[T] =
+    ProductHint[T](ConfigFieldMapping(CamelCase, CamelCase))
 
-  def create[F[_]](implicit F: Sync[F]): F[Schemakeeper] =
-    F.delay(ConfigSource.default.loadOrThrow[Configuration]).map(_.schemakeeper)
+  def create[F[_]](implicit F: Sync[F]): F[Configuration] =
+    F.delay(ConfigSource.default.at("schemakeeper").loadOrThrow[Configuration])
 
-  def create[F[_]](value: String)(implicit F: Sync[F]): F[Schemakeeper] =
-    F.delay(ConfigSource.string(value).loadOrThrow[Configuration]).map(_.schemakeeper)
+  def create[F[_]](value: String)(implicit F: Sync[F]): F[Configuration] =
+    F.delay(ConfigSource.string(value).at("schemakeeper").loadOrThrow[Configuration])
+
+  def create[F[_]](value: Config)(implicit F: Sync[F]): F[Configuration] =
+    F.delay(ConfigSource.fromConfig(value).at("schemakeeper").loadOrThrow[Configuration])
 }

@@ -7,7 +7,7 @@ import org.scalatestplus.junit.JUnitRunner
 class ConfigurationSpec extends IOSpec {
   "configuration" should {
     "load config" in runF {
-      val expected = Schemakeeper(
+      val expected = Configuration(
         Storage(
           url = "url",
           driver = "driver",
