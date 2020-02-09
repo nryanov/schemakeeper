@@ -3,22 +3,18 @@ package schemakeeper.server.service
 import java.sql.{Connection, DriverManager}
 import java.util
 
-import cats.Id
-import com.dimafeng.testcontainers.{ContainerDef, JdbcDatabaseContainer, MariaDBContainer, SingleContainer}
+import com.dimafeng.testcontainers.{ContainerDef, JdbcDatabaseContainer, SingleContainer}
 import com.dimafeng.testcontainers.scalatest.TestContainerForAll
 import com.typesafe.config.{Config, ConfigFactory}
 import org.junit.runner.RunWith
-import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.junit.JUnitRunner
-import schemakeeper.server.Configuration
 
 @RunWith(classOf[JUnitRunner])
-class MariaDBStorageSpec extends ServiceSpec with TestContainerForAll with BeforeAndAfterEach {
+class MariaDBStorageSpec extends ServiceSpec with TestContainerForAll with DBSpec {
   override val containerDef: MariaDBStorageSpec.MariaDBContainer.Def =
     MariaDBStorageSpec.MariaDBContainer.Def(dbName = "schemakeeper")
 
   override var schemaStorage: DBBackedService[F] = _
-  var connection: Connection = _
 
   override def afterContainersStart(container: MariaDBStorageSpec.MariaDBContainer): Unit = {
     val map: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]
@@ -29,21 +25,8 @@ class MariaDBStorageSpec extends ServiceSpec with TestContainerForAll with Befor
     map.put("schemakeeper.storage.url", container.jdbcUrl)
 
     val config: Config = ConfigFactory.parseMap(map)
-    schemaStorage = DBBackedService.apply[F](Configuration.apply(config))
-
-    Class.forName(container.driverClassName)
-    connection = DriverManager.getConnection(container.jdbcUrl, container.username, container.password)
-    connection.setAutoCommit(false)
+    schemaStorage = createService(config)
   }
-
-  override protected def afterEach(): Unit = {
-    connection.createStatement().execute("delete from schemakeeper.subject_schema")
-    connection.createStatement().execute("delete from schemakeeper.schema_info")
-    connection.createStatement().execute("delete from schemakeeper.subject")
-    connection.commit()
-  }
-
-  override def beforeContainersStop(containers: MariaDBStorageSpec.MariaDBContainer): Unit = connection.close()
 }
 
 object MariaDBStorageSpec {

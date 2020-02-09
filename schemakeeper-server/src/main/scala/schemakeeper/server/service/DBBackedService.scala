@@ -22,10 +22,11 @@ import schemakeeper.schema.{AvroSchemaCompatibility, AvroSchemaUtils, Compatibil
 
 import scala.collection.JavaConverters._
 
-class DBBackedService[F[_]: Sync](
+class DBBackedService[F[_]](
   storage: SchemaStorage[ConnectionIO],
   transact: ConnectionIO ~> F
-) extends Service[F] {
+)(implicit F: Sync[F])
+    extends Service[F] {
   implicit def unsafeLogger: SelfAwareStructuredLogger[F] = Slf4jLogger.getLogger[F]
 
   override def subjects(): F[List[String]] = for {
@@ -57,6 +58,7 @@ class DBBackedService[F[_]: Sync](
   override def subjectSchemasMetadata(subject: String): F[List[SubjectSchemaMetadata]] = for {
     _ <- Logger[F].info(s"Get subject schemas metadata list")
     result <- transact(isSubjectExists(subject) *> storage.subjectSchemasMetadata(subject))
+      .ensure(SubjectHasNoRegisteredSchemas(subject))(_.nonEmpty)
   } yield result
 
   override def subjectSchemaByVersion(subject: String, version: Int): F[SubjectSchemaMetadata] = for {
@@ -81,7 +83,9 @@ class DBBackedService[F[_]: Sync](
             .schemaByHash(Utils.toMD5Hex(schemaText))
             .ensure(SchemaIsNotRegistered(schemaText))(_.isDefined)
             .map(_.get)
-          _ <- isSubjectConnectedToSchema(subject, meta.getSchemaId)
+          _ <- storage
+            .isSubjectConnectedToSchema(subject, meta.getSchemaId)
+            .ensure(SubjectIsNotConnectedToSchema(subject, meta.getSchemaId))(identity)
         } yield SchemaId.instance(meta.getSchemaId)
       }
     } yield result
@@ -161,7 +165,7 @@ class DBBackedService[F[_]: Sync](
           .ensure(SchemaIsNotCompatible(subject, schemaText, subjectMeta.getCompatibilityType))(identity)
         _ <- storage
           .isSubjectConnectedToSchema(subject, schemaId)
-          .ensure(SubjectIsAlreadyConnectedToSchema(subject, schemaId))(identity)
+          .ensure(SubjectIsAlreadyConnectedToSchema(subject, schemaId))(f => !f)
         nextVersion <- storage.getNextVersionNumber(subject)
         _ <- storage.addSchemaToSubject(subject, schemaId, nextVersion)
       } yield SchemaId.instance(schemaId)
@@ -192,7 +196,7 @@ class DBBackedService[F[_]: Sync](
         }
         _ <- storage
           .isSubjectConnectedToSchema(subject, schemaId)
-          .ensure(SubjectIsAlreadyConnectedToSchema(subject, schemaId))(identity)
+          .ensure(SubjectIsAlreadyConnectedToSchema(subject, schemaId))(f => !f)
         _ <- isSchemaCompatible(subject, schemaMeta.getSchema, meta.getCompatibilityType)
           .ensure(SchemaIsNotCompatible(subject, schemaMeta.getSchemaText, meta.getCompatibilityType))(identity)
         nextVersion <- storage.getNextVersionNumber(subject)
@@ -202,8 +206,8 @@ class DBBackedService[F[_]: Sync](
   } yield result
 
   private def validateSchema(schemaText: String): F[Schema] =
-    AvroSchemaUtils.parseSchema(schemaText).pure[F].adaptError {
-      case e => SchemaIsNotValid(schemaText)
+    F.catchNonFatal(AvroSchemaUtils.parseSchema(schemaText)).adaptError {
+      case _ => SchemaIsNotValid(schemaText)
     }
 
   private def isSchemaCompatible(
@@ -240,11 +244,6 @@ class DBBackedService[F[_]: Sync](
 
   private def isSubjectExists(subject: String): ConnectionIO[Boolean] =
     storage.isSubjectExist(subject).ensure(SubjectDoesNotExist(subject))(identity)
-
-  private def isSubjectConnectedToSchema(subject: String, schemaId: Int): ConnectionIO[Boolean] =
-    storage
-      .isSubjectConnectedToSchema(subject, schemaId)
-      .ensure(SubjectIsNotConnectedToSchema(subject, schemaId))(identity)
 
   private def getLastSchemaParsed(subject: String): ConnectionIO[Option[Schema]] =
     storage.getLastSubjectSchema(subject).map(_.map(_.getSchema))
