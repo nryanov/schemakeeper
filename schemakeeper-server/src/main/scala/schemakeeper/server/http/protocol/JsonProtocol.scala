@@ -1,10 +1,10 @@
-package schemakeeper.server.api.protocol
+package schemakeeper.server.http.protocol
 
 import io.circe.Decoder.Result
 import io.circe.{Decoder, Encoder, HCursor, Json}
 import schemakeeper.api._
 import schemakeeper.schema.{CompatibilityType, SchemaType}
-import schemakeeper.server.api.internal.SubjectSettings
+import schemakeeper.server.http.internal.SubjectSettings
 
 object JsonProtocol {
   implicit val exceptionEncoder: Encoder[Exception] = Encoder.instance {

@@ -1,3 +1,3 @@
-package schemakeeper.server.api.protocol
+package schemakeeper.server.http.protocol
 
 final case class ErrorInfo(reason: String, code: ErrorCode) extends Exception(reason)

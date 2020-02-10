@@ -1,4 +1,4 @@
-package schemakeeper.server.api.protocol
+package schemakeeper.server.http.protocol
 
 import org.scalatest.{Matchers, WordSpec}
 import schemakeeper.api._
@@ -7,7 +7,7 @@ import JsonProtocol._
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.schema.{CompatibilityType, SchemaType}
-import schemakeeper.server.api.internal.SubjectSettings
+import schemakeeper.server.http.internal.SubjectSettings
 
 @RunWith(classOf[JUnitRunner])
 class JsonProtocolTest extends WordSpec with Matchers {

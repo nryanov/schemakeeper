@@ -1,4 +1,4 @@
-package schemakeeper.server.api.internal
+package schemakeeper.server.http.internal
 
 import schemakeeper.schema.CompatibilityType
 
