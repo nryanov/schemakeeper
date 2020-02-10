@@ -1,13 +1,13 @@
 package schemakeeper.server.http
 
-import cats.effect.Sync
+import cats.effect.{ContextShift, Sync}
 import sttp.tapir.docs.openapi._
 import sttp.tapir.openapi.OpenAPI
 import sttp.tapir.openapi.circe.yaml._
 import sttp.tapir.swagger.http4s.SwaggerHttp4s
 import schemakeeper.server.http.SchemaKeeperApi.apiVersion
 
-class SwaggerApi[F[_]: Sync](api: SchemaKeeperApi[F]) {
+class SwaggerApi[F[_]: Sync: ContextShift](api: SchemaKeeperApi[F]) {
   private val openApiDocs: OpenAPI = List(
     api.subjectsEndpoint,
     api.subjectMetadataEndpoint,
@@ -30,5 +30,5 @@ class SwaggerApi[F[_]: Sync](api: SchemaKeeperApi[F]) {
 }
 
 object SwaggerApi {
-  def create[F[_]: Sync](api: SchemaKeeperApi[F]): SwaggerApi[F] = new SwaggerApi(api)
+  def create[F[_]: Sync: ContextShift](api: SchemaKeeperApi[F]): SwaggerApi[F] = new SwaggerApi(api)
 }

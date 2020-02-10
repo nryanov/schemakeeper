@@ -10,34 +10,18 @@ import schemakeeper.api._
 import schemakeeper.server.http.internal.SubjectSettings
 import schemakeeper.server.http.protocol.{ErrorCode, ErrorInfo}
 import schemakeeper.server.service._
-import schemakeeper.server.http.protocol.JsonProtocol._
+import schemakeeper.server.http.tapir.TapirCodec._
 import schemakeeper.server.SchemaKeeperError._
 import org.http4s.HttpRoutes
 import sttp.tapir._
 import sttp.tapir.json.circe._
+import io.circe.generic.auto._
 import sttp.tapir.server.http4s._
 import sttp.model.StatusCode
-import io.circe.generic.auto._
 
 class SchemaKeeperApi[F[_]: Sync: ContextShift](storage: Service[F]) {
 
   import SchemaKeeperApi._
-
-  val route = subjectsRoute
-    .combineK(subjectMetadataRoute)
-    .combineK(updateSubjectSettingsRoute)
-    .combineK(subjectVersionsRoute)
-    .combineK(subjectSchemasMetadataRoute)
-    .combineK(subjectSchemaByVersionRoute)
-    .combineK(schemaByIdRoute)
-    .combineK(schemaIdBySubjectAndSchemaRoute)
-    .combineK(deleteSubjectRoute)
-    .combineK(deleteSubjectSchemaByVersionRoute)
-    .combineK(checkSubjectSchemaCompatibilityRoute)
-    .combineK(registerSchemaRoute)
-    .combineK(registerSchemaAndSubjectRoute)
-    .combineK(registerSubjectRoute)
-    .combineK(addSchemaToSubjectRoute)
 
   private val baseEndpoint: Endpoint[Unit, (StatusCode, ErrorInfo), Unit, Nothing] =
     endpoint.in(apiVersion).errorOut(statusCode.and(jsonBody[ErrorInfo]))
@@ -72,7 +56,7 @@ class SchemaKeeperApi[F[_]: Sync: ContextShift](storage: Service[F]) {
     baseEndpoint.get.in("subjects").in(path[String]).in("schemas").out(jsonBody[List[SubjectSchemaMetadata]])
 
   val subjectSchemasMetadataRoute: HttpRoutes[F] =
-    subjectSchemasMetadataEndpoint.toRoutes(subject => toRoute(storage.subjectMetadata(subject)))
+    subjectSchemasMetadataEndpoint.toRoutes(subject => toRoute(storage.subjectSchemasMetadata(subject)))
 
   val subjectSchemaByVersionEndpoint: Endpoint[(String, Int), (StatusCode, ErrorInfo), SubjectSchemaMetadata, Nothing] =
     baseEndpoint.get
@@ -184,6 +168,22 @@ class SchemaKeeperApi[F[_]: Sync: ContextShift](storage: Service[F]) {
   val addSchemaToSubjectRoute: HttpRoutes[F] = addSchemaToSubjectEndpoint.toRoutes {
     case (subject, schemaId) => toRoute(storage.addSchemaToSubject(subject, schemaId))
   }
+
+  val route = subjectsRoute
+    .combineK(subjectMetadataRoute)
+    .combineK(updateSubjectSettingsRoute)
+    .combineK(subjectVersionsRoute)
+    .combineK(subjectSchemasMetadataRoute)
+    .combineK(subjectSchemaByVersionRoute)
+    .combineK(schemaByIdRoute)
+    .combineK(schemaIdBySubjectAndSchemaRoute)
+    .combineK(deleteSubjectRoute)
+    .combineK(deleteSubjectSchemaByVersionRoute)
+    .combineK(checkSubjectSchemaCompatibilityRoute)
+    .combineK(registerSchemaRoute)
+    .combineK(registerSchemaAndSubjectRoute)
+    .combineK(registerSubjectRoute)
+    .combineK(addSchemaToSubjectRoute)
 
   def toRoute[A](fa: F[A]): F[Either[(StatusCode, ErrorInfo), A]] =
     fa.map(_.asRight[(StatusCode, ErrorInfo)]).handleError(err => handleError(err).asLeft[A])

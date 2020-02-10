@@ -14,7 +14,7 @@ class ConfigurationSpec extends IOSpec {
           username = "username",
           schema = "schema"
         ),
-        Server(port = 12345, None)
+        Server(port = 12345)
       )
 
       for {
