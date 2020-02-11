@@ -30,7 +30,7 @@ final case class Cors(
 
 final case class Server(port: Int = 9090, host: String = "localhost", cors: Option[Cors] = None)
 
-final case class Configuration(storage: Storage, server: Server)
+final case class Configuration(storage: Storage, server: Server = Server())
 
 object Configuration {
   implicit def hint[T]: ProductHint[T] =
