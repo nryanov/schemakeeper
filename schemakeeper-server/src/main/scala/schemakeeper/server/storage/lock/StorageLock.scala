@@ -10,7 +10,7 @@ trait StorageLock[F[_]] {
 }
 
 object StorageLock {
-  def create(config: Configuration): StorageLock[ConnectionIO] =
+  def apply(config: Configuration): StorageLock[ConnectionIO] =
     DataSourceUtils.detectDatabaseProvider(config.storage.url) match {
       case SupportedDatabaseProvider.H2         => H2StorageLock()
       case SupportedDatabaseProvider.PostgreSQL => PostgreSQLStorageLock()

@@ -37,7 +37,7 @@ trait DBSpec extends IOSpec with BeforeAndAfterAll {
     context = DataSource.context(cfg)
     storage = DatabaseStorage.create(context, StorageExceptionHandler(cfg))
     flyway = FlywayMigrationTool.build(cfg)
-    lock = StorageLock.create(cfg)
+    lock = StorageLock(cfg)
     _ <- IO.delay(flyway.migrate())
     resource <- DataSource.resource[F](cfg).allocated
   } yield {

@@ -1,70 +1,59 @@
 package schemakeeper.server
 
-import cats.effect.IO
-import io.finch._
-import io.finch.circe._
-import com.twitter.finagle.param.Stats
-import com.twitter.server.TwitterServer
-import com.twitter.finagle.Http
-import com.twitter.util.Await
-import com.typesafe.config.ConfigFactory
-import schemakeeper.server.api.{SchemaKeeperApi, SwaggerApi}
-import schemakeeper.server.api.protocol.JsonProtocol._
+import cats.effect.{Async, ConcurrentEffect, ContextShift, ExitCode, IO, IOApp, Resource, Sync, Timer}
+import cats.syntax.functor._
+import cats.syntax.flatMap._
+import cats.syntax.applicative._
+import org.http4s.server.blaze._
+import doobie.free.connection.ConnectionIO
+import doobie.quill.DoobieContextBase
+import io.getquill.NamingStrategy
+import io.getquill.context.sql.idiom.SqlIdiom
+import schemakeeper.server.datasource.DataSource
+import schemakeeper.server.datasource.migration.FlywayMigrationTool
+import schemakeeper.server.http.{SchemaKeeperApi, SchemaKeeperRouter, SwaggerApi}
 import schemakeeper.server.service.DBBackedService
-import schemakeeper.server.util.Filter
+import schemakeeper.server.storage.DatabaseStorage
+import schemakeeper.server.storage.exception.StorageExceptionHandler
+import schemakeeper.server.storage.lock.StorageLock
 
-import scala.concurrent.ExecutionContext
+object SchemaKeeper extends IOApp {
 
-object SchemaKeeper extends TwitterServer {
-  implicit val ctx = IO.contextShift(ExecutionContext.global)
-  val configuration = Configuration(ConfigFactory.load())
+  override def run(args: List[String]): IO[ExitCode] =
+    commonSettings[IO]()
+      .evalTap(common => migrate[IO](common.cfg))
+      .flatMap(common => applicationServer[IO](common))
+      .use { server =>
+        server.serve.compile.drain.as(ExitCode.Success)
+      }
 
-  override def defaultAdminPort: Int = configuration.adminPort
+  private def applicationServer[F[_]: Async: ContextShift: ConcurrentEffect: Timer](
+    common: Common
+  ): Resource[F, BlazeServerBuilder[F]] = for {
+    transact <- DataSource.resource(common.cfg)
+    storage <- Resource.pure(DatabaseStorage.create(common.context, common.exceptionHandler))
+    service <- Resource.pure(DBBackedService.create(storage, transact, common.lock))
+    schemakeeperApi <- Resource.pure(SchemaKeeperApi.create(service))
+    swaggerApi <- Resource.pure(SwaggerApi.create(schemakeeperApi))
+    server <- Resource.pure(SchemaKeeperRouter.build(schemakeeperApi, swaggerApi, common.cfg))
+  } yield server
 
-  def main() {
-    val service = DBBackedService[IO](configuration)
+  private def migrate[F[_]: Sync](configuration: Configuration): F[Unit] = for {
+    flyway <- FlywayMigrationTool.build(configuration).pure
+    _ <- Sync[F].delay(flyway.migrate())
+  } yield ()
 
-    val api = SchemaKeeperApi(service)
-    val swaggerApi = new SwaggerApi()
+  private def commonSettings[F[_]: Sync](): Resource[F, Common] = for {
+    cfg <- Resource.liftF(Configuration.create[F])
+    context <- Resource.pure(DataSource.context(cfg))
+    lock <- Resource.pure(StorageLock(cfg))
+    exceptionHandler <- Resource.pure(StorageExceptionHandler(cfg))
+  } yield Common(cfg, context, lock, exceptionHandler)
 
-    val bootstrap = Bootstrap
-      .configure()
-      .serve[Application.Json](api.subjects
-      :+: api.subjectMetadata
-      :+: api.subjectVersions
-      :+: api.subjectSchemasMetadata
-      :+: api.updateSubjectSettings
-      :+: api.subjectSchemaByVersion
-      :+: api.schemaIdBySubjectAndSchema
-      :+: api.schemaById
-      :+: api.deleteSubject
-      :+: api.deleteSubjectSchemaByVersion
-      :+: api.checkSubjectSchemaCompatibility
-      :+: api.registerSchema
-      :+: api.registerSchemaAndSubject
-      :+: api.registerSubject
-      :+: api.addSchemaToSubject)
-      .serve[Text.Plain](swaggerApi.swaggerDocRedirect
-      :+: swaggerApi.swaggerDoc)
-      .serve[Text.Html](swaggerApi.swaggerUi
-      :+: swaggerApi.swaggerUiRedirect)
-      .serve[Application.Javascript](swaggerApi.swaggerUiBundleJs
-      :+: swaggerApi.swaggerUiStandalonePresetJs)
-      .serve[Image.Png](swaggerApi.swaggerUiIcon32
-      :+: swaggerApi.swaggerUiIcon16)
-      .serve[Text.Css](swaggerApi.swaggerUiCss)
-      .toService
-
-    logger.info(s"Listening port: ${configuration.listeningPort}")
-
-    val server = Http.server
-      .configured(Stats(statsReceiver))
-      .serve(s":${configuration.listeningPort}", Filter.corsFilterPolicy(configuration).andThen(bootstrap))
-
-    onExit {
-      server.close()
-    }
-
-    Await.ready(adminHttpServer)
-  }
+  final case class Common(
+    cfg: Configuration,
+    context: DoobieContextBase[_ <: SqlIdiom, _ <: NamingStrategy],
+    lock: StorageLock[ConnectionIO],
+    exceptionHandler: StorageExceptionHandler
+  )
 }

@@ -4,7 +4,6 @@ import cats.arrow.FunctionK
 import cats.effect.{Async, Blocker, ContextShift, Resource}
 import com.zaxxer.hikari.HikariConfig
 import doobie.ExecutionContexts
-import doobie.h2.H2Transactor
 import doobie.hikari.HikariTransactor
 import doobie.quill.{DoobieContext, DoobieContextBase}
 import doobie.util.transactor.Transactor
@@ -26,10 +25,7 @@ object DataSource {
     }
 
   def resource[F[_]: Async: ContextShift](config: Configuration): Resource[F, FunctionK[doobie.ConnectionIO, F]] = {
-    val transactor: Resource[F, Transactor[F]] = DataSourceUtils.detectDatabaseProvider(config.storage.url) match {
-      case SupportedDatabaseProvider.H2 => hikariTransactor(config)
-      case _                            => hikariTransactor(config)
-    }
+    val transactor: Resource[F, Transactor[F]] = hikariTransactor(config)
 
     transactor.map { tx =>
       def transact[A](tx: Transactor[F])(sql: doobie.ConnectionIO[A]): F[A] =
@@ -48,19 +44,6 @@ object DataSource {
       cfg = hikariConfig(config.storage)
       xa <- HikariTransactor.fromHikariConfig[F](
         cfg,
-        connectionExecutionPool,
-        transactionExecutionPool
-      )
-    } yield xa
-
-  private def h2Transactor[F[_]: Async: ContextShift](config: Configuration): Resource[F, Transactor[F]] =
-    for {
-      connectionExecutionPool <- ExecutionContexts.fixedThreadPool[F](Runtime.getRuntime.availableProcessors())
-      transactionExecutionPool <- Blocker[F]
-      xa <- H2Transactor.newH2Transactor[F](
-        url = config.storage.url,
-        user = config.storage.username,
-        pass = config.storage.password,
         connectionExecutionPool,
         transactionExecutionPool
       )
