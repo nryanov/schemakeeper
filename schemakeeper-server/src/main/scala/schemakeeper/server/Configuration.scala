@@ -18,9 +18,14 @@ final case class Storage(
 )
 
 final case class Cors(
+  allowedCredentials: Boolean = true,
+  anyOrigin: Boolean = false,
+  anyMethod: Boolean = false,
+  maxAge: Long = -1,
   allowsOrigin: Option[String] = None,
   allowsMethods: Option[Seq[String]] = None,
-  allowsHeaders: Option[Seq[String]] = None
+  allowsHeaders: Option[Seq[String]] = None,
+  exposedHeaders: Option[Seq[String]] = None
 )
 
 final case class Server(port: Int = 9090, host: String = "localhost", cors: Option[Cors] = None)
