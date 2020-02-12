@@ -7,6 +7,7 @@ import com.dimafeng.testcontainers.MySQLContainer
 import com.typesafe.config.{Config, ConfigFactory}
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
+import schemakeeper.server.DBSpec
 
 @RunWith(classOf[JUnitRunner])
 class MySQLStorageSpec extends ServiceSpec with TestContainerForAll with DBSpec {

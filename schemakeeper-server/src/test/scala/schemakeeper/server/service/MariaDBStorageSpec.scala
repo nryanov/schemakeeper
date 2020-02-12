@@ -8,6 +8,7 @@ import com.dimafeng.testcontainers.scalatest.TestContainerForAll
 import com.typesafe.config.{Config, ConfigFactory}
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
+import schemakeeper.server.DBSpec
 
 @RunWith(classOf[JUnitRunner])
 class MariaDBStorageSpec extends ServiceSpec with TestContainerForAll with DBSpec {

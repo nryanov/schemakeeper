@@ -177,7 +177,10 @@ project(':schemakeeper-server') {
 
         implementation 'org.scala-lang:scala-library:2.12.10'
 
-        compile group: 'io.circe', name: 'circe-generic_2.12', version: '0.12.3'
+        compile group: 'org.http4s', name: 'http4s-circe_2.12', version: '0.21.0-RC4'
+        compile group: 'org.http4s', name: 'http4s-dsl_2.12', version: '0.21.0-RC4'
+        compile group: 'org.http4s', name: 'http4s-blaze-server_2.12', version: '0.21.0-RC4'
+        compile group: 'org.http4s', name: 'http4s-blaze-client_2.12', version: '0.21.0-RC4'
 
         compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-core_2.12', version: '0.12.20'
         compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-json-circe_2.12', version: '0.12.20'
@@ -201,8 +204,6 @@ project(':schemakeeper-server') {
         compile group: 'org.postgresql', name: 'postgresql', version: '42.2.6'
         compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.17'
         compile group: 'org.mariadb.jdbc', name: 'mariadb-java-client', version: '2.5.4'
-
-        compile group: 'org.webjars', name: 'swagger-ui', version: '3.24.0'
 
         testCompile group: 'org.scalatest', name: 'scalatest_2.12', version: '3.0.8'
         testCompile group: 'com.dimafeng', name: 'testcontainers-scala-mysql_2.12', version: '0.35.0'

@@ -1,11 +1,13 @@
 package schemakeeper.server.service
 
 import java.util
+
 import com.dimafeng.testcontainers.scalatest.TestContainerForAll
 import com.dimafeng.testcontainers.PostgreSQLContainer
 import com.typesafe.config.{Config, ConfigFactory}
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
+import schemakeeper.server.DBSpec
 
 @RunWith(classOf[JUnitRunner])
 class PostgreSQLStorageSpec extends ServiceSpec with TestContainerForAll with DBSpec {

@@ -1,18 +1,18 @@
-package schemakeeper.server.service
+package schemakeeper.server
 
 import java.util.concurrent.Executors
 
-import cats.syntax.apply._
 import cats.effect.{ContextShift, IO}
+import cats.syntax.apply._
 import com.typesafe.config.Config
 import org.flywaydb.core.Flyway
 import org.scalatest.{Assertion, BeforeAndAfterAll}
 import schemakeeper.server.datasource.DataSource
 import schemakeeper.server.datasource.migration.FlywayMigrationTool
+import schemakeeper.server.service.DBBackedService
 import schemakeeper.server.storage.DatabaseStorage
 import schemakeeper.server.storage.exception.StorageExceptionHandler
 import schemakeeper.server.storage.lock.StorageLock
-import schemakeeper.server.{Configuration, IOSpec}
 
 import scala.concurrent.ExecutionContext
 

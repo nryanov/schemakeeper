@@ -169,7 +169,7 @@ class SchemaKeeperApi[F[_]: Sync: ContextShift](storage: Service[F]) {
     case (subject, schemaId) => toRoute(storage.addSchemaToSubject(subject, schemaId))
   }
 
-  val route = subjectsRoute
+  val route: HttpRoutes[F] = subjectsRoute
     .combineK(subjectMetadataRoute)
     .combineK(updateSubjectSettingsRoute)
     .combineK(subjectVersionsRoute)
