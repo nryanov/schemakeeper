@@ -6,7 +6,7 @@ import doobie.implicits._
 import org.apache.avro.Schema
 import cats.~>
 import cats.free.Free
-import cats.effect.Sync
+import cats.effect.{Resource, Sync}
 import cats.syntax.apply._
 import cats.syntax.functor._
 import cats.syntax.flatMap._
@@ -153,9 +153,8 @@ class DBBackedService[F[_]](
     _ <- Logger[F].info(s"Register schema: $schemaText and add to subject: $subject")
     schema <- validateSchema(schemaText)
     schemaHash <- Utils.toMD5Hex(schemaText).pure[F]
-    result <- transact {
+    result <- lock {
       for {
-        _ <- storageLock.lockForUpdate()
         schemaId <- storage.schemaByHash(schemaHash).flatMap {
           case Some(value) => pure(value.getSchemaId)
           case None        => storage.registerSchema(schemaText, schemaHash, schemaType)
@@ -187,9 +186,8 @@ class DBBackedService[F[_]](
 
   override def addSchemaToSubject(subject: String, schemaId: Int): F[Int] = for {
     _ <- Logger[F].info(s"Add schema: $schemaId to subject: $subject")
-    result <- transact {
+    result <- lock {
       for {
-        _ <- storageLock.lockForUpdate()
         meta <- storage.subjectMetadata(subject).flatMap[SubjectMetadata] {
           case None                        => raiseErrorF(SubjectDoesNotExist(subject))
           case Some(meta) if meta.isLocked => raiseErrorF(SubjectIsLocked(subject))
@@ -246,6 +244,9 @@ class DBBackedService[F[_]](
         AvroSchemaCompatibility.FULL_TRANSITIVE_VALIDATOR.isCompatible(newSchema, previousSchemas.asJava)
       )
   }
+
+  private def lock[A](fa: ConnectionIO[A]): F[A] =
+    transact(storageLock.lockForUpdate() *> fa <* storageLock.unlock()).onSqlException(transact(storageLock.unlock()))
 
   private def isSubjectExists(subject: String): ConnectionIO[Boolean] =
     storage.isSubjectExist(subject).ensure(SubjectDoesNotExist(subject))(identity)

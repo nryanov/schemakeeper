@@ -7,6 +7,8 @@ import schemakeeper.server.datasource.migration.SupportedDatabaseProvider
 
 trait StorageLock[F[_]] {
   def lockForUpdate(): F[Unit]
+
+  def unlock(): F[Unit]
 }
 
 object StorageLock {
