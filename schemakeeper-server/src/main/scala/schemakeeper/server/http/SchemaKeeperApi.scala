@@ -98,7 +98,7 @@ class SchemaKeeperApi[F[_]: Sync: ContextShift](storage: Service[F]) {
     baseEndpoint.delete
       .in("subjects")
       .in(path[String])
-      .in("version")
+      .in("versions")
       .in(path[Int].validate(Validator.min(1)))
       .out(jsonBody[Boolean])
 

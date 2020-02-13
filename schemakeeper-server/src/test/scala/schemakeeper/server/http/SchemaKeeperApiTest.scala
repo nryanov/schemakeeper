@@ -52,6 +52,7 @@ class SchemaKeeperApiTest extends DBSpec with OptionValues with BeforeAndAfterEa
   implicit val schemaMetadataEntityDecoder: EntityDecoder[IO, SchemaMetadata] = jsonOf[IO, SchemaMetadata]
   implicit val schemaIdEntityDecoder: EntityDecoder[IO, SchemaId] = jsonOf[IO, SchemaId]
   implicit val booleanEntityDecoder: EntityDecoder[IO, Boolean] = jsonOf[IO, Boolean]
+  implicit val intEntityDecoder: EntityDecoder[IO, Int] = jsonOf[IO, Int]
 
   def checkPredicate[A](actualResp: Response[IO], expectedStatus: Status, predicate: A => Boolean)(
     implicit ev: EntityDecoder[IO, A]
@@ -320,7 +321,7 @@ class SchemaKeeperApiTest extends DBSpec with OptionValues with BeforeAndAfterEa
 
   "SchemaById endpoint" should {
     "return meta" in runF {
-      def request(id: Int) = Request[IO](method = Method.GET, uri = uri"/v2/schemas/$id")
+      def request(id: Int) = Request[IO](method = Method.GET, uri = Uri(path = s"/v2/schemas/$id"))
 
       for {
         id <- service.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
@@ -343,7 +344,7 @@ class SchemaKeeperApiTest extends DBSpec with OptionValues with BeforeAndAfterEa
         check[ErrorInfo](
           response,
           Status.NotFound,
-          ErrorInfo(SchemaIdDoesNotExist(1).msg, ErrorCode.SchemaIdDoesNotExistCode)
+          ErrorInfo(SchemaIdDoesNotExist(123).msg, ErrorCode.SchemaIdDoesNotExistCode)
         )
       }
     }
@@ -659,209 +660,262 @@ class SchemaKeeperApiTest extends DBSpec with OptionValues with BeforeAndAfterEa
     }
   }
 
-//  "RegisterSchemaAndSubject endpoint" should {
-//    "return schemaId" in {
-//      val api = SchemaKeeperApi(service)
-//      val body = SubjectAndSchemaRequest.instance(
-//        Schema.create(Schema.Type.STRING).toString,
-//        SchemaType.AVRO,
-//        CompatibilityType.BACKWARD
-//      )
-//      val result = api
-//        .registerSchemaAndSubject(Input.post("/v2/subjects/A1/schemas").withBody[Application.Json](body))
-//        .awaitValueUnsafe()
-//      assert(result.get.isInstanceOf[SchemaId])
-//    }
-//
-//    "return schemaId - schema and subject are already registered and connected" in {
-//      val id = service
-//        .registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD, SchemaType.AVRO)
-//        .unsafeRunSync()
-//        .right
-//        .get
-//      val api = SchemaKeeperApi(service)
-//      val body = SubjectAndSchemaRequest.instance(
-//        Schema.create(Schema.Type.STRING).toString,
-//        SchemaType.AVRO,
-//        CompatibilityType.BACKWARD
-//      )
-//      val result = api
-//        .registerSchemaAndSubject(Input.post("/v2/subjects/A1/schemas").withBody[Application.Json](body))
-//        .awaitValueUnsafe()
-//      assertResult(id)(result.get)
-//    }
-//
-//    "BadRequest - schema is not valid" in {
-//      val api = SchemaKeeperApi(service)
-//      val body = SubjectAndSchemaRequest.instance("not valid schema", SchemaType.AVRO, CompatibilityType.BACKWARD)
-//      val result = api
-//        .registerSchemaAndSubject(Input.post("/v2/subjects/A1/schemas").withBody[Application.Json](body))
-//        .awaitOutputUnsafe()
-//      assertResult(
-//        Output.failure(
-//          ErrorInfo(SchemaIsNotValid("not valid schema").msg, ErrorCode.SchemaIsNotValidCode),
-//          Status.BadRequest
-//        )
-//      )(result.get)
-//    }
-//
-//    "BadRequest - subject is locked" in {
-//      val api = SchemaKeeperApi(service)
-//      service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = true).unsafeRunSync()
-//      val body = SubjectAndSchemaRequest.instance(
-//        Schema.create(Schema.Type.INT).toString,
-//        SchemaType.AVRO,
-//        CompatibilityType.BACKWARD
-//      )
-//      val result = api
-//        .registerSchemaAndSubject(Input.post("/v2/subjects/A1/schemas").withBody[Application.Json](body))
-//        .awaitOutputUnsafe()
-//      assertResult(
-//        Output.failure(ErrorInfo(SubjectIsLocked("A1").msg, ErrorCode.SubjectIsLockedErrorCode), Status.BadRequest)
-//      )(result.get)
-//    }
-//
-//    "BadRequest - schema is not compatible" in {
-//      service
-//        .registerSchema("A1", Schema.create(Schema.Type.INT).toString, CompatibilityType.BACKWARD, SchemaType.AVRO)
-//        .unsafeRunSync()
-//      val api = SchemaKeeperApi(service)
-//      val body = SubjectAndSchemaRequest.instance(
-//        Schema.create(Schema.Type.STRING).toString,
-//        SchemaType.AVRO,
-//        CompatibilityType.BACKWARD
-//      )
-//      val result = api
-//        .registerSchemaAndSubject(Input.post("/v2/subjects/A1/schemas").withBody[Application.Json](body))
-//        .awaitOutputUnsafe()
-//      assertResult(
-//        Output.failure(
-//          ErrorInfo(
-//            service
-//              .SchemaIsNotCompatible("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD)
-//              .msg,
-//            ErrorCode.SchemaIsNotCompatibleCode
-//          ),
-//          Status.BadRequest
-//        )
-//      )(result.get)
-//    }
-//  }
-//
-//  "RegisterSubject endpoint" should {
-//    "return ok" in {
-//      val api = SchemaKeeperApi(service)
-//      val body = SubjectMetadata.instance("A1", CompatibilityType.BACKWARD)
-//      val result = api.registerSubject(Input.post("/v2/subjects").withBody[Application.Json](body)).awaitOutputUnsafe()
-//      assertResult(Ok(SubjectMetadata.instance("A1", CompatibilityType.BACKWARD)))(result.get)
-//    }
-//
-//    "return ok - register locked subject" in {
-//      val api = SchemaKeeperApi(service)
-//      val body = SubjectMetadata.instance("A1", CompatibilityType.BACKWARD, true)
-//      val result = api.registerSubject(Input.post("/v2/subjects").withBody[Application.Json](body)).awaitOutputUnsafe()
-//      assertResult(Ok(SubjectMetadata.instance("A1", CompatibilityType.BACKWARD, true)))(result.get)
-//    }
-//
-//    "BadRequest - subject is already exist" in {
-//      service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
-//      val api = SchemaKeeperApi(service)
-//      val body = SubjectMetadata.instance("A1", CompatibilityType.BACKWARD)
-//      val result = api.registerSubject(Input.post("/v2/subjects").withBody[Application.Json](body)).awaitOutputUnsafe()
-//      assertResult(
-//        Output
-//          .failure(ErrorInfo(SubjectIsAlreadyExists("A1").msg, ErrorCode.SubjectIsAlreadyExistsCode), Status.BadRequest)
-//      )(result.get)
-//    }
-//  }
-//
-//  "AddSchemaToSubject endpoint" should {
-//    "return version number - first schema" in {
-//      service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
-//      val id = service
-//        .registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
-//        .unsafeRunSync()
-//        .right
-//        .get
-//        .getSchemaId
-//      val api = SchemaKeeperApi(service)
-//      val result = api.addSchemaToSubject(Input.post(s"/v2/subjects/A1/schemas/$id")).awaitValueUnsafe()
-//      assert(result.contains(1))
-//    }
-//
-//    "return version number - second schema" in {
-//      service
-//        .registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.NONE, SchemaType.AVRO)
-//        .unsafeRunSync()
-//      val id = service
-//        .registerSchema(Schema.create(Schema.Type.INT).toString, SchemaType.AVRO)
-//        .unsafeRunSync()
-//        .right
-//        .get
-//        .getSchemaId
-//      val api = SchemaKeeperApi(service)
-//      val result = api.addSchemaToSubject(Input.post(s"/v2/subjects/A1/schemas/$id")).awaitValueUnsafe()
-//      assert(result.contains(2))
-//    }
-//
-//    "BadRequest - subject and schema are already connected" in {
-//      val id = service
-//        .registerSchema("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.NONE, SchemaType.AVRO)
-//        .unsafeRunSync()
-//        .right
-//        .get
-//        .getSchemaId
-//      val api = SchemaKeeperApi(service)
-//      val result = api.addSchemaToSubject(Input.post(s"/v2/subjects/A1/schemas/$id")).awaitOutputUnsafe()
-//      assertResult(
-//        Output.failure(
-//          ErrorInfo(SubjectIsAlreadyConnectedToSchema("A1", id).msg, ErrorCode.SubjectIsAlreadyConnectedToSchemaCode),
-//          Status.BadRequest
-//        )
-//      )(result.get)
-//    }
-//
-//    "BadRequest - subject is locked" in {
-//      val api = SchemaKeeperApi(service)
-//      service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = true).unsafeRunSync()
-//      val id = service
-//        .registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
-//        .unsafeRunSync()
-//        .right
-//        .get
-//        .getSchemaId
-//      val result = api.addSchemaToSubject(Input.post(s"/v2/subjects/A1/schemas/$id")).awaitOutputUnsafe()
-//      assertResult(
-//        Output.failure(ErrorInfo(SubjectIsLocked("A1").msg, ErrorCode.SubjectIsLockedErrorCode), Status.BadRequest)
-//      )(result.get)
-//    }
-//
-//    "NotFound - subject does not exist" in {
-//      val id = service
-//        .registerSchema(Schema.create(Schema.Type.INT).toString, SchemaType.AVRO)
-//        .unsafeRunSync()
-//        .right
-//        .get
-//        .getSchemaId
-//      val api = SchemaKeeperApi(service)
-//      val result = api.addSchemaToSubject(Input.post(s"/v2/subjects/A1/schemas/$id")).awaitOutputUnsafe()
-//      assertResult(
-//        Output.failure(ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode), Status.NotFound)
-//      )(result.get)
-//    }
-//
-//    "NotFound - schema does not exist" in {
-//      service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false).unsafeRunSync()
-//      val api = SchemaKeeperApi(service)
-//      val result = api.addSchemaToSubject(Input.post(s"/v2/subjects/A1/schemas/123")).awaitOutputUnsafe()
-//      assertResult(
-//        Output.failure(ErrorInfo(SchemaIdDoesNotExist(123).msg, ErrorCode.SchemaIdDoesNotExistCode), Status.NotFound)
-//      )(result.get)
-//    }
-//
-//    "throws validation error" in {
-//      val api = SchemaKeeperApi(service)
-//      assertThrows[NotValid](api.addSchemaToSubject(Input.post("/v2/subjects/A1/schemas/-1")).awaitOutputUnsafe())
-//    }
-//  }
+  "RegisterSchemaAndSubject endpoint" should {
+    "return schemaId" in runF {
+      val body = SubjectAndSchemaRequest.instance(
+        Schema.create(Schema.Type.STRING).toString,
+        SchemaType.AVRO,
+        CompatibilityType.BACKWARD
+      )
+      val request =
+        Request[IO](method = Method.POST, uri = uri"/v2/subjects/A1/schemas").withEntity(body.asJson)
+
+      for {
+        response <- runRequest(request)
+      } yield {
+        checkPredicate[SchemaId](response, Status.Ok, _ => true)
+      }
+    }
+
+    "return schemaId - schema and subject are already registered and connected" in runF {
+      val body = SubjectAndSchemaRequest.instance(
+        Schema.create(Schema.Type.STRING).toString,
+        SchemaType.AVRO,
+        CompatibilityType.BACKWARD
+      )
+      val request =
+        Request[IO](method = Method.POST, uri = uri"/v2/subjects/A1/schemas").withEntity(body.asJson)
+
+      for {
+        id <- service.registerSchema(
+          "A1",
+          Schema.create(Schema.Type.STRING).toString,
+          CompatibilityType.BACKWARD,
+          SchemaType.AVRO
+        )
+        response <- runRequest(request)
+      } yield {
+        checkPredicate[SchemaId](response, Status.Ok, _ == id)
+      }
+    }
+
+    "BadRequest - schema is not valid" in runF {
+      val body = SubjectAndSchemaRequest.instance("not valid schema", SchemaType.AVRO, CompatibilityType.BACKWARD)
+      val request =
+        Request[IO](method = Method.POST, uri = uri"/v2/subjects/A1/schemas").withEntity(body.asJson)
+
+      for {
+        response <- runRequest(request)
+      } yield {
+        check[ErrorInfo](
+          response,
+          Status.BadRequest,
+          ErrorInfo(SchemaIsNotValid("not valid schema").msg, ErrorCode.SchemaIsNotValidCode)
+        )
+      }
+    }
+
+    "BadRequest - subject is locked" in runF {
+      val body = SubjectAndSchemaRequest.instance(
+        Schema.create(Schema.Type.INT).toString,
+        SchemaType.AVRO,
+        CompatibilityType.BACKWARD
+      )
+      val request =
+        Request[IO](method = Method.POST, uri = uri"/v2/subjects/A1/schemas").withEntity(body.asJson)
+
+      for {
+        _ <- service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = true)
+        response <- runRequest(request)
+      } yield {
+        check[ErrorInfo](
+          response,
+          Status.BadRequest,
+          ErrorInfo(SubjectIsLocked("A1").msg, ErrorCode.SubjectIsLockedErrorCode)
+        )
+      }
+    }
+
+    "BadRequest - schema is not compatible" in runF {
+      val body = SubjectAndSchemaRequest.instance(
+        Schema.create(Schema.Type.STRING).toString,
+        SchemaType.AVRO,
+        CompatibilityType.BACKWARD
+      )
+      val request =
+        Request[IO](method = Method.POST, uri = uri"/v2/subjects/A1/schemas").withEntity(body.asJson)
+
+      for {
+        _ <- service.registerSchema(
+          "A1",
+          Schema.create(Schema.Type.INT).toString,
+          CompatibilityType.BACKWARD,
+          SchemaType.AVRO
+        )
+        response <- runRequest(request)
+      } yield {
+        check[ErrorInfo](
+          response,
+          Status.BadRequest,
+          ErrorInfo(
+            SchemaIsNotCompatible("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD).msg,
+            ErrorCode.SchemaIsNotCompatibleCode
+          )
+        )
+      }
+    }
+  }
+
+  "RegisterSubject endpoint" should {
+    "return ok" in runF {
+      val body = SubjectMetadata.instance("A1", CompatibilityType.BACKWARD)
+      val request =
+        Request[IO](method = Method.POST, uri = uri"/v2/subjects").withEntity(body.asJson)
+
+      for {
+        response <- runRequest(request)
+      } yield {
+        check[SubjectMetadata](response, Status.Ok, body)
+      }
+    }
+
+    "return ok - register locked subject" in runF {
+      val body = SubjectMetadata.instance("A1", CompatibilityType.BACKWARD, true)
+      val request =
+        Request[IO](method = Method.POST, uri = uri"/v2/subjects").withEntity(body.asJson)
+
+      for {
+        response <- runRequest(request)
+      } yield {
+        check[SubjectMetadata](response, Status.Ok, body)
+      }
+    }
+
+    "BadRequest - subject is already exist" in runF {
+      val body = SubjectMetadata.instance("A1", CompatibilityType.BACKWARD, false)
+      val request =
+        Request[IO](method = Method.POST, uri = uri"/v2/subjects").withEntity(body.asJson)
+
+      for {
+        _ <- service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
+        response <- runRequest(request)
+      } yield {
+        check[ErrorInfo](
+          response,
+          Status.BadRequest,
+          ErrorInfo(SubjectIsAlreadyExists("A1").msg, ErrorCode.SubjectIsAlreadyExistsCode)
+        )
+      }
+    }
+  }
+
+  "AddSchemaToSubject endpoint" should {
+    "return version number - first schema" in runF {
+      for {
+        _ <- service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
+        id <- service.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
+        response <- runRequest(
+          Request[IO](method = Method.POST, uri = Uri(path = s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
+        )
+      } yield {
+        check[Int](response, Status.Ok, 1)
+      }
+    }
+
+    "return version number - second schema" in runF {
+      for {
+        _ <- service.registerSchema(
+          "A1",
+          Schema.create(Schema.Type.STRING).toString,
+          CompatibilityType.NONE,
+          SchemaType.AVRO
+        )
+        id <- service.registerSchema(Schema.create(Schema.Type.INT).toString, SchemaType.AVRO)
+        response <- runRequest(
+          Request[IO](method = Method.POST, uri = Uri(path = s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
+        )
+      } yield {
+        check[Int](response, Status.Ok, 2)
+      }
+    }
+
+    "BadRequest - subject and schema are already connected" in runF {
+      for {
+        id <- service.registerSchema(
+          "A1",
+          Schema.create(Schema.Type.STRING).toString,
+          CompatibilityType.NONE,
+          SchemaType.AVRO
+        )
+        response <- runRequest(
+          Request[IO](method = Method.POST, uri = Uri(path = s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
+        )
+      } yield {
+        check[ErrorInfo](
+          response,
+          Status.BadRequest,
+          ErrorInfo(
+            SubjectIsAlreadyConnectedToSchema("A1", id.getSchemaId).msg,
+            ErrorCode.SubjectIsAlreadyConnectedToSchemaCode
+          )
+        )
+      }
+    }
+
+    "BadRequest - subject is locked" in runF {
+      for {
+        _ <- service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = true)
+        id <- service.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
+        response <- runRequest(
+          Request[IO](method = Method.POST, uri = Uri(path = s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
+        )
+      } yield {
+        check[ErrorInfo](
+          response,
+          Status.BadRequest,
+          ErrorInfo(SubjectIsLocked("A1").msg, ErrorCode.SubjectIsLockedErrorCode)
+        )
+      }
+    }
+
+    "NotFound - subject does not exist" in runF {
+      for {
+        id <- service.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
+        response <- runRequest(
+          Request[IO](method = Method.POST, uri = Uri(path = s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
+        )
+      } yield {
+        check[ErrorInfo](
+          response,
+          Status.NotFound,
+          ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode)
+        )
+      }
+    }
+
+    "NotFound - schema does not exist" in runF {
+      for {
+        _ <- service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
+        response <- runRequest(Request[IO](method = Method.POST, uri = uri"/v2/subjects/A1/schemas/123"))
+      } yield {
+        check[ErrorInfo](
+          response,
+          Status.NotFound,
+          ErrorInfo(SchemaIdDoesNotExist(123).msg, ErrorCode.SchemaIdDoesNotExistCode)
+        )
+      }
+    }
+
+    "throws validation error" in runF {
+      for {
+        response <- runRequest(Request[IO](method = Method.POST, uri = uri"/v2/subjects/A1/schemas/-1"))
+      } yield {
+        check[String](
+          response,
+          Status.BadRequest,
+          "Invalid value for: path parameter ? (expected value to be greater than or equal to 1, but was -1)"
+        )
+      }
+    }
+  }
 }
