@@ -1,6 +1,6 @@
-package schemakeeper.server.api.protocol
+package schemakeeper.server.http.protocol
 
-case class ErrorCode(code: Int)
+final case class ErrorCode(code: Int)
 
 object ErrorCode {
   def fromCode(code: Int): ErrorCode = code match {
@@ -18,7 +18,7 @@ object ErrorCode {
     case 1011 => SchemaIsNotRegisteredCode
     case 1012 => SubjectIsNotConnectedToSchemaCode
     case 1013 => SubjectIsLockedErrorCode
-    case x => unknownCode(x)
+    case x    => unknownCode(x)
   }
 
   def unknownCode(code: Int): ErrorCode = ErrorCode(code)

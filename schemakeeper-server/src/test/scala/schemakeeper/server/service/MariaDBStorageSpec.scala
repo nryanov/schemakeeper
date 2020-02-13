@@ -3,24 +3,21 @@ package schemakeeper.server.service
 import java.sql.{Connection, DriverManager}
 import java.util
 
-import cats.Id
-import com.dimafeng.testcontainers.{ContainerDef, JdbcDatabaseContainer, MariaDBContainer, SingleContainer}
+import com.dimafeng.testcontainers.{ContainerDef, JdbcDatabaseContainer, SingleContainer}
 import com.dimafeng.testcontainers.scalatest.TestContainerForAll
 import com.typesafe.config.{Config, ConfigFactory}
 import org.junit.runner.RunWith
-import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.junit.JUnitRunner
-import schemakeeper.server.Configuration
+import schemakeeper.server.DBSpec
 
 @RunWith(classOf[JUnitRunner])
-class MariaDBStorageTest extends ServiceTest with TestContainerForAll with BeforeAndAfterEach {
-  override val containerDef: MariaDBStorageTest.MariaDBContainer.Def =
-    MariaDBStorageTest.MariaDBContainer.Def(dbName = "schemakeeper")
+class MariaDBStorageSpec extends ServiceSpec with TestContainerForAll with DBSpec {
+  override val containerDef: MariaDBStorageSpec.MariaDBContainer.Def =
+    MariaDBStorageSpec.MariaDBContainer.Def(dbName = "schemakeeper")
 
-  override var schemaStorage: DBBackedService[Id] = _
-  var connection: Connection = _
+  override var schemaStorage: DBBackedService[F] = _
 
-  override def afterContainersStart(container: MariaDBStorageTest.MariaDBContainer): Unit = {
+  override def afterContainersStart(container: MariaDBStorageSpec.MariaDBContainer): Unit = {
     val map: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]
     map.put("schemakeeper.storage.username", container.username)
     map.put("schemakeeper.storage.password", container.password)
@@ -29,24 +26,11 @@ class MariaDBStorageTest extends ServiceTest with TestContainerForAll with Befor
     map.put("schemakeeper.storage.url", container.jdbcUrl)
 
     val config: Config = ConfigFactory.parseMap(map)
-    schemaStorage = DBBackedService.apply[Id](Configuration.apply(config))
-
-    Class.forName(container.driverClassName)
-    connection = DriverManager.getConnection(container.jdbcUrl, container.username, container.password)
-    connection.setAutoCommit(false)
+    schemaStorage = createService(config)
   }
-
-  override protected def afterEach(): Unit = {
-    connection.createStatement().execute("delete from schemakeeper.subject_schema")
-    connection.createStatement().execute("delete from schemakeeper.schema_info")
-    connection.createStatement().execute("delete from schemakeeper.subject")
-    connection.commit()
-  }
-
-  override def beforeContainersStop(containers: MariaDBStorageTest.MariaDBContainer): Unit = connection.close()
 }
 
-object MariaDBStorageTest {
+object MariaDBStorageSpec {
   import org.testcontainers.containers.{MariaDBContainer => JavaMariaDBContainer}
 
   case class MariaDBContainer(

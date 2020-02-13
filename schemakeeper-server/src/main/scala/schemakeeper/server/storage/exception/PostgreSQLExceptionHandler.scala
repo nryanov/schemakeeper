@@ -1,7 +1,7 @@
 package schemakeeper.server.storage.exception
 
 class PostgreSQLExceptionHandler extends StorageExceptionHandler {
-  override def isRecoverable(e: Throwable): Boolean = e match {
+  override def isUniqueViolation(e: Throwable): Boolean = e match {
     case duplicate: org.postgresql.util.PSQLException =>
       if (duplicate.getSQLState == "23505") {
         true
