@@ -213,13 +213,6 @@ project(':schemakeeper-server') {
     }
 
     tasks.withType(ScalaCompile) {
-        scalaCompileOptions.forkOptions.with {
-            memoryMaximumSize = '1g'
-            jvmArgs = ['-Xss16m']
-        }
-    }
-
-    tasks.withType(ScalaCompile) {
         scalaCompileOptions.additionalParameters = [
                 '-feature',
                 '-encoding',
@@ -232,6 +225,11 @@ project(':schemakeeper-server') {
                 '-language:existentials',
                 '-Ypartial-unification'
         ]
+
+        scalaCompileOptions.forkOptions.with {
+            memoryMaximumSize = '1g'
+            jvmArgs = ['-Xss16m']
+        }
     }
     
     shadowJar {

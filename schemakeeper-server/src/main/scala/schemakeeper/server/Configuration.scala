@@ -28,7 +28,7 @@ final case class Cors(
   exposedHeaders: Option[Seq[String]] = None
 )
 
-final case class Server(port: Int = 9090, host: String = "localhost", cors: Option[Cors] = None)
+final case class Server(port: Int = 9090, host: String = "0.0.0.0", cors: Option[Cors] = None)
 
 final case class Configuration(storage: Storage, server: Server = Server())
 

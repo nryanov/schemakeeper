@@ -15,7 +15,6 @@ It provides a RESTful interface for storing and retrieving Subjects and Schemas 
 - Rich REST api
 - Swagger doc & swagger ui
 - More control on existing subjects - you can lock it to prevent adding new schemas to this subject
-- Server was developed using [finch](https://github.com/finagle/finch) and [twitter-server](https://github.com/twitter/twitter-server)
 
 ### Oracle notes
 To be able to use Oracle as your backend for schemas it is required to install ojdbc jar manually. You can do it using maven (or any other tool):
@@ -79,13 +78,13 @@ docker run --name={container_name} -p 9081:9081 -p 9990:9990 -d schemakeeper/ser
 
 ## Settings
 Server uses [Lightbend HOCON config](https://github.com/lightbend/config) for configuration.
-By default server is listening **9081** port for rest and **9990** for admin panel. Also, H2 is used as default server backend with next settings:
+By default server is listening **9081** port for rest. Also, H2 is used as default server backend with next settings:
 
 ```hocon
 schemakeeper {
   server {
     port = 9081
-    admin.port = 9990
+    host = 0.0.0.0
   }
 
   storage {
@@ -120,7 +119,7 @@ java -jar -Dconfig.file=<PATH TO application.conf> schemakeeper-server.jar
 ### Docker
 To configure docker image you can use environment variables:
 - SCHEMAKEEPER_LISTENING_PORT - listening port for rest api
-- SCHEMAKEEPER_DEFAULT_ADMIN_PORT - listening port for admin panel
+- SCHEMAKEEPER_LISTENING_HOST - host
 - SCHEMAKEEPER_STORAGE_USERNAME - db username
 - SCHEMAKEEPER_STORAGE_PASSWORD - db password
 - SCHEMAKEEPER_STORAGE_DRIVER - driver (org.h2.Driver, com.mysql.jdbc.Driver, org.postgresql.Driver, org.mariadb.jdbc.Driver, oracle.jdbc.driver.OracleDriver)
@@ -188,9 +187,7 @@ Use `KafkaProtobufSerializer.class` and `KafkaProtobufDeserializer.class`.
 Also, the required property is `SerDeConfig.SCHEMAKEEPER_URL_CONFIG`. Other settings are optional for SerDe.
 
 ## Swagger
-Swagger DOC: **/swagger/doc**
-
-Swagger UI: **/swagger/ui**
+Swagger DOC: **/docs**
 
 ## API
 ### subjects
@@ -483,8 +480,4 @@ Connect schema to subject as next version
 - Not found 404
     - Code 1001 Subject does not exist
     - Code 1005 Schema does not exist
-
-## ROADMAP
-- Add security
-- Add Web UI
-- Add supporting of another DB as backends
+    
