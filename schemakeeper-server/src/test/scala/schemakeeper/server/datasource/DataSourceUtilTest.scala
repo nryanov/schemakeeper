@@ -3,10 +3,11 @@ package schemakeeper.server.datasource
 import org.junit.runner.RunWith
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.junit.JUnitRunner
+import schemakeeper.server.BaseSpec
 import schemakeeper.server.datasource.migration.SupportedDatabaseProvider
 
 @RunWith(classOf[JUnitRunner])
-class DataSourceUtilTest extends WordSpec with Matchers {
+class DataSourceUtilTest extends BaseSpec {
   "DataSourceUtil" should {
     "return postgresql provider" in {
       assertResult(SupportedDatabaseProvider.PostgreSQL)(

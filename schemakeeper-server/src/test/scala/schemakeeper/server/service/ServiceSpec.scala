@@ -562,7 +562,7 @@ abstract class ServiceSpec extends IOSpec with EitherValues {
       }
     }
 
-    "return SchemaIsNotCompatible" in runF {
+    "return SchemaIsNotCompatible (primitive types) - backward" in runF {
       for {
         _ <- schemaStorage.registerSchema(
           "A1",
@@ -576,6 +576,104 @@ abstract class ServiceSpec extends IOSpec with EitherValues {
       } yield {
         assertResult(
           SchemaIsNotCompatible("A1", Schema.create(Schema.Type.STRING).toString(), CompatibilityType.BACKWARD)
+        )(result.left.value)
+      }
+    }
+
+    "return SchemaIsNotCompatible (primitive types) - forward" in runF {
+      for {
+        _ <- schemaStorage.registerSchema(
+          "A1",
+          Schema.create(Schema.Type.INT).toString(),
+          CompatibilityType.FORWARD,
+          SchemaType.AVRO
+        )
+        schema <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString(), SchemaType.AVRO)
+        id = schema.getSchemaId
+        result <- schemaStorage.addSchemaToSubject("A1", id).attempt
+      } yield {
+        assertResult(
+          SchemaIsNotCompatible("A1", Schema.create(Schema.Type.STRING).toString(), CompatibilityType.FORWARD)
+        )(result.left.value)
+      }
+    }
+
+    "return SchemaIsNotCompatible (primitive types) - full" in runF {
+      for {
+        _ <- schemaStorage.registerSchema(
+          "A1",
+          Schema.create(Schema.Type.INT).toString(),
+          CompatibilityType.FULL,
+          SchemaType.AVRO
+        )
+        schema <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString(), SchemaType.AVRO)
+        id = schema.getSchemaId
+        result <- schemaStorage.addSchemaToSubject("A1", id).attempt
+      } yield {
+        assertResult(
+          SchemaIsNotCompatible("A1", Schema.create(Schema.Type.STRING).toString(), CompatibilityType.FULL)
+        )(result.left.value)
+      }
+    }
+
+    "return SchemaIsNotCompatible (primitive types) - backward transitive" in runF {
+      for {
+        _ <- schemaStorage.registerSchema(
+          "A1",
+          Schema.create(Schema.Type.INT).toString(),
+          CompatibilityType.BACKWARD_TRANSITIVE,
+          SchemaType.AVRO
+        )
+        schema <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString(), SchemaType.AVRO)
+        id = schema.getSchemaId
+        result <- schemaStorage.addSchemaToSubject("A1", id).attempt
+      } yield {
+        assertResult(
+          SchemaIsNotCompatible(
+            "A1",
+            Schema.create(Schema.Type.STRING).toString(),
+            CompatibilityType.BACKWARD_TRANSITIVE
+          )
+        )(result.left.value)
+      }
+    }
+
+    "return SchemaIsNotCompatible (primitive types) - forward transitive" in runF {
+      for {
+        _ <- schemaStorage.registerSchema(
+          "A1",
+          Schema.create(Schema.Type.INT).toString(),
+          CompatibilityType.FORWARD_TRANSITIVE,
+          SchemaType.AVRO
+        )
+        schema <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString(), SchemaType.AVRO)
+        id = schema.getSchemaId
+        result <- schemaStorage.addSchemaToSubject("A1", id).attempt
+      } yield {
+        assertResult(
+          SchemaIsNotCompatible(
+            "A1",
+            Schema.create(Schema.Type.STRING).toString(),
+            CompatibilityType.FORWARD_TRANSITIVE
+          )
+        )(result.left.value)
+      }
+    }
+
+    "return SchemaIsNotCompatible (primitive types) - full transitive" in runF {
+      for {
+        _ <- schemaStorage.registerSchema(
+          "A1",
+          Schema.create(Schema.Type.INT).toString(),
+          CompatibilityType.FULL_TRANSITIVE,
+          SchemaType.AVRO
+        )
+        schema <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString(), SchemaType.AVRO)
+        id = schema.getSchemaId
+        result <- schemaStorage.addSchemaToSubject("A1", id).attempt
+      } yield {
+        assertResult(
+          SchemaIsNotCompatible("A1", Schema.create(Schema.Type.STRING).toString(), CompatibilityType.FULL_TRANSITIVE)
         )(result.left.value)
       }
     }
