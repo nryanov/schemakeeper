@@ -1,6 +1,6 @@
 package schemakeeper.serialization;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import schemakeeper.exception.SerializationException;
 
 import java.io.ByteArrayOutputStream;
