@@ -20,7 +20,13 @@ public class SerDeConfig {
             throw new IllegalArgumentException("schemakeeper_url is not specified");
         }
 
-        return (String) config.get(SCHEMAKEEPER_URL_CONFIG);
+        String url = (String) config.get(SCHEMAKEEPER_URL_CONFIG);
+
+        if (url == null || url.isEmpty()) {
+            throw new IllegalArgumentException("schemakeeper_url is null or empty");
+        }
+
+        return url;
     }
 
     public boolean allowForceSchemaRegister() {
