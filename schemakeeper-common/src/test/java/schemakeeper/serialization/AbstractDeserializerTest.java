@@ -6,7 +6,7 @@ import schemakeeper.exception.SerializationException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class AbstractdeserializerTest {
+public class AbstractDeserializerTest {
     @Test
     public void checkByteTest() {
         AbstractDeserializer<Object> deserializer = new AbstractDeserializer<Object>() {
