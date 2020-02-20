@@ -5,6 +5,7 @@ import schemakeeper.exception.SerializationException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
 public abstract class AbstractDeserializer<T> implements Deserializer<T> {
@@ -29,11 +30,19 @@ public abstract class AbstractDeserializer<T> implements Deserializer<T> {
     }
 
     public final byte readProtocolByte(ByteBuffer in) {
-        return in.get();
+        try{
+            return in.get();
+        } catch (BufferUnderflowException e) {
+            throw new DeserializationException(e);
+        }
     }
 
     public final int readSchemaId(ByteBuffer in) {
-        return in.getInt();
+        try {
+            return in.getInt();
+        } catch (BufferUnderflowException e) {
+            throw new DeserializationException(e);
+        }
     }
 
     public final void checkByte(byte b) {
