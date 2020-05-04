@@ -1,29 +1,29 @@
 package schemakeeper.serialization;
 
+import schemakeeper.configuration.Config;
+import schemakeeper.exception.ConfigurationException;
 import schemakeeper.schema.CompatibilityType;
 
 import java.util.Map;
 
-public class SerDeConfig {
+public class SerDeConfig extends Config {
     public static final String SCHEMAKEEPER_URL_CONFIG = "schemakeeper.url";
     public static final String ALLOW_FORCE_SCHEMA_REGISTER_CONFIG = "allow.force.schema.register";
     public static final String COMPATIBILITY_TYPE = "compatibility.type";
 
-    protected final Map<String, Object> config;
-
     public SerDeConfig(Map<String, Object> config) {
-        this.config = config;
+        super(config);
     }
 
     public String schemakeeperUrlConfig() {
         if (!config.containsKey(SCHEMAKEEPER_URL_CONFIG)) {
-            throw new IllegalArgumentException("schemakeeper_url is not specified");
+            throw new ConfigurationException(String.format("%s is not specified", SCHEMAKEEPER_URL_CONFIG));
         }
 
         String url = (String) config.get(SCHEMAKEEPER_URL_CONFIG);
 
         if (url == null || url.isEmpty()) {
-            throw new IllegalArgumentException("schemakeeper_url is null or empty");
+            throw new ConfigurationException(String.format("%s is null or empty", SCHEMAKEEPER_URL_CONFIG));
         }
 
         return url;
