@@ -219,4 +219,62 @@ public class SerDeConfigTest {
         assertThrows(ConfigurationException.class, config::clientProxyHost);
         assertThrows(ConfigurationException.class, config::clientProxyPort);
     }
+
+    @Test
+    public void shouldReturnCacheItemSize() {
+        Map<String, Object> map = new HashMap<>();
+        map.put(SerDeConfig.SCHEMA_CACHE_SIZE, 1);
+
+        SerDeConfig config = new SerDeConfig(map);
+
+        assertEquals(1, config.schemaCacheSize());
+    }
+
+    @Test
+    public void shouldReturnDefaultCacheItemSize() {
+        Map<String, Object> map = new HashMap<>();
+
+        SerDeConfig config = new SerDeConfig(map);
+
+        assertEquals(-1, config.schemaCacheSize());
+    }
+
+    @Test
+    public void shouldThrowErrorCacheItemSize() {
+        Map<String, Object> map = new HashMap<>();
+        map.put(SerDeConfig.SCHEMA_CACHE_SIZE, 0);
+
+        SerDeConfig config = new SerDeConfig(map);
+
+        assertThrows(ConfigurationException.class, config::schemaCacheSize);
+    }
+
+    @Test
+    public void shouldReturnCacheItemTtl() {
+        Map<String, Object> map = new HashMap<>();
+        map.put(SerDeConfig.SCHEMA_CACHE_ITEM_TTL, 1);
+
+        SerDeConfig config = new SerDeConfig(map);
+
+        assertEquals(1, config.schemaCacheItemTtl());
+    }
+
+    @Test
+    public void shouldReturnDefaultCacheItemTtl() {
+        Map<String, Object> map = new HashMap<>();
+
+        SerDeConfig config = new SerDeConfig(map);
+
+        assertEquals(-1, config.schemaCacheItemTtl());
+    }
+
+    @Test
+    public void shouldThrowErrorCacheItemTtl() {
+        Map<String, Object> map = new HashMap<>();
+        map.put(SerDeConfig.SCHEMA_CACHE_ITEM_TTL, 0);
+
+        SerDeConfig config = new SerDeConfig(map);
+
+        assertThrows(ConfigurationException.class, config::schemaCacheItemTtl);
+    }
 }

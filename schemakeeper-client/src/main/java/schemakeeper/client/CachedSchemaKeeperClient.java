@@ -1,5 +1,7 @@
 package schemakeeper.client;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
 import org.apache.avro.Schema;
 import schemakeeper.schema.CompatibilityType;
 import schemakeeper.schema.SchemaType;
@@ -8,15 +10,38 @@ import schemakeeper.serialization.SerDeConfig;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public class CachedSchemaKeeperClient extends DefaultSchemaKeeperClient {
     // used for write (Subject -> (Schema text -> schema id))
-    private final ConcurrentHashMap<String, ConcurrentHashMap<Schema, Integer>> subjectSchemas = new ConcurrentHashMap<>();
+    private final Map<String, Map<Schema, Integer>> subjectSchemas;
     // used for read (Schema id -> schema)
-    private final ConcurrentHashMap<Integer, Schema> idToSchema = new ConcurrentHashMap<>();
+    private final Map<Integer, Schema> idToSchema;
 
     public CachedSchemaKeeperClient(SerDeConfig config) {
         super(config);
+
+        // todo: implement
+        if (config.schemaCacheSize() != -1 || config.schemaCacheItemTtl() != -1) {
+            CacheBuilder subjectSchemasBuilder = CacheBuilder.newBuilder();
+            CacheBuilder idToSchemaBuilder = CacheBuilder.newBuilder();
+
+            if (config.schemaCacheSize() > 0) {
+                subjectSchemasBuilder.maximumSize(config.schemaCacheSize());
+                idToSchemaBuilder.maximumSize(config.schemaCacheSize());
+            }
+
+            if (config.schemaCacheItemTtl() > 0) {
+                subjectSchemasBuilder.expireAfterAccess(config.schemaCacheItemTtl(), TimeUnit.MILLISECONDS);
+                idToSchemaBuilder.expireAfterAccess(config.schemaCacheItemTtl(), TimeUnit.MILLISECONDS);
+            }
+
+            subjectSchemas = new ConcurrentHashMap<>();
+            idToSchema = new ConcurrentHashMap<>();
+        } else {
+            subjectSchemas = new ConcurrentHashMap<>();
+            idToSchema = new ConcurrentHashMap<>();
+        }
     }
 
     @Override
@@ -53,7 +78,7 @@ public class CachedSchemaKeeperClient extends DefaultSchemaKeeperClient {
         return super.getSchemaId(subject, schema, schemaType);
     }
 
-    public Map<String, ConcurrentHashMap<Schema, Integer>> getSubjectSchemas() {
+    public Map<String, Map<Schema, Integer>> getSubjectSchemas() {
         return Collections.unmodifiableMap(subjectSchemas);
     }
 
