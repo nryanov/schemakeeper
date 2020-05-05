@@ -2,8 +2,10 @@ package schemakeeper.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import kong.unirest.Config;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
+import kong.unirest.UnirestInstance;
 import org.apache.avro.Schema;
 import schemakeeper.api.SchemaId;
 import schemakeeper.api.SchemaMetadata;
@@ -31,22 +33,38 @@ public class DefaultSchemaKeeperClient extends SchemaKeeperClient {
         mapper.registerModule(module);
     }
 
+    private UnirestInstance clientInstance;
+
     public DefaultSchemaKeeperClient(SerDeConfig config) {
         super(config);
-        Unirest.config()
-                .socketTimeout(3000)
-                .connectTimeout(3000)
-                .concurrency(5, 2)
+
+        clientInstance = Unirest.spawnInstance();
+        Config clientInstanceConfig = clientInstance.config();
+
+        clientInstanceConfig
+                .socketTimeout(config.clientSocketTimeout())
+                .connectTimeout(config.clientConnectTimeout())
+                .concurrency(config.clientMaxConnections(), config.clientConnectionsPerRoute())
                 .setDefaultHeader("Accept", "application/json")
                 .followRedirects(false)
-                .enableCookieManagement(false);
+                .enableCookieManagement(false)
+                .addShutdownHook(true);
+
+        if (config.isProxied()) {
+            clientInstanceConfig.proxy(
+                    config.clientProxyHost(),
+                    config.clientProxyPort(),
+                    config.clientProxyUsername(),
+                    config.clientProxyPassword()
+            );
+        }
     }
 
     @Override
     public Schema getSchemaById(int id) {
         logger.debug("Get schema by id: {}", id);
 
-        HttpResponse<String> response = Unirest.get(String.format("%s/%s/schemas/%s", SCHEMAKEEPER_URL, API_VERSION, id))
+        HttpResponse<String> response = clientInstance.get(String.format("%s/%s/schemas/%s", SCHEMAKEEPER_URL, API_VERSION, id))
                 .asString()
                 .ifFailure(res -> {
                     logger.error("Error: {}. Status: {}", res.getBody(), res.getStatus());
@@ -67,7 +85,7 @@ public class DefaultSchemaKeeperClient extends SchemaKeeperClient {
     public int registerNewSchema(String subject, Schema schema, SchemaType schemaType, CompatibilityType compatibilityType) {
         logger.debug("Get schema id ({}) or register new schema and add to subject: {}", schema.toString(), subject);
 
-           HttpResponse<String> response = Unirest.post(String.format("%s/%s/subjects/%s/schemas", SCHEMAKEEPER_URL, API_VERSION, subject))
+           HttpResponse<String> response = clientInstance.post(String.format("%s/%s/subjects/%s/schemas", SCHEMAKEEPER_URL, API_VERSION, subject))
                 .header("Content-Type", "application/json")
                 .body(SubjectAndSchemaRequest.instance(schema, schemaType, compatibilityType))
                 .asString()
@@ -90,7 +108,7 @@ public class DefaultSchemaKeeperClient extends SchemaKeeperClient {
     public int getSchemaId(String subject, Schema schema, SchemaType schemaType) {
         logger.debug("Get schema id ({}) subject: {}", schema.toString(), subject);
 
-        HttpResponse<String> response = Unirest.post(String.format("%s/%s/subjects/%s/schemas/id", SCHEMAKEEPER_URL, API_VERSION, subject))
+        HttpResponse<String> response = clientInstance.post(String.format("%s/%s/subjects/%s/schemas/id", SCHEMAKEEPER_URL, API_VERSION, subject))
                 .header("Content-Type", "application/json")
                 .body(SchemaText.instance(schema, schemaType))
                 .asString()
@@ -111,6 +129,6 @@ public class DefaultSchemaKeeperClient extends SchemaKeeperClient {
 
     @Override
     public void close() {
-        Unirest.shutDown();
+        clientInstance.shutDown();
     }
 }

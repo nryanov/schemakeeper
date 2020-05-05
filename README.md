@@ -132,6 +132,23 @@ To configure docker image you can use environment variables:
 - SCHEMAKEEPER_ALLOWS_HEADERS - Comma-separated headers
 
 ## Usage
+
+### Client settings
+Under the hood the [Unirest](https://github.com/Kong/unirest-java) is used as http client. You can configure it:
+```java
+Map<String, Object> properties = new HashMap();
+properties.put(ClientConfig.CLIENT_MAX_CONNECTIONS, 10);
+properties.put(ClientConfig.CLIENT_CONNECTIONS_PER_ROUTE, 5);
+properties.put(ClientConfig.CLIENT_SOCKET_TIMEOUT, 5000);
+properties.put(ClientConfig.CLIENT_CONNECT_TIMEOUT, 5000);
+
+// Optionally, you can confgure your http client to use proxy
+properties.put(ClientConfig.CLIENT_PROXY_HOST, "proxyHost");
+properties.put(ClientConfig.CLIENT_PROXY_PORT, port);
+properties.put(ClientConfig.CLIENT_PROXY_USERNAME, "username");
+properties.put(ClientConfig.CLIENT_PROXY_PASSWORD, "password");
+```  
+
 ### Avro
 ```java
 Map<String, Object> properties = new HashMap();
