@@ -36,7 +36,7 @@ allprojects {
     }
 
     group 'com.nryanov.schemakeeper'
-    version '0.1'
+    version '0.2.0'
 }
 
 subprojects {
@@ -236,6 +236,10 @@ project(':schemakeeper-server') {
         manifest {
             attributes "Main-Class": "schemakeeper.server.SchemaKeeper"
         }
+
+        archiveBaseName = project.name
+        archiveClassifier = ''
+        archiveVersion = ''
     }
 }
 
