@@ -28,14 +28,20 @@ object SchemaKeeperRouter {
       .map(cors => CORS(api.route.combineK(swaggerApi.route), corsConfig(cors)))
       .getOrElse(api.route.combineK(swaggerApi.route))
 
-  private def corsConfig(cors: Cors): CORSConfig =
+  private def corsConfig(cors: Cors): CORSConfig = {
+    val allowedOrigins = cors.allowsOrigins.map(_.split(",").toSet)
+
+    val anyOrigin = cors.anyOrigin || allowedOrigins.fold(false)(_.contains("*"))
+
     CORSConfig(
-      anyOrigin = cors.anyOrigin,
+      anyOrigin = anyOrigin,
       anyMethod = cors.anyMethod,
-      allowedMethods = cors.allowsMethods.map(_.toSet),
+      allowedMethods = cors.allowsMethods.map(_.split(",").toSet),
       allowCredentials = cors.allowedCredentials,
       maxAge = cors.maxAge,
-      allowedOrigins = cors.allowsOrigin.map(origin => (str: String) => str == origin).getOrElse(_ => false),
-      allowedHeaders = cors.allowsHeaders.map(_.toSet)
+      allowedOrigins = allowedOrigins.map(origins => (str: String) => origins.contains(str)).getOrElse(_ => false),
+      allowedHeaders = cors.allowsHeaders.map(_.split(",").toSet),
+      exposedHeaders = cors.exposedHeaders.map(_.split(",").toSet)
     )
+  }
 }

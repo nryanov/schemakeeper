@@ -7,6 +7,7 @@ import pureconfig.ConfigSource
 import pureconfig._
 import pureconfig.generic.ProductHint
 import pureconfig.generic.auto._
+import scala.concurrent.duration._
 
 final case class Storage(
   url: String,
@@ -21,11 +22,11 @@ final case class Cors(
   allowedCredentials: Boolean = true,
   anyOrigin: Boolean = false,
   anyMethod: Boolean = false,
-  maxAge: Long = -1,
-  allowsOrigin: Option[String] = None,
-  allowsMethods: Option[Seq[String]] = None,
-  allowsHeaders: Option[Seq[String]] = None,
-  exposedHeaders: Option[Seq[String]] = None
+  maxAge: Long = 1.day.toSeconds,
+  allowsOrigins: Option[String] = None,
+  allowsMethods: Option[String] = None,
+  allowsHeaders: Option[String] = None,
+  exposedHeaders: Option[String] = None
 )
 
 final case class Server(port: Int = 9090, host: String = "0.0.0.0", cors: Option[Cors] = None)

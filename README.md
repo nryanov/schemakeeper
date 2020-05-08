@@ -72,8 +72,8 @@ gradle test
 
 ## Run
 ```bash
-docker pull schemakeeper/server:{version}
-docker run --name={container_name} -p 9081:9081 -p 9990:9990 -d schemakeeper/server:{version}
+docker pull nryanov/schemakeeper:{version}
+docker run --name={container_name} -p 9081:9081 -p 9990:9990 -d nryanov/schemakeeper:{version}
 ```
 
 ## Settings
@@ -102,9 +102,14 @@ schemakeeper {
 schemakeeper {
   server {
     cors {
-      allowsOrigin = "<ORIGIN>"
+      allowedCredentials = "<true/false>"
+      anyOrigin = "<true/false>"
+      anyMethod = "<true/false>"
+      maxAge = "<number>"
+      allowsOrigins = "<ORIGIN>"
       allowsMethods = "<Comma-separated methods>"
       allowsHeaders = "<Comma-separated headers>"
+      exposedHeaders = "<Comma-separated headers>"
     }
   }
 }
@@ -127,7 +132,7 @@ To configure docker image you can use environment variables:
 - SCHEMAKEEPER_STORAGE_URL - jdbc connection url
 
 **Cors settings:**
-- SCHEMAKEEPER_ALLOWS_ORIGIN - Allowed origin
+- SCHEMAKEEPER_ALLOWS_ORIGINS - Allowed origins
 - SCHEMAKEEPER_ALLOWS_METHODS - Comma-separated methods
 - SCHEMAKEEPER_ALLOWS_HEADERS - Comma-separated headers
 
