@@ -86,7 +86,7 @@ public class AvroSerDeTest {
         double data = 1.0D;
         byte[] s = serializer.serialize("test", data);
         double d = (double) deserializer.deserialize(s);
-        assertEquals(data, d);
+        assertEquals(data, d, 0.1);
     }
 
     @Test
