@@ -98,9 +98,6 @@ lazy val schemakeeper =
     .settings(allSettings)
     .settings(noPublish)
     .aggregate(
-      generatedAvro,
-      generatedThrift,
-      generatedProtobuf,
       common,
       server,
       client,
@@ -112,40 +109,6 @@ lazy val schemakeeper =
       kafkaThrift,
       kafkaProtobuf
     )
-
-lazy val generatedAvro =
-  project
-    .in(file("modules/generated/avro"))
-    .settings(noPublish)
-    .settings(moduleName := "generated-avro")
-    .settings(
-      libraryDependencies ++= Seq(
-        "org.apache.avro" % "avro" % avroVersion
-      )
-    )
-
-lazy val generatedThrift = project
-  .in(file("modules/generated/thrift"))
-  .settings(noPublish)
-  .settings(moduleName := "generated-thrift")
-  .settings(
-    scroogeBuildOptions in Compile := Seq(),
-    scroogeLanguages in Compile := Seq("java"),
-    libraryDependencies ++= Seq(
-      "org.apache.thrift" % "libthrift" % thriftVersion % Test,
-      "com.twitter" %% "scrooge-core" % scroogeVersion % Test,
-      "com.twitter" %% "finagle-thrift" % scroogeVersion % Test
-    )
-  )
-
-lazy val generatedProtobuf = project
-  .in(file("modules/generated/protobuf"))
-  .settings(noPublish)
-  .enablePlugins(ProtobufPlugin)
-  .settings(moduleName := "generated-protobuf")
-  .settings(
-    ProtobufConfig / version := protobufVersion
-  )
 
 lazy val common = project
   .in(file("modules/common"))
