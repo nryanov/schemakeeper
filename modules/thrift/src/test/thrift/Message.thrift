@@ -1,4 +1,4 @@
-namespace java schemakeeper.serialization.thrift.test
+namespace java schemakeeper.generated.thrift
 
 enum E {
   X = 1,

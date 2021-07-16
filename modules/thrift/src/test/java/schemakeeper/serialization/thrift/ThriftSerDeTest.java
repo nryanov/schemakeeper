@@ -1,19 +1,15 @@
 package schemakeeper.serialization.thrift;
 
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import schemakeeper.client.MockSchemaKeeperClient;
 import schemakeeper.exception.ThriftDeserializationException;
 import schemakeeper.exception.ThriftSerializationException;
+import schemakeeper.generated.thrift.*;
 import schemakeeper.schema.CompatibilityType;
-import schemakeeper.serialization.SerDeConfig;
-import schemakeeper.serialization.thrift.test.ThriftMsgV1;
-import schemakeeper.serialization.thrift.test.ThriftMsgV2;
-import schemakeeper.serialization.thrift.test.ThriftMsgV5;
 
-import java.util.Collections;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
 public class ThriftSerDeTest {
     @Test

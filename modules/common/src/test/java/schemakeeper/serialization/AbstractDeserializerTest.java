@@ -1,12 +1,12 @@
 package schemakeeper.serialization;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import schemakeeper.exception.DeserializationException;
 import schemakeeper.exception.SerializationException;
 
 import java.nio.ByteBuffer;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
 public class AbstractDeserializerTest {
     AbstractDeserializer<Object> deserializer = new AbstractDeserializer<Object>() {
@@ -24,9 +24,9 @@ public class AbstractDeserializerTest {
     @Test
     public void checkByteTest() {
         assertThrows(SerializationException.class, () -> deserializer.checkByte((byte) 1));
-        assertDoesNotThrow(() -> deserializer.checkByte((byte) 0b1111001));
-        assertDoesNotThrow(() -> deserializer.checkByte((byte) 0b1111011));
-        assertDoesNotThrow(() -> deserializer.checkByte((byte) 0b1111010));
+        deserializer.checkByte((byte) 0b1111001);
+        deserializer.checkByte((byte) 0b1111011);
+        deserializer.checkByte((byte) 0b1111010);
     }
 
     @Test

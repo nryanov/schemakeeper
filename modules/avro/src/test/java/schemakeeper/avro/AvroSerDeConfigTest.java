@@ -1,14 +1,14 @@
 package schemakeeper.avro;
 
 import org.apache.avro.Schema;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import schemakeeper.serialization.avro.AvroSerDeConfig;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
 public class AvroSerDeConfigTest {
     @Test

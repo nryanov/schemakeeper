@@ -1,20 +1,17 @@
 package schemakeeper.schema.thrift;
 
+import org.junit.Test;
 import org.apache.avro.Schema;
-import org.apache.avro.SchemaBuilder;
-import org.junit.jupiter.api.Test;
-import schemakeeper.serialization.thrift.test.*;
+import schemakeeper.generated.thrift.*;
 
-import java.util.Arrays;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
 public class SchemaKeeperThriftDataTest {
     @Test
     public void getSchemaWithOptionalFields() {
         Schema schema = SchemaKeeperThriftData.get().getSchema(ThriftMsgV4.class);
 
-        String expected = "{\"type\":\"record\",\"name\":\"ThriftMsgV4\",\"namespace\":\"schemakeeper.serialization.thrift.test\",\"fields\":[{\"name\":\"f1\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"]},{\"name\":\"f3\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"]},{\"name\":\"f4\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"default\":null}]}";
+        String expected = "{\"type\":\"record\",\"name\":\"ThriftMsgV4\",\"namespace\":\"schemakeeper.generated.thrift\",\"fields\":[{\"name\":\"f1\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"]},{\"name\":\"f3\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"]},{\"name\":\"f4\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"default\":null}]}";
         assertEquals(schema.toString(), expected);
     }
 
@@ -22,13 +19,13 @@ public class SchemaKeeperThriftDataTest {
     public void getSchemaWithDefaultValues() {
         Schema schema = SchemaKeeperThriftData.get().getSchema(ThriftMsgV1.class);
 
-        String expected = "{\"type\":\"record\",\"name\":\"ThriftMsgV1\",\"namespace\":\"schemakeeper.serialization.thrift.test\",\"fields\":[{\"name\":\"f1\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"]},{\"name\":\"f2\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"default\":null}]}";
+        String expected = "{\"type\":\"record\",\"name\":\"ThriftMsgV1\",\"namespace\":\"schemakeeper.generated.thrift\",\"fields\":[{\"name\":\"f1\",\"type\":[{\"type\":\"string\",\"avro.java.string\":\"String\"},\"null\"]},{\"name\":\"f2\",\"type\":[\"null\",{\"type\":\"string\",\"avro.java.string\":\"String\"}],\"default\":null}]}";
         assertEquals(schema.toString(), expected);
     }
 
     @Test
     public void complexStructTest() {
-        Schema schema = SchemaKeeperThriftData.get().getSchema(schemakeeper.serialization.thrift.test.Test.class);
+        Schema schema = SchemaKeeperThriftData.get().getSchema(schemakeeper.generated.thrift.Test.class);
 
         Schema intOptional = Schema.createUnion(Schema.create(Schema.Type.NULL), Schema.create(Schema.Type.INT));
         Schema stringSchema = Schema.create(Schema.Type.STRING);

@@ -1,4 +1,4 @@
-{"namespace": "schemakeeper.avro.test",
+{"namespace": "schemakeeper.generated.avro",
  "type": "record",
  "name": "Message",
  "fields": [

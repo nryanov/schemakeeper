@@ -2,11 +2,11 @@ package schemakeeper.schema;
 
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import java.util.Arrays;
+import static org.junit.Assert.*;
 
-import static org.junit.jupiter.api.Assertions.*;
 
 public class AvroSchemaCompatibilityTest {
     @Test

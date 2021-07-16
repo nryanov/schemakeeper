@@ -14,11 +14,13 @@ lazy val postgresqlDriverVersion = "42.2.6"
 lazy val mysqlDriverVersion = "8.0.17"
 lazy val mariadbDriverVersion = "2.5.4"
 lazy val kafkaClientVersion = "2.0.0"
-
+lazy val unirestVersion = "3.1.00"
 lazy val logbackVersion = "1.2.3"
-lazy val scalatestVersion = "3.2.9"
+lazy val munitVersion = "0.7.27"
 lazy val testcontainersVersion = "0.35.0"
+lazy val testcontainersJavaVersion = "1.12.2"
 lazy val embeddedKafkaVersion = "2.1.0"
+lazy val scroogeVersion = "21.6.0"
 
 val scala2_12 = "2.12.13"
 
@@ -81,7 +83,8 @@ lazy val commonSettings = Seq(
     ("org.typelevel" %% "kind-projector" % kindProjectorVersion).cross(CrossVersion.full)
   ),
   libraryDependencies ++= Seq(
-    "org.slf4j" % "slf4j-api" % slf4jVersion
+    "org.slf4j" % "slf4j-api" % slf4jVersion,
+    "org.scalameta" %% "munit" % munitVersion % Test
   ),
   Test / parallelExecution := false
 )
@@ -95,141 +98,177 @@ lazy val schemakeeper =
     .settings(allSettings)
     .settings(noPublish)
     .aggregate(
+      generatedAvro,
+      generatedThrift,
+      generatedProtobuf,
+      common,
+      server,
+      client,
+      avro,
+      thrift,
+      protobuf,
+      kafkaCommon,
+      kafkaAvro,
+      kafkaThrift,
+      kafkaProtobuf
+    )
+
+lazy val generatedAvro =
+  project
+    .in(file("modules/generated/avro"))
+    .settings(noPublish)
+    .settings(moduleName := "generated-avro")
+    .settings(
+      libraryDependencies ++= Seq(
+        "org.apache.avro" % "avro" % avroVersion
       )
+    )
 
-lazy val common = project.in(file("modules/common")).settings(moduleName := "schemakeeper-common")
-lazy val server = project.in(file("modules/server")).settings(moduleName := "schemakeeper-server")
-lazy val client = project.in(file("modules/client")).settings(moduleName := "schemakeeper-client")
-lazy val avro = project.in(file("modules/avro")).settings(moduleName := "schemakeeper-avro")
-lazy val thrift = project.in(file("modules/thrift")).settings(moduleName := "schemakeeper-thrift")
-lazy val protobuf = project.in(file("modules/protobuf")).settings(moduleName := "schemakeeper-protobuf")
-lazy val kafkaCommon = project.in(file("modules/kafka/common")).settings(moduleName := "schemakeeper-kafka-common")
-lazy val kafkaAvro = project.in(file("modules/kafka/avro")).settings(moduleName := "schemakeeper-kafka-avro")
-lazy val kafkaThrift = project.in(file("modules/kafka/thrift")).settings(moduleName := "schemakeeper-kafka-thrift")
+lazy val generatedThrift = project
+  .in(file("modules/generated/thrift"))
+  .settings(noPublish)
+  .settings(moduleName := "generated-thrift")
+  .settings(
+    scroogeBuildOptions in Compile := Seq(),
+    scroogeLanguages in Compile := Seq("java"),
+    libraryDependencies ++= Seq(
+      "org.apache.thrift" % "libthrift" % thriftVersion % Test,
+      "com.twitter" %% "scrooge-core" % scroogeVersion % Test,
+      "com.twitter" %% "finagle-thrift" % scroogeVersion % Test
+    )
+  )
+
+lazy val generatedProtobuf = project
+  .in(file("modules/generated/protobuf"))
+  .settings(noPublish)
+  .enablePlugins(ProtobufPlugin)
+  .settings(moduleName := "generated-protobuf")
+  .settings(
+    ProtobufConfig / version := protobufVersion
+  )
+
+lazy val common = project
+  .in(file("modules/common"))
+  .settings(allSettings)
+  .settings(moduleName := "schemakeeper-common")
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.apache.avro" % "avro" % avroVersion,
+      "ch.qos.logback" % "logback-classic" % logbackVersion % Test
+    )
+  )
+
+lazy val server = project
+  .in(file("modules/server"))
+  .settings(allSettings)
+  .settings(moduleName := "schemakeeper-server")
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.http4s" %% "http4s-circe" % http4sVersion,
+      "org.http4s" %% "http4s-dsl" % http4sVersion,
+      "org.http4s" %% "http4s-blaze-server" % http4sVersion,
+      "org.http4s" %% "http4s-blaze-client" % http4sVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-core" % tapirVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-http4s" % tapirVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-openapi-docs" % tapirVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-openapi-circe-yaml" % tapirVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-openapi-circe" % tapirVersion,
+      "ch.qos.logback" % "logback-classic" % logbackVersion,
+      "com.github.pureconfig" %% "pureconfig" % pureconfigVersion,
+      "com.beachape" %% "enumeratum" % enumeratumVersion,
+      "io.chrisdavenport" %% "log4cats-slf4j" % log4catsVersion,
+      "org.tpolecat" %% "doobie-quill" % doobieVersion,
+      "org.tpolecat" %% "doobie-h2" % doobieVersion,
+      "org.tpolecat" %% "doobie-core" % doobieVersion,
+      "org.tpolecat" %% "doobie-hikari" % doobieVersion,
+      "org.flywaydb" % "flyway-core" % flywayVersion,
+      "org.postgresql" % "postgresql" % postgresqlDriverVersion,
+      "mysql" % "mysql-connector-java" % mysqlDriverVersion,
+      "org.mariadb.jdbc" % "mariadb-java-client" % mariadbDriverVersion,
+      "com.dimafeng" %% "testcontainers-scala-mysql" % testcontainersVersion % Test,
+      "com.dimafeng" %% "testcontainers-scala-postgresql" % testcontainersVersion % Test,
+      "com.dimafeng" %% "testcontainers-scala-mariadb" % testcontainersVersion % Test,
+      "com.dimafeng" %% "testcontainers-scala" % testcontainersVersion % Test
+    )
+  )
+  .dependsOn(common % compileAndTest)
+
+lazy val client = project
+  .in(file("modules/client"))
+  .settings(allSettings)
+  .settings(moduleName := "schemakeeper-client")
+  .settings(
+    libraryDependencies ++= Seq(
+      "com.konghq" % "unirest-java" % unirestVersion,
+      // todo: replace by mock server ?
+      "org.testcontainers" % "testcontainers" % testcontainersJavaVersion % Test
+    )
+  )
+  .dependsOn(common % compileAndTest)
+
+lazy val avro = project
+  .in(file("modules/avro"))
+  .settings(allSettings)
+  .settings(moduleName := "schemakeeper-avro")
+  .dependsOn(common % compileAndTest)
+  .dependsOn(client % compileAndTest)
+
+lazy val thrift = project
+  .in(file("modules/thrift"))
+  .settings(allSettings)
+  .settings(moduleName := "schemakeeper-thrift")
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.apache.avro" % "avro-thrift" % avroVersion,
+      "org.apache.thrift" % "libthrift" % thriftVersion
+    )
+  )
+  .dependsOn(common % compileAndTest)
+  .dependsOn(client % compileAndTest)
+
+lazy val protobuf = project
+  .in(file("modules/protobuf"))
+  .settings(allSettings)
+  .settings(moduleName := "schemakeeper-protobuf")
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.apache.avro" % "avro-protobuf" % avroVersion,
+      "com.google.protobuf" % "protobuf-java" % protobufVersion
+    )
+  )
+  .dependsOn(common % compileAndTest)
+  .dependsOn(client % compileAndTest)
+
+lazy val kafkaCommon = project
+  .in(file("modules/kafka/common"))
+  .settings(allSettings)
+  .settings(moduleName := "schemakeeper-kafka-common")
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.apache.kafka" % "kafka-clients" % kafkaClientVersion,
+      "io.github.embeddedkafka" %% "embedded-kafka" % embeddedKafkaVersion % Test
+    )
+  )
+
+lazy val kafkaAvro = project
+  .in(file("modules/kafka/avro"))
+  .settings(moduleName := "schemakeeper-kafka-avro")
+  .dependsOn(kafkaCommon % compileAndTest)
+  .dependsOn(avro % compileAndTest)
+
+lazy val kafkaThrift = project
+  .in(file("modules/kafka/thrift"))
+  .settings(allSettings)
+  .settings(moduleName := "schemakeeper-kafka-thrift")
+  .dependsOn(common % compileAndTest)
+  .dependsOn(thrift % compileAndTest)
+
 lazy val kafkaProtobuf =
-  project.in(file("modules/kafka/protobuf")).settings(moduleName := "schemakeeper-kafka-protobuf")
-
-//// common for all
-//compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
-//compile group: 'org.apache.avro', name: 'avro', version: '1.9.0'
-//
-//testCompile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
-//testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.5.1'
-//testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.5.1'
-//testCompile group: 'org.junit.vintage', name: 'junit-vintage-engine', version: '5.5.1'
-//
-//
-//
-//
-//// server
-//compile project(':schemakeeper-common')
-//
-//implementation 'org.scala-lang:scala-library:2.12.10'
-//
-//compile group: 'org.http4s', name: 'http4s-circe_2.12', version: '0.21.0-RC4'
-//compile group: 'org.http4s', name: 'http4s-dsl_2.12', version: '0.21.0-RC4'
-//compile group: 'org.http4s', name: 'http4s-blaze-server_2.12', version: '0.21.0-RC4'
-//compile group: 'org.http4s', name: 'http4s-blaze-client_2.12', version: '0.21.0-RC4'
-//
-//compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-core_2.12', version: '0.12.20'
-//compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-json-circe_2.12', version: '0.12.20'
-//compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-http4s-server_2.12', version: '0.12.20'
-//compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-swagger-ui-http4s_2.12', version: '0.12.20'
-//compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-openapi-docs_2.12', version: '0.12.20'
-//compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-openapi-circe-yaml_2.12', version: '0.12.20'
-//compile group: 'com.softwaremill.sttp.tapir', name: 'tapir-openapi-circe_2.12', version: '0.12.20'
-//
-//compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
-//compile group: 'com.github.pureconfig', name: 'pureconfig_2.12', version: '0.12.2'
-//compile group: 'com.beachape', name: 'enumeratum_2.12', version: '1.5.13'
-//compile group: 'io.chrisdavenport', name: 'log4cats-slf4j_2.12', version: '1.0.1'
-//
-//compile group: 'org.tpolecat', name: 'doobie-quill_2.12', version: '0.8.8'
-//compile group: 'org.tpolecat', name: 'doobie-h2_2.12', version: '0.8.8'
-//compile group: 'org.tpolecat', name: 'doobie-core_2.12', version: '0.8.8'
-//compile group: 'org.tpolecat', name: 'doobie-hikari_2.12', version: '0.8.8'
-//compile group: 'org.flywaydb', name: 'flyway-core', version: '6.0.1'
-//
-//compile group: 'org.postgresql', name: 'postgresql', version: '42.2.6'
-//compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.17'
-//compile group: 'org.mariadb.jdbc', name: 'mariadb-java-client', version: '2.5.4'
-//
-//testCompile group: 'org.scalatest', name: 'scalatest_2.12', version: '3.0.8'
-//testCompile group: 'com.dimafeng', name: 'testcontainers-scala-mysql_2.12', version: '0.35.0'
-//testCompile group: 'com.dimafeng', name: 'testcontainers-scala-postgresql_2.12', version: '0.35.0'
-//testCompile group: 'com.dimafeng', name: 'testcontainers-scala-mariadb_2.12', version: '0.35.0'
-//testCompile group: 'com.dimafeng', name: 'testcontainers-scala_2.12', version: '0.35.0'
-//
-//
-//
-//// client
-//compile project(':schemakeeper-common')
-//compile group: 'com.konghq', name: 'unirest-java', version: '3.1.00'
-//
-//testCompile group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
-//testCompile group: 'org.testcontainers', name: 'testcontainers', version: '1.12.2'
-//
-//
-//
-//// avro
-//compile project(':schemakeeper-common')
-//compile project(':schemakeeper-client')
-//
-//
-//
-//// common
-//
-//
-//
-//// protobuf
-//compile project(':schemakeeper-common')
-//compile project(':schemakeeper-client')
-//
-//compile group: 'org.apache.avro', name: 'avro-protobuf', version: '1.9.0'
-//compile group: 'com.google.protobuf', name: 'protobuf-java', version: '3.6.1'
-//
-//
-//
-//// thrift
-//compile project(':schemakeeper-common')
-//compile project(':schemakeeper-client')
-//
-//compile group: 'org.apache.avro', name: 'avro-thrift', version: '1.9.0'
-//compile group: 'org.apache.thrift', name: 'libthrift', version: '0.12.0'
-//
-//
-//
-//// kafka-avro
-//compile project(':schemakeeper-avro')
-//compile project(':schemakeeper-kafka-common')
-//
-//testImplementation 'org.scala-lang:scala-library:2.12.8'
-//testCompile group: 'org.scalatest', name: 'scalatest_2.12', version: '3.0.8'
-//testCompile 'io.github.embeddedkafka:embedded-kafka_2.12:2.1.0'
-//
-//
-//
-//// kafka-protobuf
-//compile project(':schemakeeper-protobuf')
-//compile project(':schemakeeper-kafka-common')
-//
-//testImplementation 'org.scala-lang:scala-library:2.12.8'
-//testCompile group: 'org.scalatest', name: 'scalatest_2.12', version: '3.0.8'
-//testCompile 'io.github.embeddedkafka:embedded-kafka_2.12:2.1.0'
-//testCompile project(':schemakeeper-protobuf').sourceSets.test.output
-//
-//
-//
-//// kafka-thrift
-//compile project(':schemakeeper-thrift')
-//compile project(':schemakeeper-kafka-common')
-//
-//testImplementation 'org.scala-lang:scala-library:2.12.8'
-//testCompile group: 'org.scalatest', name: 'scalatest_2.12', version: '3.0.8'
-//testCompile 'io.github.embeddedkafka:embedded-kafka_2.12:2.1.0'
-//testCompile project(':schemakeeper-thrift').sourceSets.test.output
-//
-//
-//
-//// kafka-common
-//compile group: 'org.apache.kafka', name: 'kafka-clients', version: '2.0.0'
+  project
+    .in(file("modules/kafka/protobuf"))
+    .settings(allSettings)
+    .settings(moduleName := "schemakeeper-kafka-protobuf")
+    .dependsOn(common % compileAndTest)
+    .dependsOn(protobuf % compileAndTest)

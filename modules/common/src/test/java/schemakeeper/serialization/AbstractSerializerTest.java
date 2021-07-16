@@ -1,11 +1,11 @@
 package schemakeeper.serialization;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import schemakeeper.exception.SerializationException;
 
 import java.io.ByteArrayOutputStream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
 public class AbstractSerializerTest {
     private AbstractSerializer<Object> serializer = new AbstractSerializer<Object>() {

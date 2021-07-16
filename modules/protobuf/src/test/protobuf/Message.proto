@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package examples;
 
-option java_package = "schemakeeper.serialization.protobuf.test";
+option java_package = "schemakeeper.generated.protobuf";
 option java_outer_classname = "Message";
 
 message ProtoMsgV1 {

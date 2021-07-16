@@ -2,7 +2,10 @@ package schemakeeper.client;
 
 import kong.unirest.Unirest;
 import org.apache.avro.Schema;
-import org.junit.jupiter.api.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -15,7 +18,7 @@ import schemakeeper.serialization.SerDeConfig;
 
 import java.util.Collections;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
 public class DefaultSchemaKeeperClientTest {
     private static final Logger logger = LoggerFactory.getLogger(DefaultSchemaKeeperClientTest.class);
@@ -25,19 +28,19 @@ public class DefaultSchemaKeeperClientTest {
             .withLogConsumer(new Slf4jLogConsumer(logger));
     private static SerDeConfig config;
 
-    @BeforeAll
+    @BeforeClass
     public static void start() {
         schemakeeperServer.start();
         config = new SerDeConfig(Collections.singletonMap(SerDeConfig.SCHEMAKEEPER_URL_CONFIG, "http://localhost:" + schemakeeperServer.getMappedPort(9081)));
     }
 
-    @AfterAll
+    @AfterClass
     public static void stop() {
         schemakeeperServer.stop();
         Unirest.shutDown();
     }
 
-    @AfterEach
+    @After
     public void reset() {
         Unirest.config().reset();
     }

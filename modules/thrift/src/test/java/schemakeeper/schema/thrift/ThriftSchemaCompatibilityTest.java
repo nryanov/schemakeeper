@@ -1,13 +1,11 @@
 package schemakeeper.schema.thrift;
 
 import org.apache.avro.Schema;
-import org.apache.avro.thrift.ThriftData;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import schemakeeper.generated.thrift.*;
 import schemakeeper.schema.AvroSchemaCompatibility;
-import schemakeeper.serialization.thrift.test.*;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.*;
 
 public class ThriftSchemaCompatibilityTest {
     @Test

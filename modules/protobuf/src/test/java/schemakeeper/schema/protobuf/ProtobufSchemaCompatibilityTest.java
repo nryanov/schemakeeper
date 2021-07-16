@@ -1,13 +1,12 @@
 package schemakeeper.schema.protobuf;
 
+import org.junit.Test;
 import org.apache.avro.Schema;
 import org.apache.avro.protobuf.ProtobufData;
-import org.junit.jupiter.api.Test;
+import schemakeeper.generated.protobuf.Message;
 import schemakeeper.schema.AvroSchemaCompatibility;
-import schemakeeper.serialization.protobuf.test.Message;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.*;
 
 public class ProtobufSchemaCompatibilityTest {
     // proto3 supports only optional fields, so the only possible non-compatible change is field type change.

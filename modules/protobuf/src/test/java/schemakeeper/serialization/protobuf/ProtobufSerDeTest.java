@@ -1,17 +1,14 @@
 package schemakeeper.serialization.protobuf;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import schemakeeper.client.MockSchemaKeeperClient;
 import schemakeeper.exception.ProtobufDeserializationException;
 import schemakeeper.exception.ProtobufSerializationException;
+import schemakeeper.generated.protobuf.Message;
 import schemakeeper.schema.CompatibilityType;
-import schemakeeper.serialization.SerDeConfig;
-import schemakeeper.serialization.protobuf.test.Message;
 
-import java.util.Collections;
+import static org.junit.Assert.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ProtobufSerDeTest {
     @Test
