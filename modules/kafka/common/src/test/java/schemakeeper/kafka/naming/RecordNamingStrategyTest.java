@@ -3,8 +3,9 @@ package schemakeeper.kafka.naming;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.kafka.common.errors.SerializationException;
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class RecordNamingStrategyTest {
     private NamingStrategy strategy = new RecordNamingStrategy();

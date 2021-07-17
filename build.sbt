@@ -83,9 +83,11 @@ lazy val commonSettings = Seq(
     ("org.typelevel" %% "kind-projector" % kindProjectorVersion).cross(CrossVersion.full)
   ),
   libraryDependencies ++= Seq(
+    "org.apache.avro" % "avro" % avroVersion,
     "org.slf4j" % "slf4j-api" % slf4jVersion,
     "org.scalameta" %% "munit" % munitVersion % Test
   ),
+  testFrameworks += new TestFramework("munit.Framework"),
   Test / parallelExecution := false
 )
 
@@ -116,7 +118,6 @@ lazy val common = project
   .settings(moduleName := "schemakeeper-common")
   .settings(
     libraryDependencies ++= Seq(
-      "org.apache.avro" % "avro" % avroVersion,
       "ch.qos.logback" % "logback-classic" % logbackVersion % Test
     )
   )
@@ -225,7 +226,7 @@ lazy val kafkaThrift = project
   .in(file("modules/kafka/thrift"))
   .settings(allSettings)
   .settings(moduleName := "schemakeeper-kafka-thrift")
-  .dependsOn(common % compileAndTest)
+  .dependsOn(kafkaCommon % compileAndTest)
   .dependsOn(thrift % compileAndTest)
 
 lazy val kafkaProtobuf =
@@ -233,5 +234,5 @@ lazy val kafkaProtobuf =
     .in(file("modules/kafka/protobuf"))
     .settings(allSettings)
     .settings(moduleName := "schemakeeper-kafka-protobuf")
-    .dependsOn(common % compileAndTest)
+    .dependsOn(kafkaCommon % compileAndTest)
     .dependsOn(protobuf % compileAndTest)

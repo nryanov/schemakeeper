@@ -1,5 +1,5 @@
 package schemakeeper.server
 
-import org.scalatest.{Matchers, WordSpec}
+import munit._
 
-trait BaseSpec extends WordSpec with Matchers
+trait BaseSpec extends FunSuite

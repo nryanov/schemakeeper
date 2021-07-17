@@ -6,7 +6,6 @@ import cats.effect.{ContextShift, IO}
 import cats.syntax.apply._
 import com.typesafe.config.Config
 import org.flywaydb.core.Flyway
-import org.scalatest.{Assertion, BeforeAndAfterAll}
 import schemakeeper.server.datasource.DataSource
 import schemakeeper.server.datasource.migration.FlywayMigrationTool
 import schemakeeper.server.service.DBBackedService
@@ -16,7 +15,7 @@ import schemakeeper.server.storage.lock.StorageLock
 
 import scala.concurrent.ExecutionContext
 
-trait DBSpec extends IOSpec with BeforeAndAfterAll {
+trait DBSpec extends IOSpec {
   protected var finalizer: F[Unit] = _
   private var flyway: Flyway = _
 
@@ -26,7 +25,7 @@ trait DBSpec extends IOSpec with BeforeAndAfterAll {
   override protected def afterAll(): Unit =
     finalizer.unsafeRunSync()
 
-  override def runF[A](fa: => F[Assertion]): Assertion = super.runF(migrate() *> fa)
+  override def runF[A](fa: => F[Unit]): Unit = super.runF(migrate() *> fa)
 
   private def migrate(): F[Int] = IO.delay(flyway.clean()) *> IO.delay(flyway.migrate())
 

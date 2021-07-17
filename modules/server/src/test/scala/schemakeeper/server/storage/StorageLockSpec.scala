@@ -1,13 +1,11 @@
 package schemakeeper.server.storage
 
-import org.junit.runner.RunWith
-import org.scalatest.{MustMatchers, WordSpec}
-import org.scalatestplus.junit.JUnitRunner
 import schemakeeper.server.{Configuration, Storage}
 import schemakeeper.server.storage.lock._
 
-@RunWith(classOf[JUnitRunner])
-class StorageLockSpec extends WordSpec with MustMatchers {
+import munit._
+
+class StorageLockSpec extends FunSuite {
   val cfg = Storage(
     url = "url",
     driver = "",
@@ -15,29 +13,34 @@ class StorageLockSpec extends WordSpec with MustMatchers {
     schema = "schema"
   )
 
-  "StorageLock" should {
-    "return postgresql lock" in {
-      StorageLock(Configuration(cfg.copy(url = "jdbc:postgresql://host:port"))) mustBe a[PostgreSQLStorageLock]
-    }
+  test("return postgresql lock") {
+    assert(
+      StorageLock(Configuration(cfg.copy(url = "jdbc:postgresql://host:port"))).isInstanceOf[PostgreSQLStorageLock]
+    )
+  }
 
-    "return mysql lock" in {
-      StorageLock(Configuration(cfg.copy(url = "jdbc:mysql://host:port"))) mustBe a[MySQLStorageLock]
-    }
+  test("return mysql lock") {
+    assert(StorageLock(Configuration(cfg.copy(url = "jdbc:mysql://host:port"))).isInstanceOf[MySQLStorageLock])
+  }
 
-    "return h2 lock" in {
-      StorageLock(Configuration(cfg.copy(url = "jdbc:h2://host:port"))) mustBe a[H2StorageLock]
-    }
+  test("return h2 lock") {
+    assert(StorageLock(Configuration(cfg.copy(url = "jdbc:h2://host:port"))).isInstanceOf[H2StorageLock])
+  }
 
-    "return mariadb lock" in {
-      StorageLock(Configuration(cfg.copy(url = "jdbc:mariadb://host:port"))) mustBe a[MariaDBStorageLock]
-    }
+  test("return mariadb lock") {
+    assert(StorageLock(Configuration(cfg.copy(url = "jdbc:mariadb://host:port"))).isInstanceOf[MariaDBStorageLock])
+  }
 
-    "return oracle lock" in {
-      StorageLock(Configuration(cfg.copy(url = "jdbc:oracle://host:port"))) mustBe a[OracleStorageLock]
-    }
+  test("return oracle lock") {
+    assert(StorageLock(Configuration(cfg.copy(url = "jdbc:oracle://host:port"))).isInstanceOf[OracleStorageLock])
+  }
 
-    "throw error" in {
-      assertThrows[IllegalArgumentException](StorageLock(Configuration(cfg.copy(url = "jdbc:unknown://host:port"))))
+  test("throw error") {
+    try {
+      StorageLock(Configuration(cfg.copy(url = "jdbc:unknown://host:port")))
+    } catch {
+      case _: IllegalArgumentException => assert(cond = true)
+      case e                           => failSuite(s"Unexpected error: $e")
     }
   }
 }
