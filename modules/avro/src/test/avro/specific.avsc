@@ -1,0 +1,10 @@
+{"namespace": "schemakeeper.generated.avro",
+ "type": "record",
+ "name": "Message",
+ "fields": [
+     {"name": "f1", "type": "long"},
+     {"name": "f2", "type": "string"},
+     {"name": "f3", "type": "long"},
+     {"name": "f4",  "type": ["null", "string"]}
+ ]
+}
