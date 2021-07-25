@@ -9,7 +9,7 @@ import schemakeeper.server.DBSpec
 
 class MySQLStorageSpec extends ServiceSpec with TestContainerForAll with DBSpec {
   override val containerDef: MySQLContainer.Def =
-    MySQLContainer.Def(dockerImageName = "mysql:5.7", databaseName = "schemakeeper")
+    MySQLContainer.Def(dockerImageName = "mysql:8.0.26", databaseName = "schemakeeper")
   override var schemaStorage: DBBackedService[F] = _
 
   override def afterContainersStart(container: MySQLContainer): Unit = {
