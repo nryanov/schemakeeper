@@ -5,7 +5,9 @@ import java.security.MessageDigest
 
 object Utils {
   def toMD5Hex(value: String): String =
-    MessageDigest.getInstance("MD5").digest(value.getBytes(StandardCharsets.UTF_8))
+    MessageDigest
+      .getInstance("MD5")
+      .digest(value.getBytes(StandardCharsets.UTF_8))
       .map(0xFF & _)
       .map("%02x".format(_))
       .foldLeft("")(_ + _)
