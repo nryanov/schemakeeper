@@ -129,8 +129,14 @@ lazy val common = project
 
 lazy val server = project
   .in(file("modules/server"))
+  .enablePlugins(JavaAppPackaging, DockerPlugin)
   .settings(allSettings)
   .settings(moduleName := "schemakeeper-server")
+  .settings(
+    Docker / dockerBaseImage := "openjdk:8-jre-alpine",
+    Docker / packageName := "schemakeeper",
+    Docker / version := "test"
+  )
   .settings(
     libraryDependencies ++= Seq(
       "org.http4s" %% "http4s-circe" % http4sVersion,

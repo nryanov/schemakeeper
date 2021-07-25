@@ -22,7 +22,7 @@ import static org.junit.Assert.*;
 
 public class DefaultSchemaKeeperClientTest {
     private static final Logger logger = LoggerFactory.getLogger(DefaultSchemaKeeperClientTest.class);
-    private static final GenericContainer schemakeeperServer = new GenericContainer("schemakeeper/server:test")
+    private static final GenericContainer schemakeeperServer = new GenericContainer("schemakeeper:test")
             .withExposedPorts(9081)
             .waitingFor(Wait.forHttp("/v2/subjects"))
             .withLogConsumer(new Slf4jLogConsumer(logger));
