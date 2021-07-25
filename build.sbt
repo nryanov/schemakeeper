@@ -5,22 +5,21 @@ lazy val protobufVersion = "3.6.1"
 lazy val thriftVersion = "0.12.0"
 lazy val http4sVersion = "0.21.0-RC4"
 lazy val tapirVersion = "0.12.20"
-lazy val pureconfigVersion = "0.12.2"
-lazy val enumeratumVersion = "1.5.13"
+lazy val pureconfigVersion = "0.16.0"
+lazy val enumeratumVersion = "1.6.0"
 lazy val log4catsVersion = "1.0.1"
 lazy val doobieVersion = "0.8.8"
 lazy val flywayVersion = "6.0.1"
 lazy val postgresqlDriverVersion = "42.2.6"
 lazy val mysqlDriverVersion = "8.0.17"
 lazy val mariadbDriverVersion = "2.5.4"
-lazy val kafkaClientVersion = "2.0.0"
+lazy val kafkaClientVersion = "2.1.0"
 lazy val unirestVersion = "3.1.00"
 lazy val logbackVersion = "1.2.3"
 lazy val munitVersion = "0.7.27"
 lazy val testcontainersVersion = "0.35.0"
 lazy val testcontainersJavaVersion = "1.12.2"
 lazy val embeddedKafkaVersion = "2.1.0"
-lazy val scroogeVersion = "21.6.0"
 
 val scala2_12 = "2.12.13"
 
@@ -50,31 +49,35 @@ lazy val noPublish = Seq(
 
 def compilerOptions(scalaVersion: String) = Seq(
   "-deprecation",
+  "-unchecked",
   "-encoding",
   "UTF-8",
+  "-explaintypes",
   "-feature",
-  "-language:existentials",
   "-language:higherKinds",
   "-language:implicitConversions",
-  "-unchecked",
+  "-language:existentials",
+  "-language:postfixOps",
+  "-Ywarn-dead-code",
+  "-Xlint",
+  "-Xlint:constant",
+  "-Xlint:inaccessible",
+  "-Xlint:nullary-unit",
+  "-Xlint:type-parameter-shadow",
+  // scala 2.12
+  "-Yno-adapted-args",
+  "-Xfuture",
+  "-Ypartial-unification",
   "-Ywarn-dead-code",
   "-Ywarn-numeric-widen",
-  "-Xlint",
-  "-language:existentials",
-  "-language:postfixOps"
-) ++ (CrossVersion.partialVersion(scalaVersion) match {
-  case Some((2, scalaMajor)) if scalaMajor == 12 => scala212CompilerOptions
-  case Some((2, scalaMajor)) if scalaMajor == 13 => scala213CompilerOptions
-})
-
-lazy val scala212CompilerOptions = Seq(
-  "-Yno-adapted-args",
-  "-Ywarn-unused-import",
-  "-Xfuture"
-)
-
-lazy val scala213CompilerOptions = Seq(
-  "-Wunused:imports"
+  "-Ywarn-unused:implicits",
+  "-Ywarn-unused:imports",
+  "-Ywarn-unused:locals",
+  "-Ywarn-unused:params",
+  "-Ywarn-unused:patvars",
+  "-Ywarn-unused:privates",
+  "-Ywarn-value-discard",
+  "-Xlint:unsound-match"
 )
 
 lazy val commonSettings = Seq(

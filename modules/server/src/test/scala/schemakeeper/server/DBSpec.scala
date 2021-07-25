@@ -22,7 +22,7 @@ trait DBSpec extends IOSpec {
   val ec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
   implicit val cs: ContextShift[F] = IO.contextShift(ec)
 
-  override protected def afterAll(): Unit =
+  override def afterAll(): Unit =
     finalizer.unsafeRunSync()
 
   override def runF[A](fa: => F[Unit]): Unit = super.runF(migrate() *> fa)

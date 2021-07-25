@@ -1,12 +1,9 @@
 package schemakeeper.server
 
 import cats.effect.Sync
-import cats.syntax.functor._
 import com.typesafe.config.Config
-import pureconfig.ConfigSource
 import pureconfig._
-import pureconfig.generic.ProductHint
-import pureconfig.generic.auto._
+import pureconfig.generic.semiauto._
 import scala.concurrent.duration._
 
 final case class Storage(
@@ -34,8 +31,10 @@ final case class Server(port: Int = 9090, host: String = "0.0.0.0", cors: Option
 final case class Configuration(storage: Storage, server: Server = Server())
 
 object Configuration {
-  implicit def hint[T]: ProductHint[T] =
-    ProductHint[T](ConfigFieldMapping(CamelCase, CamelCase))
+  private implicit val storageConfigReader: ConfigReader[Storage] = deriveReader[Storage]
+  private implicit val corsConfigReader: ConfigReader[Cors] = deriveReader[Cors]
+  private implicit val serverConfigReader: ConfigReader[Server] = deriveReader[Server]
+  private implicit val configReader: ConfigReader[Configuration] = deriveReader[Configuration]
 
   def create[F[_]](implicit F: Sync[F]): F[Configuration] =
     F.delay(ConfigSource.default.at("schemakeeper").loadOrThrow[Configuration])

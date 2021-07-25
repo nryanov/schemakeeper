@@ -209,7 +209,7 @@ class DatabaseStorage(
     .run(quote {
       query[SubjectSchema].insert(lift(SubjectSchema(subject, schemaId, version)))
     })
-    .map(_ => Unit)
+    .map(_ => (()))
 
   override def isSubjectExist(subject: String): doobie.ConnectionIO[Boolean] = dc.run(quote {
     query[Subject].filter(_.subjectName == lift(subject)).nonEmpty

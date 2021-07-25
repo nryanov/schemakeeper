@@ -6,7 +6,7 @@ import doobie.implicits._
 import org.apache.avro.Schema
 import cats.~>
 import cats.free.Free
-import cats.effect.{Resource, Sync}
+import cats.effect.Sync
 import cats.syntax.apply._
 import cats.syntax.functor._
 import cats.syntax.flatMap._
