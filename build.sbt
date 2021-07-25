@@ -19,6 +19,7 @@ lazy val kafkaClientVersion = "2.1.0"
 lazy val unirestVersion = "3.1.00"
 // test
 lazy val logbackVersion = "1.2.3"
+lazy val junitInterface = "0.11"
 lazy val munitVersion = "0.7.27"
 lazy val testcontainersVersion = "0.39.5"
 lazy val testcontainersJavaVersion = "1.15.3"
@@ -90,9 +91,12 @@ lazy val commonSettings = Seq(
   ),
   libraryDependencies ++= Seq(
     "org.apache.avro" % "avro" % avroVersion,
-    "org.scalameta" %% "munit" % munitVersion % Test
+    "org.scalameta" %% "munit" % munitVersion % Test,
+    ("com.novocode" % "junit-interface" % junitInterface % Test).exclude("junit", "junit-dep")
   ),
+  crossPaths := false,
   testFrameworks += new TestFramework("munit.Framework"),
+  testOptions += Tests.Argument(TestFrameworks.JUnit),
   Test / parallelExecution := false
 )
 
@@ -133,7 +137,6 @@ lazy val server = project
   .settings(allSettings)
   .settings(moduleName := "schemakeeper-server")
   .settings(
-    Docker / dockerBaseImage := "openjdk:8-jre-alpine",
     Docker / packageName := "schemakeeper",
     Docker / version := "test"
   )
