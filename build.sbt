@@ -17,8 +17,8 @@ lazy val kafkaClientVersion = "2.1.0"
 lazy val unirestVersion = "3.1.00"
 lazy val logbackVersion = "1.2.3"
 lazy val munitVersion = "0.7.27"
-lazy val testcontainersVersion = "0.35.0"
-lazy val testcontainersJavaVersion = "1.12.2"
+lazy val testcontainersVersion = "0.39.5"
+lazy val testcontainersJavaVersion = "1.15.3"
 lazy val embeddedKafkaVersion = "2.1.0"
 
 val scala2_12 = "2.12.13"
@@ -154,10 +154,10 @@ lazy val server = project
       "org.postgresql" % "postgresql" % postgresqlDriverVersion,
       "mysql" % "mysql-connector-java" % mysqlDriverVersion,
       "org.mariadb.jdbc" % "mariadb-java-client" % mariadbDriverVersion,
+      "com.dimafeng" %% "testcontainers-scala-munit" % testcontainersVersion % Test,
       "com.dimafeng" %% "testcontainers-scala-mysql" % testcontainersVersion % Test,
       "com.dimafeng" %% "testcontainers-scala-postgresql" % testcontainersVersion % Test,
-      "com.dimafeng" %% "testcontainers-scala-mariadb" % testcontainersVersion % Test,
-      "com.dimafeng" %% "testcontainers-scala" % testcontainersVersion % Test
+      "com.dimafeng" %% "testcontainers-scala-mariadb" % testcontainersVersion % Test
     )
   )
   .dependsOn(common % compileAndTest)
