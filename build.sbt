@@ -1,8 +1,9 @@
 lazy val kindProjectorVersion = "0.13.0"
-lazy val slf4jVersion = "1.7.25"
+// avro
 lazy val avroVersion = "1.9.0"
 lazy val protobufVersion = "3.6.1"
 lazy val thriftVersion = "0.12.0"
+// server
 lazy val http4sVersion = "0.21.0-RC4"
 lazy val tapirVersion = "0.12.20"
 lazy val pureconfigVersion = "0.16.0"
@@ -14,7 +15,9 @@ lazy val postgresqlDriverVersion = "42.2.6"
 lazy val mysqlDriverVersion = "8.0.17"
 lazy val mariadbDriverVersion = "2.5.4"
 lazy val kafkaClientVersion = "2.1.0"
+// client
 lazy val unirestVersion = "3.1.00"
+// test
 lazy val logbackVersion = "1.2.3"
 lazy val munitVersion = "0.7.27"
 lazy val testcontainersVersion = "0.39.5"
@@ -87,7 +90,6 @@ lazy val commonSettings = Seq(
   ),
   libraryDependencies ++= Seq(
     "org.apache.avro" % "avro" % avroVersion,
-    "org.slf4j" % "slf4j-api" % slf4jVersion,
     "org.scalameta" %% "munit" % munitVersion % Test
   ),
   testFrameworks += new TestFramework("munit.Framework"),
