@@ -140,9 +140,13 @@ lazy val server = project
   .settings(moduleName := "schemakeeper-server")
   .settings(
     dockerBaseImage := "openjdk:8-jre-alpine",
+    dockerRepository := Some("index.docker.io"),
+    dockerUsername := Some("nryanov"),
+    dockerUpdateLatest := true,
     Docker / packageName := "schemakeeper",
-    Docker / version := "test",
+    Docker / version := Option(System.getenv("DOCKER_TAG")).getOrElse("test"),
     Docker / daemonUser := "daemon",
+    Docker / maintainer := "https://github/nryanov",
     dockerCommands ++= Seq(
       Cmd("USER", "root"),
       Cmd("RUN", "apk", "add", "--no-cache", "bash"),
