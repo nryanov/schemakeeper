@@ -17,7 +17,7 @@ jobs:
 #          tagRegex: "v(.*)"
 
       - name: Set tag
-        run: echo "DOCKER_TAG=$GIT_TAG_NAME"
+        run: echo $GIT_TAG_NAME
 
       - name: Login to DockerHub
         uses: docker/login-action@v1
