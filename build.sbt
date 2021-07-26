@@ -137,6 +137,7 @@ lazy val server = project
   .settings(allSettings)
   .settings(moduleName := "schemakeeper-server")
   .settings(
+    dockerBaseImage := "openjdk:8-jre-alpine",
     Docker / packageName := "schemakeeper",
     Docker / version := "test"
   )
