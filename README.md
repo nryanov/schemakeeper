@@ -3,10 +3,10 @@ Schemakeeper - yet another schema registry for Avro, Thrift and Protobuf schemas
 It provides a RESTful interface for storing and retrieving Subjects and Schemas metadata.
 
 ## Badges
-[![Build Status](https://img.shields.io/travis/nryanov/Schemakeeper/master.svg)](https://travis-ci.com/nryanov/Schemakeeper)
-[![codecov](https://codecov.io/gh/nryanov/Schemakeeper/branch/master/graph/badge.svg)](https://codecov.io/gh/nryanov/Schemakeeper)
 [![GitHub license](https://img.shields.io/github/license/nryanov/Schemakeeper)](https://github.com/nryanov/Schemakeeper/blob/master/LICENSE.txt)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.nryanov.schemakeeper/schemakeeper-common/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.nryanov.schemakeeper/schemakeeper-common)
+[![Codecov](https://img.shields.io/codecov/c/github/nryanov/Schemakeeper)](https://img.shields.io/codecov/c/github/nryanov/Schemakeeper)
+[![Schemakeeper CI](https://github.com/nryanov/Schemakeeper/actions/workflows/scala.yml/badge.svg?branch=master)](https://github.com/nryanov/Schemakeeper/actions/workflows/scala.yml)
 
 ## Features
 - Allows to store metadata for Avro, Thrift and Protobuf schemas
