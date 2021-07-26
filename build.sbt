@@ -245,6 +245,7 @@ lazy val kafkaCommon = project
 
 lazy val kafkaAvro = project
   .in(file("modules/kafka/avro"))
+  .settings(allSettings)
   .settings(moduleName := "schemakeeper-kafka-avro")
   .dependsOn(kafkaCommon % compileAndTest)
   .dependsOn(avro % compileAndTest)
