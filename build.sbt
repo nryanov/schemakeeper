@@ -1,3 +1,5 @@
+import com.typesafe.sbt.packager.docker._
+
 lazy val kindProjectorVersion = "0.13.0"
 // avro
 lazy val avroVersion = "1.9.0"
@@ -139,7 +141,13 @@ lazy val server = project
   .settings(
     dockerBaseImage := "openjdk:8-jre-alpine",
     Docker / packageName := "schemakeeper",
-    Docker / version := "test"
+    Docker / version := "test",
+    Docker / daemonUser := "daemon",
+    dockerCommands ++= Seq(
+      Cmd("USER", "root"),
+      Cmd("RUN", "apk", "add", "--no-cache", "bash"),
+      Cmd("USER", (Docker / daemonUser).value)
+    )
   )
   .settings(
     libraryDependencies ++= Seq(
