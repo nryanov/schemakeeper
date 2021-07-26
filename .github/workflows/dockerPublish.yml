@@ -24,4 +24,6 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: ${{ matrix.java }}
+
+      - name: Publish docker image
         run: sbt ++${{ matrix.scala }} server/docker:publish
