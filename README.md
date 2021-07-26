@@ -1,12 +1,11 @@
 # Schemakeeper
-Schemakeeper - yet another schema registry for Avro, Thrift and Protobuf schemas. 
-It provides a RESTful interface for storing and retrieving Subjects and Schemas metadata.
-
-## Badges
 [![GitHub license](https://img.shields.io/github/license/nryanov/Schemakeeper)](https://github.com/nryanov/Schemakeeper/blob/master/LICENSE.txt)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.nryanov.schemakeeper/schemakeeper-common/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.nryanov.schemakeeper/schemakeeper-common)
 [![Codecov](https://img.shields.io/codecov/c/github/nryanov/Schemakeeper)](https://img.shields.io/codecov/c/github/nryanov/Schemakeeper)
 [![Schemakeeper CI](https://github.com/nryanov/Schemakeeper/actions/workflows/scala.yml/badge.svg?branch=master)](https://github.com/nryanov/Schemakeeper/actions/workflows/scala.yml)
+
+Schemakeeper - yet another schema registry for Avro, Thrift and Protobuf schemas. 
+It provides a RESTful interface for storing and retrieving Subjects and Schemas metadata.
 
 ## Features
 - Allows to store metadata for Avro, Thrift and Protobuf schemas
@@ -51,23 +50,25 @@ Every Schemakeeper module is published at Maven Central
 compile 'com.nryanov.schemakeeper:${module.name}:${module.version}'
 ```
 
-## Build
-### Gradle
-```bash
-gradle build
+```sbt
+"com.nryanov.schemakeeper" %% "<schemakeeper-module>" % "[version]"
 ```
+
+## Build
 Server build:
 ```bash
-gradle :schemakeeper-server:clean :schemakeeper-server:shadowJar
+sbt server/stage
+// executable should be in server/target/universal/stage/bin/*
 ```
 ### Docker
 ```bash
-docker build -t {image-name} .
+sbt server/docker:publishLocal
 ```
 
 ## Test
 ```bash
-gradle test
+sbt server/docker:publishLocal
+sbt test
 ```
 
 ## Run
