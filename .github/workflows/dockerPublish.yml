@@ -26,7 +26,7 @@ jobs:
           java-version: adopt@1.8
 
       - name: Print docker tag
-        run: echo ${{DOCKER_TAG}}
+        run: echo $DOCKER_TAG
 
       - name: Publish docker image
         run: sbt ++${{ matrix.scala }} server/docker:publish
