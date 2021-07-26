@@ -17,6 +17,8 @@ jobs:
       - name: Docker meta
         uses: docker/metadata-action@v3
         id: meta
+        with:
+          images: nryanov/schemakeeper
 
 #      - name: Login to DockerHub
 #        uses: docker/login-action@v1
