@@ -11,8 +11,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2.3.4
 
+      - uses: olegtarasov/get-tag@v2.1
+        id: tagName
+#        with:
+#          tagRegex: "v(.*)"
+
       - name: Set tag
-        run: echo "DOCKER_TAG=${GITHUB_REF#refs/*/v*}" >> $GITHUB_ENV
+        run: echo "DOCKER_TAG=$GIT_TAG_NAME"
 
       - name: Login to DockerHub
         uses: docker/login-action@v1
@@ -28,5 +33,5 @@ jobs:
       - name: Print docker tag
         run: echo $DOCKER_TAG
 
-      - name: Publish docker image
-        run: sbt ++${{ matrix.scala }} server/docker:publish
+#      - name: Publish docker image
+#        run: sbt ++${{ matrix.scala }} server/docker:publish
