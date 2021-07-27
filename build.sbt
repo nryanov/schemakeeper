@@ -8,7 +8,7 @@ lazy val thriftVersion = "0.14.2"
 // server
 lazy val tapirVersion = "0.18.1"
 lazy val pureconfigVersion = "0.16.0"
-lazy val enumeratumVersion = "1.6.1"
+lazy val enumeratumVersion = "1.7.0"
 lazy val log4catsVersion = "1.0.1"
 lazy val doobieVersion = "0.13.4"
 lazy val flywayVersion = "6.0.1"
