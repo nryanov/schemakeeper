@@ -2,7 +2,7 @@ import com.typesafe.sbt.packager.docker._
 
 lazy val kindProjectorVersion = "0.13.0"
 // avro
-lazy val avroVersion = "1.9.0"
+lazy val avroVersion = "1.9.2"
 lazy val protobufVersion = "3.6.1"
 lazy val thriftVersion = "0.12.0"
 // server
