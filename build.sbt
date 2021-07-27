@@ -4,7 +4,7 @@ lazy val kindProjectorVersion = "0.13.0"
 // avro
 lazy val avroVersion = "1.9.0"
 lazy val protobufVersion = "3.17.3"
-lazy val thriftVersion = "0.12.0"
+lazy val thriftVersion = "0.14.2"
 // server
 lazy val tapirVersion = "0.18.1"
 lazy val pureconfigVersion = "0.16.0"
