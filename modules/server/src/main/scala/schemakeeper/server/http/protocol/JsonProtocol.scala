@@ -1,22 +1,12 @@
 package schemakeeper.server.http.protocol
 
-import io.circe.{Decoder, Encoder, HCursor, Json}
+import io.circe._
 import cats.syntax.either._
 import schemakeeper.api._
 import schemakeeper.schema.{CompatibilityType, SchemaType}
 import schemakeeper.server.http.internal.SubjectSettings
 
 object JsonProtocol {
-
-  implicit val exceptionEncoder: Encoder[Exception] = Encoder.instance {
-    case e: ErrorInfo =>
-      Json.obj(
-        ("reason", Json.fromString(e.reason)),
-        ("code", Json.fromInt(e.code.code))
-      )
-    case e => Json.fromString(e.getLocalizedMessage)
-  }
-
   implicit val errorInfoEncoder: Encoder[ErrorInfo] = (a: ErrorInfo) =>
     Json.obj(
       ("reason", Json.fromString(a.reason)),
