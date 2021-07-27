@@ -25,7 +25,7 @@ lazy val junitInterface = "0.11"
 lazy val munitVersion = "0.7.27"
 lazy val testcontainersVersion = "0.39.5"
 lazy val testcontainersJavaVersion = "1.15.3"
-lazy val embeddedKafkaVersion = "2.1.0"
+lazy val embeddedKafkaVersion = "2.1.1"
 
 val scala2_12 = "2.12.13"
 
