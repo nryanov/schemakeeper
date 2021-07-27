@@ -6,8 +6,7 @@ lazy val avroVersion = "1.9.0"
 lazy val protobufVersion = "3.17.3"
 lazy val thriftVersion = "0.12.0"
 // server
-lazy val http4sVersion = "0.21.0-RC4"
-lazy val tapirVersion = "0.12.28"
+lazy val tapirVersion = "0.18.1"
 lazy val pureconfigVersion = "0.16.0"
 lazy val enumeratumVersion = "1.6.1"
 lazy val log4catsVersion = "1.0.1"
@@ -20,6 +19,7 @@ lazy val kafkaClientVersion = "2.1.0"
 // client
 lazy val unirestVersion = "3.1.04"
 // test
+lazy val http4sVersion = "0.22.0"
 lazy val logbackVersion = "1.2.5"
 lazy val junitInterface = "0.11"
 lazy val munitVersion = "0.7.27"
@@ -155,29 +155,23 @@ lazy val server = project
   )
   .settings(
     libraryDependencies ++= Seq(
-      "org.http4s" %% "http4s-circe" % http4sVersion,
-      "org.http4s" %% "http4s-dsl" % http4sVersion,
-      "org.http4s" %% "http4s-blaze-server" % http4sVersion,
-      "org.http4s" %% "http4s-blaze-client" % http4sVersion,
-      "com.softwaremill.sttp.tapir" %% "tapir-core" % tapirVersion,
-      "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion,
-      "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-http4s" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-openapi-docs" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-openapi-circe-yaml" % tapirVersion,
-      "com.softwaremill.sttp.tapir" %% "tapir-openapi-circe" % tapirVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-http4s" % tapirVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion,
       "ch.qos.logback" % "logback-classic" % logbackVersion,
       "com.github.pureconfig" %% "pureconfig" % pureconfigVersion,
       "com.beachape" %% "enumeratum" % enumeratumVersion,
       "io.chrisdavenport" %% "log4cats-slf4j" % log4catsVersion,
       "org.tpolecat" %% "doobie-quill" % doobieVersion,
-      "org.tpolecat" %% "doobie-h2" % doobieVersion,
-      "org.tpolecat" %% "doobie-core" % doobieVersion,
       "org.tpolecat" %% "doobie-hikari" % doobieVersion,
+      "org.tpolecat" %% "doobie-h2" % doobieVersion,
       "org.flywaydb" % "flyway-core" % flywayVersion,
       "org.postgresql" % "postgresql" % postgresqlDriverVersion,
       "mysql" % "mysql-connector-java" % mysqlDriverVersion,
       "org.mariadb.jdbc" % "mariadb-java-client" % mariadbDriverVersion,
+      "org.http4s" %% "http4s-circe" % http4sVersion % Test,
       "com.dimafeng" %% "testcontainers-scala-munit" % testcontainersVersion % Test,
       "com.dimafeng" %% "testcontainers-scala-mysql" % testcontainersVersion % Test,
       "com.dimafeng" %% "testcontainers-scala-postgresql" % testcontainersVersion % Test,

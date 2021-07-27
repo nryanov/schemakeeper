@@ -4,11 +4,11 @@ import cats.effect.{Async, ConcurrentEffect, ContextShift, ExitCode, IO, IOApp, 
 import cats.syntax.functor._
 import cats.syntax.flatMap._
 import cats.syntax.applicative._
-import org.http4s.server.blaze._
 import doobie.free.connection.ConnectionIO
 import doobie.quill.DoobieContextBase
 import io.getquill.NamingStrategy
 import io.getquill.context.sql.idiom.SqlIdiom
+import org.http4s.blaze.server.BlazeServerBuilder
 import schemakeeper.server.datasource.DataSource
 import schemakeeper.server.datasource.migration.FlywayMigrationTool
 import schemakeeper.server.http.{SchemaKeeperApi, SchemaKeeperRouter, SwaggerApi}
@@ -44,7 +44,7 @@ object SchemaKeeper extends IOApp {
   } yield ()
 
   private def commonSettings[F[_]: Sync](): Resource[F, Common] = for {
-    cfg <- Resource.liftF(Configuration.create[F])
+    cfg <- Resource.eval(Configuration.create[F])
     context <- Resource.pure(DataSource.context(cfg))
     lock <- Resource.pure(StorageLock(cfg))
     exceptionHandler <- Resource.pure(StorageExceptionHandler(cfg))
