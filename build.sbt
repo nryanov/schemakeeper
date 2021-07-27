@@ -20,7 +20,7 @@ lazy val kafkaClientVersion = "2.1.0"
 // client
 lazy val unirestVersion = "3.1.00"
 // test
-lazy val logbackVersion = "1.2.3"
+lazy val logbackVersion = "1.2.5"
 lazy val junitInterface = "0.11"
 lazy val munitVersion = "0.7.27"
 lazy val testcontainersVersion = "0.39.5"
