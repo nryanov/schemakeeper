@@ -28,9 +28,7 @@ class ConfigurationSpec extends IOSpec {
                                        |}
                                        |}
                                        |""".stripMargin)
-    } yield {
-      assertEquals(expected, cfg)
-    })
+    } yield assertEquals(expected, cfg))
   }
 
 }

@@ -47,9 +47,8 @@ class StorageExceptionHandlerSpec extends FunSuite {
   }
 
   test("throw error") {
-    try {
-      StorageExceptionHandler(Configuration(cfg.copy(url = "jdbc:unknown://host:port")))
-    } catch {
+    try StorageExceptionHandler(Configuration(cfg.copy(url = "jdbc:unknown://host:port")))
+    catch {
       case _: IllegalArgumentException => assert(cond = true)
       case e: Throwable                => failSuite(s"Unexpected error: $e")
     }

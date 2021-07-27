@@ -49,15 +49,15 @@ class SchemaKeeperApiTest extends DBSpec {
   implicit val booleanEntityDecoder: EntityDecoder[IO, Boolean] = jsonOf[IO, Boolean]
   implicit val intEntityDecoder: EntityDecoder[IO, Int] = jsonOf[IO, Int]
 
-  def checkPredicate[A](actualResp: Response[IO], expectedStatus: Status, predicate: A => Boolean)(
-    implicit ev: EntityDecoder[IO, A]
+  def checkPredicate[A](actualResp: Response[IO], expectedStatus: Status, predicate: A => Boolean)(implicit
+    ev: EntityDecoder[IO, A]
   ) = {
     assertEquals(expectedStatus, actualResp.status)
     assert(predicate(actualResp.as[A].unsafeRunSync))
   }
 
-  def check[A](actualResp: Response[IO], expectedStatus: Status, expectedBody: A)(
-    implicit ev: EntityDecoder[IO, A]
+  def check[A](actualResp: Response[IO], expectedStatus: Status, expectedBody: A)(implicit
+    ev: EntityDecoder[IO, A]
   ) = {
     assertEquals(expectedStatus, actualResp.status)
     assertEquals(expectedBody, actualResp.as[A].unsafeRunSync)
@@ -73,9 +73,7 @@ class SchemaKeeperApiTest extends DBSpec {
       for {
         _ <- service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         response <- runRequest(request)
-      } yield {
-        check[List[String]](response, Status.Ok, List("A1"))
-      }
+      } yield check[List[String]](response, Status.Ok, List("A1"))
     }
   }
 
@@ -85,9 +83,7 @@ class SchemaKeeperApiTest extends DBSpec {
 
       for {
         response <- runRequest(request)
-      } yield {
-        checkPredicate[List[String]](response, Status.Ok, _.isEmpty)
-      }
+      } yield checkPredicate[List[String]](response, Status.Ok, _.isEmpty)
     }
   }
 
@@ -98,9 +94,7 @@ class SchemaKeeperApiTest extends DBSpec {
       for {
         _ <- service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         response <- runRequest(request)
-      } yield {
-        check[SubjectMetadata](response, Status.Ok, SubjectMetadata.instance("A1", CompatibilityType.BACKWARD))
-      }
+      } yield check[SubjectMetadata](response, Status.Ok, SubjectMetadata.instance("A1", CompatibilityType.BACKWARD))
     }
   }
 
@@ -110,13 +104,11 @@ class SchemaKeeperApiTest extends DBSpec {
 
       for {
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.NotFound,
-          ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode)
-        )
-      }
+      } yield check[ErrorInfo](
+        response,
+        Status.NotFound,
+        ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode)
+      )
     }
   }
 
@@ -128,13 +120,11 @@ class SchemaKeeperApiTest extends DBSpec {
       for {
         _ <- service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         response <- runRequest(request)
-      } yield {
-        check[SubjectMetadata](
-          response,
-          Status.Ok,
-          SubjectMetadata.instance("A1", CompatibilityType.FORWARD, true)
-        )
-      }
+      } yield check[SubjectMetadata](
+        response,
+        Status.Ok,
+        SubjectMetadata.instance("A1", CompatibilityType.FORWARD, true)
+      )
     }
   }
 
@@ -145,13 +135,11 @@ class SchemaKeeperApiTest extends DBSpec {
 
       for {
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.NotFound,
-          ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode)
-        )
-      }
+      } yield check[ErrorInfo](
+        response,
+        Status.NotFound,
+        ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode)
+      )
     }
   }
 
@@ -167,10 +155,8 @@ class SchemaKeeperApiTest extends DBSpec {
           SchemaType.AVRO
         )
         response <- runRequest(request)
-      } yield {
-        check[List[Int]](response, Status.Ok, List(1))
+      } yield check[List[Int]](response, Status.Ok, List(1))
 
-      }
     }
   }
 
@@ -181,10 +167,8 @@ class SchemaKeeperApiTest extends DBSpec {
       for {
         _ <- service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         response <- runRequest(request)
-      } yield {
-        checkPredicate[List[Int]](response, Status.Ok, _.isEmpty)
+      } yield checkPredicate[List[Int]](response, Status.Ok, _.isEmpty)
 
-      }
     }
   }
 
@@ -194,13 +178,11 @@ class SchemaKeeperApiTest extends DBSpec {
 
       for {
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.NotFound,
-          ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode)
-        )
-      }
+      } yield check[ErrorInfo](
+        response,
+        Status.NotFound,
+        ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode)
+      )
     }
   }
 
@@ -216,9 +198,7 @@ class SchemaKeeperApiTest extends DBSpec {
           SchemaType.AVRO
         )
         response <- runRequest(request)
-      } yield {
-        checkPredicate[List[SubjectSchemaMetadata]](response, Status.Ok, _.size == 1)
-      }
+      } yield checkPredicate[List[SubjectSchemaMetadata]](response, Status.Ok, _.size == 1)
     }
   }
 
@@ -229,13 +209,11 @@ class SchemaKeeperApiTest extends DBSpec {
       for {
         _ <- service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.BadRequest,
-          ErrorInfo(SubjectHasNoRegisteredSchemas("A1").msg, ErrorCode.SubjectHasNoRegisteredSchemasCode)
-        )
-      }
+      } yield check[ErrorInfo](
+        response,
+        Status.BadRequest,
+        ErrorInfo(SubjectHasNoRegisteredSchemas("A1").msg, ErrorCode.SubjectHasNoRegisteredSchemasCode)
+      )
     }
   }
 
@@ -245,13 +223,11 @@ class SchemaKeeperApiTest extends DBSpec {
 
       for {
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.NotFound,
-          ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode)
-        )
-      }
+      } yield check[ErrorInfo](
+        response,
+        Status.NotFound,
+        ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode)
+      )
     }
   }
 
@@ -267,13 +243,11 @@ class SchemaKeeperApiTest extends DBSpec {
           SchemaType.AVRO
         )
         response <- runRequest(request)
-      } yield {
-        checkPredicate[SchemaText](
-          response,
-          Status.Ok,
-          _.getSchemaText == Schema.create(Schema.Type.STRING).toString
-        )
-      }
+      } yield checkPredicate[SchemaText](
+        response,
+        Status.Ok,
+        _.getSchemaText == Schema.create(Schema.Type.STRING).toString
+      )
     }
   }
 
@@ -283,13 +257,11 @@ class SchemaKeeperApiTest extends DBSpec {
 
       for {
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.NotFound,
-          ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode)
-        )
-      }
+      } yield check[ErrorInfo](
+        response,
+        Status.NotFound,
+        ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode)
+      )
     }
   }
 
@@ -305,17 +277,15 @@ class SchemaKeeperApiTest extends DBSpec {
           SchemaType.AVRO
         )
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.NotFound,
-          ErrorInfo(
-            SubjectSchemaVersionDoesNotExist("A1", 2).msg,
-            ErrorCode.SubjectSchemaVersionDoesNotExistCode
-          )
+      } yield check[ErrorInfo](
+        response,
+        Status.NotFound,
+        ErrorInfo(
+          SubjectSchemaVersionDoesNotExist("A1", 2).msg,
+          ErrorCode.SubjectSchemaVersionDoesNotExistCode
         )
+      )
 
-      }
     }
   }
 
@@ -325,13 +295,11 @@ class SchemaKeeperApiTest extends DBSpec {
 
       for {
         response <- runRequest(request)
-      } yield {
-        check[String](
-          response,
-          Status.BadRequest,
-          "Invalid value for: path parameter ? (expected value to be greater than or equal to 1, but was -1)"
-        )
-      }
+      } yield check[String](
+        response,
+        Status.BadRequest,
+        "Invalid value for: path parameter ? (expected value to be greater than or equal to 1, but was -1)"
+      )
     }
   }
 
@@ -342,13 +310,11 @@ class SchemaKeeperApiTest extends DBSpec {
       for {
         id <- service.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
         response <- runRequest(request(id.getSchemaId))
-      } yield {
-        checkPredicate[SchemaMetadata](
-          response,
-          Status.Ok,
-          _.getSchemaId == id.getSchemaId
-        )
-      }
+      } yield checkPredicate[SchemaMetadata](
+        response,
+        Status.Ok,
+        _.getSchemaId == id.getSchemaId
+      )
     }
   }
 
@@ -358,13 +324,11 @@ class SchemaKeeperApiTest extends DBSpec {
 
       for {
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.NotFound,
-          ErrorInfo(SchemaIdDoesNotExist(123).msg, ErrorCode.SchemaIdDoesNotExistCode)
-        )
-      }
+      } yield check[ErrorInfo](
+        response,
+        Status.NotFound,
+        ErrorInfo(SchemaIdDoesNotExist(123).msg, ErrorCode.SchemaIdDoesNotExistCode)
+      )
     }
   }
 
@@ -374,13 +338,11 @@ class SchemaKeeperApiTest extends DBSpec {
 
       for {
         response <- runRequest(request)
-      } yield {
-        check[String](
-          response,
-          Status.BadRequest,
-          "Invalid value for: path parameter ? (expected value to be greater than or equal to 1, but was -1)"
-        )
-      }
+      } yield check[String](
+        response,
+        Status.BadRequest,
+        "Invalid value for: path parameter ? (expected value to be greater than or equal to 1, but was -1)"
+      )
     }
   }
 
@@ -397,13 +359,11 @@ class SchemaKeeperApiTest extends DBSpec {
           SchemaType.AVRO
         )
         response <- runRequest(request)
-      } yield {
-        check[SchemaId](
-          response,
-          Status.Ok,
-          SchemaId.instance(id.getSchemaId)
-        )
-      }
+      } yield check[SchemaId](
+        response,
+        Status.Ok,
+        SchemaId.instance(id.getSchemaId)
+      )
     }
   }
 
@@ -415,16 +375,14 @@ class SchemaKeeperApiTest extends DBSpec {
       for {
         _ <- service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.NotFound,
-          ErrorInfo(
-            SchemaIsNotRegistered(Schema.create(Schema.Type.STRING).toString()).msg,
-            ErrorCode.SchemaIsNotRegisteredCode
-          )
+      } yield check[ErrorInfo](
+        response,
+        Status.NotFound,
+        ErrorInfo(
+          SchemaIsNotRegistered(Schema.create(Schema.Type.STRING).toString()).msg,
+          ErrorCode.SchemaIsNotRegisteredCode
         )
-      }
+      )
     }
   }
 
@@ -436,13 +394,11 @@ class SchemaKeeperApiTest extends DBSpec {
       for {
         _ <- service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.BadRequest,
-          ErrorInfo(SchemaIsNotValid("not valid schema").msg, ErrorCode.SchemaIsNotValidCode)
-        )
-      }
+      } yield check[ErrorInfo](
+        response,
+        Status.BadRequest,
+        ErrorInfo(SchemaIsNotValid("not valid schema").msg, ErrorCode.SchemaIsNotValidCode)
+      )
     }
   }
 
@@ -455,16 +411,14 @@ class SchemaKeeperApiTest extends DBSpec {
         _ <- service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         id <- service.registerSchema(Schema.create(Schema.Type.STRING).toString(), SchemaType.AVRO)
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.BadRequest,
-          ErrorInfo(
-            SubjectIsNotConnectedToSchema("A1", id.getSchemaId).msg,
-            ErrorCode.SubjectIsNotConnectedToSchemaCode
-          )
+      } yield check[ErrorInfo](
+        response,
+        Status.BadRequest,
+        ErrorInfo(
+          SubjectIsNotConnectedToSchema("A1", id.getSchemaId).msg,
+          ErrorCode.SubjectIsNotConnectedToSchemaCode
         )
-      }
+      )
     }
   }
 
@@ -475,9 +429,7 @@ class SchemaKeeperApiTest extends DBSpec {
       for {
         _ <- service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         response <- runRequest(request)
-      } yield {
-        checkPredicate[Boolean](response, Status.Ok, r => r)
-      }
+      } yield checkPredicate[Boolean](response, Status.Ok, r => r)
     }
   }
 
@@ -487,9 +439,7 @@ class SchemaKeeperApiTest extends DBSpec {
 
       for {
         response <- runRequest(request)
-      } yield {
-        checkPredicate[Boolean](response, Status.Ok, r => !r)
-      }
+      } yield checkPredicate[Boolean](response, Status.Ok, r => !r)
     }
   }
 
@@ -505,9 +455,7 @@ class SchemaKeeperApiTest extends DBSpec {
           SchemaType.AVRO
         )
         response <- runRequest(request)
-      } yield {
-        checkPredicate[Boolean](response, Status.Ok, r => r)
-      }
+      } yield checkPredicate[Boolean](response, Status.Ok, r => r)
     }
   }
 
@@ -517,13 +465,11 @@ class SchemaKeeperApiTest extends DBSpec {
 
       for {
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.NotFound,
-          ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode)
-        )
-      }
+      } yield check[ErrorInfo](
+        response,
+        Status.NotFound,
+        ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode)
+      )
     }
   }
 
@@ -539,16 +485,14 @@ class SchemaKeeperApiTest extends DBSpec {
           SchemaType.AVRO
         )
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.NotFound,
-          ErrorInfo(
-            SubjectSchemaVersionDoesNotExist("A1", 123).msg,
-            ErrorCode.SubjectSchemaVersionDoesNotExistCode
-          )
+      } yield check[ErrorInfo](
+        response,
+        Status.NotFound,
+        ErrorInfo(
+          SubjectSchemaVersionDoesNotExist("A1", 123).msg,
+          ErrorCode.SubjectSchemaVersionDoesNotExistCode
         )
-      }
+      )
     }
   }
 
@@ -558,13 +502,11 @@ class SchemaKeeperApiTest extends DBSpec {
 
       for {
         response <- runRequest(request)
-      } yield {
-        check[String](
-          response,
-          Status.BadRequest,
-          "Invalid value for: path parameter ? (expected value to be greater than or equal to 1, but was -1)"
-        )
-      }
+      } yield check[String](
+        response,
+        Status.BadRequest,
+        "Invalid value for: path parameter ? (expected value to be greater than or equal to 1, but was -1)"
+      )
     }
   }
 
@@ -582,9 +524,7 @@ class SchemaKeeperApiTest extends DBSpec {
           SchemaType.AVRO
         )
         response <- runRequest(request)
-      } yield {
-        checkPredicate[Boolean](response, Status.Ok, r => r)
-      }
+      } yield checkPredicate[Boolean](response, Status.Ok, r => r)
     }
   }
 
@@ -602,9 +542,7 @@ class SchemaKeeperApiTest extends DBSpec {
           SchemaType.AVRO
         )
         response <- runRequest(request)
-      } yield {
-        checkPredicate[Boolean](response, Status.Ok, r => !r)
-      }
+      } yield checkPredicate[Boolean](response, Status.Ok, r => !r)
     }
   }
 
@@ -622,13 +560,11 @@ class SchemaKeeperApiTest extends DBSpec {
           SchemaType.AVRO
         )
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.BadRequest,
-          ErrorInfo(SchemaIsNotValid("not valid schema").msg, ErrorCode.SchemaIsNotValidCode)
-        )
-      }
+      } yield check[ErrorInfo](
+        response,
+        Status.BadRequest,
+        ErrorInfo(SchemaIsNotValid("not valid schema").msg, ErrorCode.SchemaIsNotValidCode)
+      )
     }
   }
 
@@ -640,13 +576,11 @@ class SchemaKeeperApiTest extends DBSpec {
 
       for {
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.NotFound,
-          ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode)
-        )
-      }
+      } yield check[ErrorInfo](
+        response,
+        Status.NotFound,
+        ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode)
+      )
     }
   }
 
@@ -658,9 +592,7 @@ class SchemaKeeperApiTest extends DBSpec {
 
       for {
         response <- runRequest(request)
-      } yield {
-        checkPredicate[SchemaId](response, Status.Ok, _ => true)
-      }
+      } yield checkPredicate[SchemaId](response, Status.Ok, _ => true)
     }
   }
 
@@ -672,13 +604,11 @@ class SchemaKeeperApiTest extends DBSpec {
 
       for {
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.BadRequest,
-          ErrorInfo(SchemaIsNotValid("not valid schema").msg, ErrorCode.SchemaIsNotValidCode)
-        )
-      }
+      } yield check[ErrorInfo](
+        response,
+        Status.BadRequest,
+        ErrorInfo(SchemaIsNotValid("not valid schema").msg, ErrorCode.SchemaIsNotValidCode)
+      )
     }
   }
 
@@ -691,16 +621,14 @@ class SchemaKeeperApiTest extends DBSpec {
       for {
         schema <- service.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.BadRequest,
-          ErrorInfo(
-            SchemaIsAlreadyExist(schema.getSchemaId, Schema.create(Schema.Type.STRING).toString()).msg,
-            ErrorCode.SchemaIsAlreadyExistCode
-          )
+      } yield check[ErrorInfo](
+        response,
+        Status.BadRequest,
+        ErrorInfo(
+          SchemaIsAlreadyExist(schema.getSchemaId, Schema.create(Schema.Type.STRING).toString()).msg,
+          ErrorCode.SchemaIsAlreadyExistCode
         )
-      }
+      )
     }
   }
 
@@ -716,9 +644,7 @@ class SchemaKeeperApiTest extends DBSpec {
 
       for {
         response <- runRequest(request)
-      } yield {
-        checkPredicate[SchemaId](response, Status.Ok, _ => true)
-      }
+      } yield checkPredicate[SchemaId](response, Status.Ok, _ => true)
     }
   }
 
@@ -742,9 +668,7 @@ class SchemaKeeperApiTest extends DBSpec {
           SchemaType.AVRO
         )
         response <- runRequest(request)
-      } yield {
-        checkPredicate[SchemaId](response, Status.Ok, _ == id)
-      }
+      } yield checkPredicate[SchemaId](response, Status.Ok, _ == id)
     }
   }
 
@@ -756,13 +680,11 @@ class SchemaKeeperApiTest extends DBSpec {
 
       for {
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.BadRequest,
-          ErrorInfo(SchemaIsNotValid("not valid schema").msg, ErrorCode.SchemaIsNotValidCode)
-        )
-      }
+      } yield check[ErrorInfo](
+        response,
+        Status.BadRequest,
+        ErrorInfo(SchemaIsNotValid("not valid schema").msg, ErrorCode.SchemaIsNotValidCode)
+      )
     }
   }
 
@@ -779,13 +701,11 @@ class SchemaKeeperApiTest extends DBSpec {
       for {
         _ <- service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = true)
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.BadRequest,
-          ErrorInfo(SubjectIsLocked("A1").msg, ErrorCode.SubjectIsLockedErrorCode)
-        )
-      }
+      } yield check[ErrorInfo](
+        response,
+        Status.BadRequest,
+        ErrorInfo(SubjectIsLocked("A1").msg, ErrorCode.SubjectIsLockedErrorCode)
+      )
     }
   }
 
@@ -807,16 +727,14 @@ class SchemaKeeperApiTest extends DBSpec {
           SchemaType.AVRO
         )
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.BadRequest,
-          ErrorInfo(
-            SchemaIsNotCompatible("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD).msg,
-            ErrorCode.SchemaIsNotCompatibleCode
-          )
+      } yield check[ErrorInfo](
+        response,
+        Status.BadRequest,
+        ErrorInfo(
+          SchemaIsNotCompatible("A1", Schema.create(Schema.Type.STRING).toString, CompatibilityType.BACKWARD).msg,
+          ErrorCode.SchemaIsNotCompatibleCode
         )
-      }
+      )
     }
   }
 
@@ -828,9 +746,7 @@ class SchemaKeeperApiTest extends DBSpec {
 
       for {
         response <- runRequest(request)
-      } yield {
-        check[SubjectMetadata](response, Status.Ok, body)
-      }
+      } yield check[SubjectMetadata](response, Status.Ok, body)
     }
   }
 
@@ -842,9 +758,7 @@ class SchemaKeeperApiTest extends DBSpec {
 
       for {
         response <- runRequest(request)
-      } yield {
-        check[SubjectMetadata](response, Status.Ok, body)
-      }
+      } yield check[SubjectMetadata](response, Status.Ok, body)
     }
   }
 
@@ -857,13 +771,11 @@ class SchemaKeeperApiTest extends DBSpec {
       for {
         _ <- service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         response <- runRequest(request)
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.BadRequest,
-          ErrorInfo(SubjectIsAlreadyExists("A1").msg, ErrorCode.SubjectIsAlreadyExistsCode)
-        )
-      }
+      } yield check[ErrorInfo](
+        response,
+        Status.BadRequest,
+        ErrorInfo(SubjectIsAlreadyExists("A1").msg, ErrorCode.SubjectIsAlreadyExistsCode)
+      )
     }
   }
 
@@ -875,9 +787,7 @@ class SchemaKeeperApiTest extends DBSpec {
         response <- runRequest(
           Request[IO](method = Method.POST, uri = Uri(path = s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
         )
-      } yield {
-        check[Int](response, Status.Ok, 1)
-      }
+      } yield check[Int](response, Status.Ok, 1)
     }
   }
 
@@ -894,9 +804,7 @@ class SchemaKeeperApiTest extends DBSpec {
         response <- runRequest(
           Request[IO](method = Method.POST, uri = Uri(path = s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
         )
-      } yield {
-        check[Int](response, Status.Ok, 2)
-      }
+      } yield check[Int](response, Status.Ok, 2)
     }
   }
 
@@ -912,16 +820,14 @@ class SchemaKeeperApiTest extends DBSpec {
         response <- runRequest(
           Request[IO](method = Method.POST, uri = Uri(path = s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
         )
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.BadRequest,
-          ErrorInfo(
-            SubjectIsAlreadyConnectedToSchema("A1", id.getSchemaId).msg,
-            ErrorCode.SubjectIsAlreadyConnectedToSchemaCode
-          )
+      } yield check[ErrorInfo](
+        response,
+        Status.BadRequest,
+        ErrorInfo(
+          SubjectIsAlreadyConnectedToSchema("A1", id.getSchemaId).msg,
+          ErrorCode.SubjectIsAlreadyConnectedToSchemaCode
         )
-      }
+      )
     }
   }
 
@@ -933,13 +839,11 @@ class SchemaKeeperApiTest extends DBSpec {
         response <- runRequest(
           Request[IO](method = Method.POST, uri = Uri(path = s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
         )
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.BadRequest,
-          ErrorInfo(SubjectIsLocked("A1").msg, ErrorCode.SubjectIsLockedErrorCode)
-        )
-      }
+      } yield check[ErrorInfo](
+        response,
+        Status.BadRequest,
+        ErrorInfo(SubjectIsLocked("A1").msg, ErrorCode.SubjectIsLockedErrorCode)
+      )
     }
   }
 
@@ -950,13 +854,11 @@ class SchemaKeeperApiTest extends DBSpec {
         response <- runRequest(
           Request[IO](method = Method.POST, uri = Uri(path = s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
         )
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.NotFound,
-          ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode)
-        )
-      }
+      } yield check[ErrorInfo](
+        response,
+        Status.NotFound,
+        ErrorInfo(SubjectDoesNotExist("A1").msg, ErrorCode.SubjectDoesNotExistCode)
+      )
     }
   }
 
@@ -965,13 +867,11 @@ class SchemaKeeperApiTest extends DBSpec {
       for {
         _ <- service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         response <- runRequest(Request[IO](method = Method.POST, uri = uri"/v2/subjects/A1/schemas/123"))
-      } yield {
-        check[ErrorInfo](
-          response,
-          Status.NotFound,
-          ErrorInfo(SchemaIdDoesNotExist(123).msg, ErrorCode.SchemaIdDoesNotExistCode)
-        )
-      }
+      } yield check[ErrorInfo](
+        response,
+        Status.NotFound,
+        ErrorInfo(SchemaIdDoesNotExist(123).msg, ErrorCode.SchemaIdDoesNotExistCode)
+      )
     }
   }
 
@@ -979,13 +879,11 @@ class SchemaKeeperApiTest extends DBSpec {
     runF {
       for {
         response <- runRequest(Request[IO](method = Method.POST, uri = uri"/v2/subjects/A1/schemas/-1"))
-      } yield {
-        check[String](
-          response,
-          Status.BadRequest,
-          "Invalid value for: path parameter ? (expected value to be greater than or equal to 1, but was -1)"
-        )
-      }
+      } yield check[String](
+        response,
+        Status.BadRequest,
+        "Invalid value for: path parameter ? (expected value to be greater than or equal to 1, but was -1)"
+      )
     }
   }
 }

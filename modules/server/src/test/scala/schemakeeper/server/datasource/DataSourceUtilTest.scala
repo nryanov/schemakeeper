@@ -40,9 +40,8 @@ class DataSourceUtilTest extends BaseSpec {
   }
 
   test("throw error") {
-    try {
-      DataSourceUtils.detectDatabaseProvider("jdbc:unknown://host:port")
-    } catch {
+    try DataSourceUtils.detectDatabaseProvider("jdbc:unknown://host:port")
+    catch {
       case _: IllegalArgumentException => assert(cond = true)
       case _: Throwable                => failSuite("Unexpected error")
     }

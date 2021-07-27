@@ -41,9 +41,8 @@ class SchemaKeeperApi[F[_]: Sync: ContextShift](storage: Service[F]) {
     : Endpoint[(String, SubjectSettings), (StatusCode, ErrorInfo), SubjectMetadata, Nothing] =
     baseEndpoint.put.in("subjects").in(path[String]).in(jsonBody[SubjectSettings]).out(jsonBody[SubjectMetadata])
 
-  val updateSubjectSettingsRoute: HttpRoutes[F] = updateSubjectSettingsEndpoint.toRoutes {
-    case (subject, settings) =>
-      toRoute(storage.updateSubjectSettings(subject, settings.compatibilityType, settings.isLocked))
+  val updateSubjectSettingsRoute: HttpRoutes[F] = updateSubjectSettingsEndpoint.toRoutes { case (subject, settings) =>
+    toRoute(storage.updateSubjectSettings(subject, settings.compatibilityType, settings.isLocked))
   }
 
   val subjectVersionsEndpoint: Endpoint[String, (StatusCode, ErrorInfo), List[Int], Nothing] =
@@ -66,8 +65,8 @@ class SchemaKeeperApi[F[_]: Sync: ContextShift](storage: Service[F]) {
       .in(path[Int].validate(Validator.min(1)))
       .out(jsonBody[SubjectSchemaMetadata])
 
-  val subjectSchemaByVersionRoute: HttpRoutes[F] = subjectSchemaByVersionEndpoint.toRoutes {
-    case (subject, version) => toRoute(storage.subjectSchemaByVersion(subject, version))
+  val subjectSchemaByVersionRoute: HttpRoutes[F] = subjectSchemaByVersionEndpoint.toRoutes { case (subject, version) =>
+    toRoute(storage.subjectSchemaByVersion(subject, version))
   }
 
   val schemaByIdEndpoint: Endpoint[Int, (StatusCode, ErrorInfo), SchemaMetadata, Nothing] =
@@ -165,8 +164,8 @@ class SchemaKeeperApi[F[_]: Sync: ContextShift](storage: Service[F]) {
       .in(path[Int].validate(Validator.min(1)))
       .out(jsonBody[Int])
 
-  val addSchemaToSubjectRoute: HttpRoutes[F] = addSchemaToSubjectEndpoint.toRoutes {
-    case (subject, schemaId) => toRoute(storage.addSchemaToSubject(subject, schemaId))
+  val addSchemaToSubjectRoute: HttpRoutes[F] = addSchemaToSubjectEndpoint.toRoutes { case (subject, schemaId) =>
+    toRoute(storage.addSchemaToSubject(subject, schemaId))
   }
 
   val route: HttpRoutes[F] = subjectsRoute

@@ -36,9 +36,8 @@ class StorageLockSpec extends FunSuite {
   }
 
   test("throw error") {
-    try {
-      StorageLock(Configuration(cfg.copy(url = "jdbc:unknown://host:port")))
-    } catch {
+    try StorageLock(Configuration(cfg.copy(url = "jdbc:unknown://host:port")))
+    catch {
       case _: IllegalArgumentException => assert(cond = true)
       case e: Throwable                => failSuite(s"Unexpected error: $e")
     }
