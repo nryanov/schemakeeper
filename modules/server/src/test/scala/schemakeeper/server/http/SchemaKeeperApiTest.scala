@@ -1,15 +1,15 @@
 package schemakeeper.server.http
 
-import cats.effect.IO
+import cats.effect.{IO, Timer}
 import com.typesafe.config.{Config, ConfigFactory}
 import schemakeeper.schema.{CompatibilityType, SchemaType}
 import schemakeeper.server.DBSpec
 import schemakeeper.server.service._
 import io.circe.syntax._
 import org.apache.avro.Schema
-import org.http4s.circe._
 import org.http4s.implicits._
 import org.http4s._
+import org.http4s.circe._
 import schemakeeper.api._
 import schemakeeper.server.SchemaKeeperError._
 import schemakeeper.server.http.internal.SubjectSettings
@@ -20,6 +20,7 @@ import scala.concurrent.ExecutionContext
 
 class SchemaKeeperApiTest extends DBSpec {
   implicit val ctx = IO.contextShift(ExecutionContext.global)
+  implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
 
   var service: DBBackedService[F] = {
     val map: java.util.Map[String, AnyRef] = new java.util.HashMap[String, AnyRef]
@@ -36,6 +37,8 @@ class SchemaKeeperApiTest extends DBSpec {
 
   val api = SchemaKeeperApi.create[IO](service).route
 
+  // http4s specific codecs. only for testing purposes.
+  // todo: refactor this test
   implicit val listOfStringsDecoder: EntityDecoder[IO, List[String]] = jsonOf[IO, List[String]]
   implicit val listOfIntDecoder: EntityDecoder[IO, List[Int]] = jsonOf[IO, List[Int]]
   implicit val errorInfoEntityDecoder: EntityDecoder[IO, ErrorInfo] = jsonOf[IO, ErrorInfo]
@@ -337,7 +340,7 @@ class SchemaKeeperApiTest extends DBSpec {
 
   test("SchemaById endpoint should return meta") {
     runF {
-      def request(id: Int) = Request[IO](method = Method.GET, uri = Uri(path = s"/v2/schemas/$id"))
+      def request(id: Int) = Request[IO](method = Method.GET, uri = Uri.unsafeFromString(s"/v2/schemas/$id"))
 
       for {
         id <- service.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
@@ -873,7 +876,7 @@ class SchemaKeeperApiTest extends DBSpec {
         _ <- service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         id <- service.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
         response <- runRequest(
-          Request[IO](method = Method.POST, uri = Uri(path = s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
+          Request[IO](method = Method.POST, uri = Uri.unsafeFromString(s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
         )
       } yield {
         check[Int](response, Status.Ok, 1)
@@ -892,7 +895,7 @@ class SchemaKeeperApiTest extends DBSpec {
         )
         id <- service.registerSchema(Schema.create(Schema.Type.INT).toString, SchemaType.AVRO)
         response <- runRequest(
-          Request[IO](method = Method.POST, uri = Uri(path = s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
+          Request[IO](method = Method.POST, uri = Uri.unsafeFromString(s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
         )
       } yield {
         check[Int](response, Status.Ok, 2)
@@ -910,7 +913,7 @@ class SchemaKeeperApiTest extends DBSpec {
           SchemaType.AVRO
         )
         response <- runRequest(
-          Request[IO](method = Method.POST, uri = Uri(path = s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
+          Request[IO](method = Method.POST, uri = Uri.unsafeFromString(s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
         )
       } yield {
         check[ErrorInfo](
@@ -931,7 +934,7 @@ class SchemaKeeperApiTest extends DBSpec {
         _ <- service.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = true)
         id <- service.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
         response <- runRequest(
-          Request[IO](method = Method.POST, uri = Uri(path = s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
+          Request[IO](method = Method.POST, uri = Uri.unsafeFromString(s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
         )
       } yield {
         check[ErrorInfo](
@@ -948,7 +951,7 @@ class SchemaKeeperApiTest extends DBSpec {
       for {
         id <- service.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
         response <- runRequest(
-          Request[IO](method = Method.POST, uri = Uri(path = s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
+          Request[IO](method = Method.POST, uri = Uri.unsafeFromString(s"/v2/subjects/A1/schemas/${id.getSchemaId}"))
         )
       } yield {
         check[ErrorInfo](
