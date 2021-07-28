@@ -2,25 +2,25 @@ import com.typesafe.sbt.packager.docker._
 
 lazy val kindProjectorVersion = "0.13.0"
 // avro
-lazy val avroVersion = "1.9.0"
-lazy val protobufVersion = "3.6.1"
-lazy val thriftVersion = "0.12.0"
+lazy val avroVersion = "1.9.2"
+lazy val protobufVersion = "3.17.3"
+lazy val thriftVersion = "0.14.2"
 // server
-lazy val http4sVersion = "0.21.0-RC4"
-lazy val tapirVersion = "0.12.20"
+lazy val tapirVersion = "0.18.1"
 lazy val pureconfigVersion = "0.16.0"
-lazy val enumeratumVersion = "1.6.0"
+lazy val enumeratumVersion = "1.7.0"
 lazy val log4catsVersion = "1.0.1"
-lazy val doobieVersion = "0.8.8"
+lazy val doobieVersion = "0.13.4"
 lazy val flywayVersion = "6.0.1"
-lazy val postgresqlDriverVersion = "42.2.6"
+lazy val postgresqlDriverVersion = "42.2.23"
 lazy val mysqlDriverVersion = "8.0.26"
-lazy val mariadbDriverVersion = "2.5.4"
-lazy val kafkaClientVersion = "2.1.1"
+lazy val mariadbDriverVersion = "2.7.3"
+lazy val kafkaClientVersion = "2.1.0"
 // client
-lazy val unirestVersion = "3.1.00"
+lazy val unirestVersion = "3.11.12"
 // test
-lazy val logbackVersion = "1.2.3"
+lazy val http4sVersion = "0.22.0"
+lazy val logbackVersion = "1.2.5"
 lazy val junitInterface = "0.11"
 lazy val munitVersion = "0.7.27"
 lazy val testcontainersVersion = "0.39.5"
@@ -155,29 +155,23 @@ lazy val server = project
   )
   .settings(
     libraryDependencies ++= Seq(
-      "org.http4s" %% "http4s-circe" % http4sVersion,
-      "org.http4s" %% "http4s-dsl" % http4sVersion,
-      "org.http4s" %% "http4s-blaze-server" % http4sVersion,
-      "org.http4s" %% "http4s-blaze-client" % http4sVersion,
-      "com.softwaremill.sttp.tapir" %% "tapir-core" % tapirVersion,
-      "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion,
-      "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-http4s" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-openapi-docs" % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-openapi-circe-yaml" % tapirVersion,
-      "com.softwaremill.sttp.tapir" %% "tapir-openapi-circe" % tapirVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-http4s" % tapirVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion,
       "ch.qos.logback" % "logback-classic" % logbackVersion,
       "com.github.pureconfig" %% "pureconfig" % pureconfigVersion,
       "com.beachape" %% "enumeratum" % enumeratumVersion,
       "io.chrisdavenport" %% "log4cats-slf4j" % log4catsVersion,
       "org.tpolecat" %% "doobie-quill" % doobieVersion,
-      "org.tpolecat" %% "doobie-h2" % doobieVersion,
-      "org.tpolecat" %% "doobie-core" % doobieVersion,
       "org.tpolecat" %% "doobie-hikari" % doobieVersion,
+      "org.tpolecat" %% "doobie-h2" % doobieVersion,
       "org.flywaydb" % "flyway-core" % flywayVersion,
       "org.postgresql" % "postgresql" % postgresqlDriverVersion,
       "mysql" % "mysql-connector-java" % mysqlDriverVersion,
       "org.mariadb.jdbc" % "mariadb-java-client" % mariadbDriverVersion,
+      "org.http4s" %% "http4s-circe" % http4sVersion % Test,
       "com.dimafeng" %% "testcontainers-scala-munit" % testcontainersVersion % Test,
       "com.dimafeng" %% "testcontainers-scala-mysql" % testcontainersVersion % Test,
       "com.dimafeng" %% "testcontainers-scala-postgresql" % testcontainersVersion % Test,

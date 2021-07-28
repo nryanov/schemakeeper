@@ -3,7 +3,6 @@ package schemakeeper.server
 import java.util.concurrent.Executors
 
 import cats.effect.{ContextShift, IO}
-import cats.syntax.apply._
 import com.typesafe.config.Config
 import org.flywaydb.core.Flyway
 import schemakeeper.server.datasource.DataSource

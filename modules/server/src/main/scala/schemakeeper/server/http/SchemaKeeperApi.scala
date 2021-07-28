@@ -1,64 +1,66 @@
 package schemakeeper.server.http
 
-import cats.effect.{ContextShift, Sync}
+import cats.effect.{Concurrent, ContextShift, Timer}
 import cats.syntax.applicative._
 import cats.syntax.applicativeError._
 import cats.syntax.functor._
 import cats.syntax.either._
 import cats.syntax.semigroupk._
 import schemakeeper.api._
-import schemakeeper.server.http.internal.SubjectSettings
 import schemakeeper.server.http.protocol.{ErrorCode, ErrorInfo}
 import schemakeeper.server.service._
-import schemakeeper.server.http.tapir.TapirCodec._
 import schemakeeper.server.SchemaKeeperError._
 import org.http4s.HttpRoutes
+import schemakeeper.server.http.internal.SubjectSettings
+import schemakeeper.server.http.protocol.JsonProtocol._
+import schemakeeper.server.http.tapir.TapirCodec._
 import sttp.tapir._
-import sttp.tapir.json.circe._
-import io.circe.generic.auto._
 import sttp.tapir.server.http4s._
 import sttp.model.StatusCode
 
-class SchemaKeeperApi[F[_]: Sync: ContextShift](storage: Service[F]) {
+class SchemaKeeperApi[F[_]: Timer: Concurrent: ContextShift](storage: Service[F]) {
 
   import SchemaKeeperApi._
 
-  private val baseEndpoint: Endpoint[Unit, (StatusCode, ErrorInfo), Unit, Nothing] =
+  private val baseEndpoint: Endpoint[Unit, (StatusCode, ErrorInfo), Unit, Any] =
     endpoint.in(apiVersion).errorOut(statusCode.and(jsonBody[ErrorInfo]))
 
-  val subjectsEndpoint: Endpoint[Unit, (StatusCode, ErrorInfo), List[String], Nothing] =
+  val subjectsEndpoint: Endpoint[Unit, (StatusCode, ErrorInfo), List[String], Any] =
     baseEndpoint.get.in("subjects").out(jsonBody[List[String]])
 
-  val subjectsRoute: HttpRoutes[F] = subjectsEndpoint.toRoutes(_ => toRoute(storage.subjects()))
+  val subjectsRoute: HttpRoutes[F] =
+    Http4sServerInterpreter[F].toRoutes(subjectsEndpoint)(_ => toRoute(storage.subjects()))
 
-  val subjectMetadataEndpoint: Endpoint[String, (StatusCode, ErrorInfo), SubjectMetadata, Nothing] =
+  val subjectMetadataEndpoint: Endpoint[String, (StatusCode, ErrorInfo), SubjectMetadata, Any] =
     baseEndpoint.get.in("subjects").in(path[String]).out(jsonBody[SubjectMetadata])
 
   val subjectMetadataRoute: HttpRoutes[F] =
-    subjectMetadataEndpoint.toRoutes(subject => toRoute(storage.subjectMetadata(subject)))
+    Http4sServerInterpreter[F].toRoutes(subjectMetadataEndpoint)(subject => toRoute(storage.subjectMetadata(subject)))
 
   val updateSubjectSettingsEndpoint
-    : Endpoint[(String, SubjectSettings), (StatusCode, ErrorInfo), SubjectMetadata, Nothing] =
+    : Endpoint[(String, SubjectSettings), (StatusCode, ErrorInfo), SubjectMetadata, Any] =
     baseEndpoint.put.in("subjects").in(path[String]).in(jsonBody[SubjectSettings]).out(jsonBody[SubjectMetadata])
 
-  val updateSubjectSettingsRoute: HttpRoutes[F] = updateSubjectSettingsEndpoint.toRoutes {
+  val updateSubjectSettingsRoute: HttpRoutes[F] = Http4sServerInterpreter[F].toRoutes(updateSubjectSettingsEndpoint) {
     case (subject, settings) =>
       toRoute(storage.updateSubjectSettings(subject, settings.compatibilityType, settings.isLocked))
   }
 
-  val subjectVersionsEndpoint: Endpoint[String, (StatusCode, ErrorInfo), List[Int], Nothing] =
+  val subjectVersionsEndpoint: Endpoint[String, (StatusCode, ErrorInfo), List[Int], Any] =
     baseEndpoint.get.in("subjects").in(path[String]).in("versions").out(jsonBody[List[Int]])
 
   val subjectVersionsRoute: HttpRoutes[F] =
-    subjectVersionsEndpoint.toRoutes(subject => toRoute(storage.subjectVersions(subject)))
+    Http4sServerInterpreter[F].toRoutes(subjectVersionsEndpoint)(subject => toRoute(storage.subjectVersions(subject)))
 
-  val subjectSchemasMetadataEndpoint: Endpoint[String, (StatusCode, ErrorInfo), List[SubjectSchemaMetadata], Nothing] =
+  val subjectSchemasMetadataEndpoint: Endpoint[String, (StatusCode, ErrorInfo), List[SubjectSchemaMetadata], Any] =
     baseEndpoint.get.in("subjects").in(path[String]).in("schemas").out(jsonBody[List[SubjectSchemaMetadata]])
 
   val subjectSchemasMetadataRoute: HttpRoutes[F] =
-    subjectSchemasMetadataEndpoint.toRoutes(subject => toRoute(storage.subjectSchemasMetadata(subject)))
+    Http4sServerInterpreter[F].toRoutes(subjectSchemasMetadataEndpoint)(subject =>
+      toRoute(storage.subjectSchemasMetadata(subject))
+    )
 
-  val subjectSchemaByVersionEndpoint: Endpoint[(String, Int), (StatusCode, ErrorInfo), SubjectSchemaMetadata, Nothing] =
+  val subjectSchemaByVersionEndpoint: Endpoint[(String, Int), (StatusCode, ErrorInfo), SubjectSchemaMetadata, Any] =
     baseEndpoint.get
       .in("subjects")
       .in(path[String])
@@ -66,17 +68,17 @@ class SchemaKeeperApi[F[_]: Sync: ContextShift](storage: Service[F]) {
       .in(path[Int].validate(Validator.min(1)))
       .out(jsonBody[SubjectSchemaMetadata])
 
-  val subjectSchemaByVersionRoute: HttpRoutes[F] = subjectSchemaByVersionEndpoint.toRoutes {
+  val subjectSchemaByVersionRoute: HttpRoutes[F] = Http4sServerInterpreter[F].toRoutes(subjectSchemaByVersionEndpoint) {
     case (subject, version) => toRoute(storage.subjectSchemaByVersion(subject, version))
   }
 
-  val schemaByIdEndpoint: Endpoint[Int, (StatusCode, ErrorInfo), SchemaMetadata, Nothing] =
+  val schemaByIdEndpoint: Endpoint[Int, (StatusCode, ErrorInfo), SchemaMetadata, Any] =
     baseEndpoint.get.in("schemas").in(path[Int].validate(Validator.min(1))).out(jsonBody[SchemaMetadata])
 
   val schemaByIdRoute: HttpRoutes[F] =
-    schemaByIdEndpoint.toRoutes(schemaId => toRoute(storage.schemaById(schemaId)))
+    Http4sServerInterpreter[F].toRoutes(schemaByIdEndpoint)(schemaId => toRoute(storage.schemaById(schemaId)))
 
-  val schemaIdBySubjectAndSchemaEndpoint: Endpoint[(String, SchemaText), (StatusCode, ErrorInfo), SchemaId, Nothing] =
+  val schemaIdBySubjectAndSchemaEndpoint: Endpoint[(String, SchemaText), (StatusCode, ErrorInfo), SchemaId, Any] =
     baseEndpoint.post
       .in("subjects")
       .in(path[String])
@@ -84,17 +86,18 @@ class SchemaKeeperApi[F[_]: Sync: ContextShift](storage: Service[F]) {
       .in(jsonBody[SchemaText])
       .out(jsonBody[SchemaId])
 
-  val schemaIdBySubjectAndSchemaRoute: HttpRoutes[F] = schemaIdBySubjectAndSchemaEndpoint.toRoutes {
-    case (subject, schemaText) => toRoute(storage.schemaIdBySubjectAndSchema(subject, schemaText.getSchemaText))
-  }
+  val schemaIdBySubjectAndSchemaRoute: HttpRoutes[F] =
+    Http4sServerInterpreter[F].toRoutes(schemaIdBySubjectAndSchemaEndpoint) {
+      case (subject, schemaText) => toRoute(storage.schemaIdBySubjectAndSchema(subject, schemaText.getSchemaText))
+    }
 
-  val deleteSubjectEndpoint: Endpoint[String, (StatusCode, ErrorInfo), Boolean, Nothing] =
+  val deleteSubjectEndpoint: Endpoint[String, (StatusCode, ErrorInfo), Boolean, Any] =
     baseEndpoint.delete.in("subjects").in(path[String]).out(jsonBody[Boolean])
 
   val deleteSubjectRoute: HttpRoutes[F] =
-    deleteSubjectEndpoint.toRoutes(subject => toRoute(storage.deleteSubject(subject)))
+    Http4sServerInterpreter[F].toRoutes(deleteSubjectEndpoint)(subject => toRoute(storage.deleteSubject(subject)))
 
-  val deleteSubjectSchemaByVersionEndpoint: Endpoint[(String, Int), (StatusCode, ErrorInfo), Boolean, Nothing] =
+  val deleteSubjectSchemaByVersionEndpoint: Endpoint[(String, Int), (StatusCode, ErrorInfo), Boolean, Any] =
     baseEndpoint.delete
       .in("subjects")
       .in(path[String])
@@ -102,12 +105,12 @@ class SchemaKeeperApi[F[_]: Sync: ContextShift](storage: Service[F]) {
       .in(path[Int].validate(Validator.min(1)))
       .out(jsonBody[Boolean])
 
-  val deleteSubjectSchemaByVersionRoute: HttpRoutes[F] = deleteSubjectSchemaByVersionEndpoint.toRoutes {
-    case (subject, version) => toRoute(storage.deleteSubjectSchemaByVersion(subject, version))
-  }
+  val deleteSubjectSchemaByVersionRoute: HttpRoutes[F] =
+    Http4sServerInterpreter[F].toRoutes(deleteSubjectSchemaByVersionEndpoint) {
+      case (subject, version) => toRoute(storage.deleteSubjectSchemaByVersion(subject, version))
+    }
 
-  val checkSubjectSchemaCompatibilityEndpoint
-    : Endpoint[(String, SchemaText), (StatusCode, ErrorInfo), Boolean, Nothing] =
+  val checkSubjectSchemaCompatibilityEndpoint: Endpoint[(String, SchemaText), (StatusCode, ErrorInfo), Boolean, Any] =
     baseEndpoint.post
       .in("subjects")
       .in(path[String])
@@ -115,19 +118,20 @@ class SchemaKeeperApi[F[_]: Sync: ContextShift](storage: Service[F]) {
       .in(jsonBody[SchemaText])
       .out(jsonBody[Boolean])
 
-  val checkSubjectSchemaCompatibilityRoute: HttpRoutes[F] = checkSubjectSchemaCompatibilityEndpoint.toRoutes {
-    case (subject, schemaText) => toRoute(storage.checkSubjectSchemaCompatibility(subject, schemaText.getSchemaText))
-  }
+  val checkSubjectSchemaCompatibilityRoute: HttpRoutes[F] =
+    Http4sServerInterpreter[F].toRoutes(checkSubjectSchemaCompatibilityEndpoint) {
+      case (subject, schemaText) => toRoute(storage.checkSubjectSchemaCompatibility(subject, schemaText.getSchemaText))
+    }
 
-  val registerSchemaEndpoint: Endpoint[SchemaText, (StatusCode, ErrorInfo), SchemaId, Nothing] =
+  val registerSchemaEndpoint: Endpoint[SchemaText, (StatusCode, ErrorInfo), SchemaId, Any] =
     baseEndpoint.post.in("schemas").in(jsonBody[SchemaText]).out(jsonBody[SchemaId])
 
-  val registerSchemaRoute: HttpRoutes[F] = registerSchemaEndpoint.toRoutes(schemaText =>
+  val registerSchemaRoute: HttpRoutes[F] = Http4sServerInterpreter[F].toRoutes(registerSchemaEndpoint)(schemaText =>
     toRoute(storage.registerSchema(schemaText.getSchemaText, schemaText.getSchemaType))
   )
 
   val registerSchemaAndSubjectEndpoint
-    : Endpoint[(String, SubjectAndSchemaRequest), (StatusCode, ErrorInfo), SchemaId, Nothing] =
+    : Endpoint[(String, SubjectAndSchemaRequest), (StatusCode, ErrorInfo), SchemaId, Any] =
     baseEndpoint.post
       .in("subjects")
       .in(path[String])
@@ -135,29 +139,31 @@ class SchemaKeeperApi[F[_]: Sync: ContextShift](storage: Service[F]) {
       .in(jsonBody[SubjectAndSchemaRequest])
       .out(jsonBody[SchemaId])
 
-  val registerSchemaAndSubjectRoute: HttpRoutes[F] = registerSchemaAndSubjectEndpoint.toRoutes {
-    case (subject, request) =>
-      toRoute(
-        storage
-          .registerSchema(subject, request.getSchemaText, request.getCompatibilityType, request.getSchemaType)
-          .handleErrorWith {
-            case SubjectIsAlreadyConnectedToSchema(_, id) => SchemaId.instance(id).pure
-            case e                                        => e.raiseError
-          }
-      )
-  }
+  val registerSchemaAndSubjectRoute: HttpRoutes[F] =
+    Http4sServerInterpreter[F].toRoutes(registerSchemaAndSubjectEndpoint) {
+      case (subject, request) =>
+        toRoute(
+          storage
+            .registerSchema(subject, request.getSchemaText, request.getCompatibilityType, request.getSchemaType)
+            .handleErrorWith {
+              case SubjectIsAlreadyConnectedToSchema(_, id) => SchemaId.instance(id).pure
+              case e                                        => e.raiseError
+            }
+        )
+    }
 
-  val registerSubjectEndpoint: Endpoint[SubjectMetadata, (StatusCode, ErrorInfo), SubjectMetadata, Nothing] =
+  val registerSubjectEndpoint: Endpoint[SubjectMetadata, (StatusCode, ErrorInfo), SubjectMetadata, Any] =
     baseEndpoint.post.in("subjects").in(jsonBody[SubjectMetadata]).out(jsonBody[SubjectMetadata])
 
-  val registerSubjectRoute: HttpRoutes[F] = registerSubjectEndpoint.toRoutes(subjectMetadata =>
-    toRoute(
-      storage
-        .registerSubject(subjectMetadata.getSubject, subjectMetadata.getCompatibilityType, subjectMetadata.isLocked)
+  val registerSubjectRoute: HttpRoutes[F] =
+    Http4sServerInterpreter[F].toRoutes(registerSubjectEndpoint)(subjectMetadata =>
+      toRoute(
+        storage
+          .registerSubject(subjectMetadata.getSubject, subjectMetadata.getCompatibilityType, subjectMetadata.isLocked)
+      )
     )
-  )
 
-  val addSchemaToSubjectEndpoint: Endpoint[(String, Int), (StatusCode, ErrorInfo), Int, Nothing] =
+  val addSchemaToSubjectEndpoint: Endpoint[(String, Int), (StatusCode, ErrorInfo), Int, Any] =
     baseEndpoint.post
       .in("subjects")
       .in(path[String])
@@ -165,7 +171,7 @@ class SchemaKeeperApi[F[_]: Sync: ContextShift](storage: Service[F]) {
       .in(path[Int].validate(Validator.min(1)))
       .out(jsonBody[Int])
 
-  val addSchemaToSubjectRoute: HttpRoutes[F] = addSchemaToSubjectEndpoint.toRoutes {
+  val addSchemaToSubjectRoute: HttpRoutes[F] = Http4sServerInterpreter[F].toRoutes(addSchemaToSubjectEndpoint) {
     case (subject, schemaId) => toRoute(storage.addSchemaToSubject(subject, schemaId))
   }
 
@@ -213,5 +219,7 @@ class SchemaKeeperApi[F[_]: Sync: ContextShift](storage: Service[F]) {
 object SchemaKeeperApi {
   val apiVersion = "v2"
 
-  def create[F[_]: Sync: ContextShift](service: Service[F]): SchemaKeeperApi[F] = new SchemaKeeperApi(service)
+  def create[F[_]: Timer: Concurrent: ContextShift](service: Service[F]): SchemaKeeperApi[F] = new SchemaKeeperApi(
+    service
+  )
 }
