@@ -87,8 +87,8 @@ class SchemaKeeperApi[F[_]: Timer: Concurrent: ContextShift](storage: Service[F]
       .out(jsonBody[SchemaId])
 
   val schemaIdBySubjectAndSchemaRoute: HttpRoutes[F] =
-    Http4sServerInterpreter[F].toRoutes(schemaIdBySubjectAndSchemaEndpoint) {
-      case (subject, schemaText) => toRoute(storage.schemaIdBySubjectAndSchema(subject, schemaText.getSchemaText))
+    Http4sServerInterpreter[F].toRoutes(schemaIdBySubjectAndSchemaEndpoint) { case (subject, schemaText) =>
+      toRoute(storage.schemaIdBySubjectAndSchema(subject, schemaText.getSchemaText))
     }
 
   val deleteSubjectEndpoint: Endpoint[String, (StatusCode, ErrorInfo), Boolean, Any] =
@@ -106,8 +106,8 @@ class SchemaKeeperApi[F[_]: Timer: Concurrent: ContextShift](storage: Service[F]
       .out(jsonBody[Boolean])
 
   val deleteSubjectSchemaByVersionRoute: HttpRoutes[F] =
-    Http4sServerInterpreter[F].toRoutes(deleteSubjectSchemaByVersionEndpoint) {
-      case (subject, version) => toRoute(storage.deleteSubjectSchemaByVersion(subject, version))
+    Http4sServerInterpreter[F].toRoutes(deleteSubjectSchemaByVersionEndpoint) { case (subject, version) =>
+      toRoute(storage.deleteSubjectSchemaByVersion(subject, version))
     }
 
   val checkSubjectSchemaCompatibilityEndpoint: Endpoint[(String, SchemaText), (StatusCode, ErrorInfo), Boolean, Any] =
@@ -119,8 +119,8 @@ class SchemaKeeperApi[F[_]: Timer: Concurrent: ContextShift](storage: Service[F]
       .out(jsonBody[Boolean])
 
   val checkSubjectSchemaCompatibilityRoute: HttpRoutes[F] =
-    Http4sServerInterpreter[F].toRoutes(checkSubjectSchemaCompatibilityEndpoint) {
-      case (subject, schemaText) => toRoute(storage.checkSubjectSchemaCompatibility(subject, schemaText.getSchemaText))
+    Http4sServerInterpreter[F].toRoutes(checkSubjectSchemaCompatibilityEndpoint) { case (subject, schemaText) =>
+      toRoute(storage.checkSubjectSchemaCompatibility(subject, schemaText.getSchemaText))
     }
 
   val registerSchemaEndpoint: Endpoint[SchemaText, (StatusCode, ErrorInfo), SchemaId, Any] =
@@ -140,16 +140,15 @@ class SchemaKeeperApi[F[_]: Timer: Concurrent: ContextShift](storage: Service[F]
       .out(jsonBody[SchemaId])
 
   val registerSchemaAndSubjectRoute: HttpRoutes[F] =
-    Http4sServerInterpreter[F].toRoutes(registerSchemaAndSubjectEndpoint) {
-      case (subject, request) =>
-        toRoute(
-          storage
-            .registerSchema(subject, request.getSchemaText, request.getCompatibilityType, request.getSchemaType)
-            .handleErrorWith {
-              case SubjectIsAlreadyConnectedToSchema(_, id) => SchemaId.instance(id).pure
-              case e                                        => e.raiseError
-            }
-        )
+    Http4sServerInterpreter[F].toRoutes(registerSchemaAndSubjectEndpoint) { case (subject, request) =>
+      toRoute(
+        storage
+          .registerSchema(subject, request.getSchemaText, request.getCompatibilityType, request.getSchemaType)
+          .handleErrorWith {
+            case SubjectIsAlreadyConnectedToSchema(_, id) => SchemaId.instance(id).pure
+            case e                                        => e.raiseError
+          }
+      )
     }
 
   val registerSubjectEndpoint: Endpoint[SubjectMetadata, (StatusCode, ErrorInfo), SubjectMetadata, Any] =
