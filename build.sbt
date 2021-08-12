@@ -14,7 +14,7 @@ lazy val doobieVersion = "0.13.4"
 lazy val flywayVersion = "6.5.7"
 lazy val postgresqlDriverVersion = "42.2.23"
 lazy val mysqlDriverVersion = "8.0.26"
-lazy val mariadbDriverVersion = "2.7.3"
+lazy val mariadbDriverVersion = "2.7.4"
 lazy val kafkaClientVersion = "2.1.0"
 // client
 lazy val unirestVersion = "3.11.12"
