@@ -180,15 +180,14 @@ class DatabaseStorage(
 
   override def registerSchema(schema: String, schemaHash: String, schemaType: SchemaType): doobie.ConnectionIO[Int] =
     dc.run(quote {
-        query[SchemaInfo]
-          .insert(lift(SchemaInfo(0, schemaType.identifier, schema, schemaHash)))
-          .returningGenerated(_.schemaId)
-      })
-      .exceptSql {
-        case err if storageExceptionHandler.isUniqueViolation(err) =>
-          connection.raiseError(SchemaIsAlreadyExist(-1, schema))
-        case err => connection.raiseError(BackendError(err))
-      }
+      query[SchemaInfo]
+        .insert(lift(SchemaInfo(0, schemaType.identifier, schema, schemaHash)))
+        .returningGenerated(_.schemaId)
+    }).exceptSql {
+      case err if storageExceptionHandler.isUniqueViolation(err) =>
+        connection.raiseError(SchemaIsAlreadyExist(-1, schema))
+      case err => connection.raiseError(BackendError(err))
+    }
 
   override def registerSubject(
     subject: String,

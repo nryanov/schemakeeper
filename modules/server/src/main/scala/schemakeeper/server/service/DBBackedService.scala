@@ -136,8 +136,8 @@ class DBBackedService[F[_]](
     schemaHash <- Utils.toMD5Hex(schemaText).pure[F]
     result <- transact {
       for {
-        _ <- storage.schemaByHash(schemaHash).reject {
-          case Some(value) => SchemaIsAlreadyExist(value.getSchemaId, schemaText)
+        _ <- storage.schemaByHash(schemaHash).reject { case Some(value) =>
+          SchemaIsAlreadyExist(value.getSchemaId, schemaText)
         }
         newSchema <- storage.registerSchema(schemaText, schemaHash, schemaType).map(SchemaId.instance)
       } yield newSchema
@@ -209,8 +209,8 @@ class DBBackedService[F[_]](
   } yield result
 
   private def validateSchema(schemaText: String): F[Schema] =
-    F.catchNonFatal(AvroSchemaUtils.parseSchema(schemaText)).adaptError {
-      case _ => SchemaIsNotValid(schemaText)
+    F.catchNonFatal(AvroSchemaUtils.parseSchema(schemaText)).adaptError { case _ =>
+      SchemaIsNotValid(schemaText)
     }
 
   private def isSchemaCompatible(

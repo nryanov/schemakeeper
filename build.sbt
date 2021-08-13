@@ -2,7 +2,7 @@ import com.typesafe.sbt.packager.docker._
 
 lazy val kindProjectorVersion = "0.13.0"
 // avro
-lazy val avroVersion = "1.9.2"
+lazy val avroVersion = "1.10.2"
 lazy val protobufVersion = "3.17.3"
 lazy val thriftVersion = "0.14.2"
 // server
@@ -11,18 +11,18 @@ lazy val pureconfigVersion = "0.16.0"
 lazy val enumeratumVersion = "1.7.0"
 lazy val log4catsVersion = "1.0.1"
 lazy val doobieVersion = "0.13.4"
-lazy val flywayVersion = "6.0.1"
+lazy val flywayVersion = "6.5.7"
 lazy val postgresqlDriverVersion = "42.2.23"
 lazy val mysqlDriverVersion = "8.0.26"
-lazy val mariadbDriverVersion = "2.7.3"
-lazy val kafkaClientVersion = "2.1.1"
+lazy val mariadbDriverVersion = "2.7.4"
+lazy val kafkaClientVersion = "2.1.0"
 // client
 lazy val unirestVersion = "3.11.12"
 // test
-lazy val http4sVersion = "0.22.0"
+lazy val http4sVersion = "0.22.1"
 lazy val logbackVersion = "1.2.5"
 lazy val junitInterface = "0.11"
-lazy val munitVersion = "0.7.27"
+lazy val munitVersion = "0.7.28"
 lazy val testcontainersVersion = "0.39.5"
 lazy val testcontainersJavaVersion = "1.15.3"
 lazy val embeddedKafkaVersion = "2.1.0"

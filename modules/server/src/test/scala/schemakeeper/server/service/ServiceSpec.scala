@@ -14,9 +14,7 @@ abstract class ServiceSpec extends IOSpec {
     runF {
       for {
         result <- schemaStorage.subjects()
-      } yield {
-        assert(result.isEmpty)
-      }
+      } yield assert(result.isEmpty)
     }
   }
 
@@ -25,9 +23,7 @@ abstract class ServiceSpec extends IOSpec {
       for {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         result <- schemaStorage.subjects()
-      } yield {
-        assertEquals(List("A1"), result)
-      }
+      } yield assertEquals(List("A1"), result)
     }
   }
 
@@ -47,9 +43,7 @@ abstract class ServiceSpec extends IOSpec {
       for {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         result <- schemaStorage.subjectMetadata("A1")
-      } yield {
-        assertEquals(SubjectMetadata.instance("A1", CompatibilityType.BACKWARD), result)
-      }
+      } yield assertEquals(SubjectMetadata.instance("A1", CompatibilityType.BACKWARD), result)
     }
   }
 
@@ -69,9 +63,7 @@ abstract class ServiceSpec extends IOSpec {
       for {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         result <- schemaStorage.updateSubjectSettings("A1", CompatibilityType.FULL, isLocked = true)
-      } yield {
-        assertEquals(SubjectMetadata.instance("A1", CompatibilityType.FULL, true), result)
-      }
+      } yield assertEquals(SubjectMetadata.instance("A1", CompatibilityType.FULL, true), result)
     }
   }
 
@@ -91,9 +83,7 @@ abstract class ServiceSpec extends IOSpec {
       for {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         result <- schemaStorage.subjectVersions("A1")
-      } yield {
-        assert(result.isEmpty)
-      }
+      } yield assert(result.isEmpty)
     }
   }
 
@@ -107,9 +97,7 @@ abstract class ServiceSpec extends IOSpec {
           SchemaType.AVRO
         )
         result <- schemaStorage.subjectVersions("A1")
-      } yield {
-        assertEquals(List(1), result)
-      }
+      } yield assertEquals(List(1), result)
     }
   }
 
@@ -219,17 +207,15 @@ abstract class ServiceSpec extends IOSpec {
         schema <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
         id = schema.getSchemaId
         result <- schemaStorage.schemaById(id)
-      } yield {
-        assertEquals(
-          SchemaMetadata.instance(
-            id,
-            Schema.create(Schema.Type.STRING).toString,
-            Utils.toMD5Hex(Schema.create(Schema.Type.STRING).toString),
-            SchemaType.AVRO
-          ),
-          result
-        )
-      }
+      } yield assertEquals(
+        SchemaMetadata.instance(
+          id,
+          Schema.create(Schema.Type.STRING).toString,
+          Utils.toMD5Hex(Schema.create(Schema.Type.STRING).toString),
+          SchemaType.AVRO
+        ),
+        result
+      )
     }
   }
 
@@ -248,12 +234,10 @@ abstract class ServiceSpec extends IOSpec {
     runF {
       for {
         result <- schemaStorage.schemaIdBySubjectAndSchema("A1", Schema.create(Schema.Type.STRING).toString()).attempt
-      } yield {
-        assertEquals(
-          SchemaIsNotRegistered(Schema.create(Schema.Type.STRING).toString()),
-          result.left.get.asInstanceOf[SchemaIsNotRegistered]
-        )
-      }
+      } yield assertEquals(
+        SchemaIsNotRegistered(Schema.create(Schema.Type.STRING).toString()),
+        result.left.get.asInstanceOf[SchemaIsNotRegistered]
+      )
     }
   }
 
@@ -284,9 +268,7 @@ abstract class ServiceSpec extends IOSpec {
           SchemaType.AVRO
         )
         result <- schemaStorage.schemaIdBySubjectAndSchema("A1", Schema.create(Schema.Type.STRING).toString())
-      } yield {
-        assertEquals(schemaId, result)
-      }
+      } yield assertEquals(schemaId, result)
     }
   }
 
@@ -294,9 +276,7 @@ abstract class ServiceSpec extends IOSpec {
     runF {
       for {
         result <- schemaStorage.deleteSubject("A1")
-      } yield {
-        assertEquals(false, result)
-      }
+      } yield assertEquals(false, result)
     }
   }
 
@@ -305,9 +285,7 @@ abstract class ServiceSpec extends IOSpec {
       for {
         _ <- schemaStorage.registerSubject("A1", CompatibilityType.BACKWARD, isLocked = false)
         result <- schemaStorage.deleteSubject("A1")
-      } yield {
-        assertEquals(true, result)
-      }
+      } yield assertEquals(true, result)
     }
   }
 
@@ -347,9 +325,7 @@ abstract class ServiceSpec extends IOSpec {
           SchemaType.AVRO
         )
         result <- schemaStorage.deleteSubjectSchemaByVersion("A1", 1)
-      } yield {
-        assert(result)
-      }
+      } yield assert(result)
     }
   }
 
@@ -387,9 +363,7 @@ abstract class ServiceSpec extends IOSpec {
       for {
         _ <- schemaStorage.registerSchema("A1", schema1.toString(), CompatibilityType.BACKWARD, SchemaType.AVRO)
         result <- schemaStorage.checkSubjectSchemaCompatibility("A1", schema2.toString())
-      } yield {
-        assert(result)
-      }
+      } yield assert(result)
     }
   }
 
@@ -401,9 +375,7 @@ abstract class ServiceSpec extends IOSpec {
       for {
         _ <- schemaStorage.registerSchema("A1", schema1.toString(), CompatibilityType.FORWARD, SchemaType.AVRO)
         result <- schemaStorage.checkSubjectSchemaCompatibility("A1", schema2.toString())
-      } yield {
-        assert(!result)
-      }
+      } yield assert(!result)
     }
   }
 
@@ -440,9 +412,7 @@ abstract class ServiceSpec extends IOSpec {
           SchemaType.AVRO
         )
         result <- schemaStorage.getSubjectSchemas("A1")
-      } yield {
-        assert(result.size == 1)
-      }
+      } yield assert(result.size == 1)
     }
   }
 
@@ -461,9 +431,7 @@ abstract class ServiceSpec extends IOSpec {
     runF {
       for {
         result <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO).attempt
-      } yield {
-        assert(result.isRight)
-      }
+      } yield assert(result.isRight)
     }
   }
 
@@ -475,12 +443,10 @@ abstract class ServiceSpec extends IOSpec {
         schema <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO)
         id = schema.getSchemaId
         result <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString, SchemaType.AVRO).attempt
-      } yield {
-        assertEquals(
-          SchemaIsAlreadyExist(id, Schema.create(Schema.Type.STRING).toString),
-          result.left.get.asInstanceOf[SchemaIsAlreadyExist]
-        )
-      }
+      } yield assertEquals(
+        SchemaIsAlreadyExist(id, Schema.create(Schema.Type.STRING).toString),
+        result.left.get.asInstanceOf[SchemaIsAlreadyExist]
+      )
     }
   }
 
@@ -660,10 +626,9 @@ abstract class ServiceSpec extends IOSpec {
         schema <- schemaStorage.registerSchema(Schema.create(Schema.Type.STRING).toString(), SchemaType.AVRO)
         id = schema.getSchemaId
         result <- schemaStorage.addSchemaToSubject("A1", id)
-      } yield {
-        // 1 - version
-        assertEquals(1, result)
-      }
+      } yield
+      // 1 - version
+      assertEquals(1, result)
     }
   }
 
