@@ -15,7 +15,7 @@ lazy val flywayVersion = "6.5.7"
 lazy val postgresqlDriverVersion = "42.2.23"
 lazy val mysqlDriverVersion = "8.0.26"
 lazy val mariadbDriverVersion = "2.7.4"
-lazy val kafkaClientVersion = "2.1.0"
+lazy val kafkaClientVersion = "2.1.1"
 // client
 lazy val unirestVersion = "3.11.12"
 // test
@@ -25,7 +25,6 @@ lazy val junitInterface = "0.11"
 lazy val munitVersion = "0.7.28"
 lazy val testcontainersVersion = "0.39.5"
 lazy val testcontainersJavaVersion = "1.15.3"
-lazy val embeddedKafkaVersion = "2.1.0"
 
 val scala2_12 = "2.12.13"
 
@@ -233,7 +232,7 @@ lazy val kafkaCommon = project
   .settings(
     libraryDependencies ++= Seq(
       "org.apache.kafka" % "kafka-clients" % kafkaClientVersion,
-      "io.github.embeddedkafka" %% "embedded-kafka" % embeddedKafkaVersion % Test
+      "io.github.embeddedkafka" %% "embedded-kafka" % kafkaClientVersion % Test
     )
   )
 
