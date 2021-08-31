@@ -211,7 +211,7 @@ class SchemaKeeperApi[F[_]: Timer: Concurrent: ContextShift](storage: Service[F]
       (StatusCode.BadRequest, ErrorInfo(e.msg, ErrorCode.SubjectIsNotConnectedToSchemaCode))
     case e: SchemaIsNotCompatible => (StatusCode.BadRequest, ErrorInfo(e.msg, ErrorCode.SchemaIsNotCompatibleCode))
     case e: SubjectIsLocked       => (StatusCode.BadRequest, ErrorInfo(e.msg, ErrorCode.SubjectIsLockedErrorCode))
-    case _                        => (StatusCode.InternalServerError, ErrorInfo(err.getLocalizedMessage, ErrorCode.BackendErrorCode))
+    case _ => (StatusCode.InternalServerError, ErrorInfo(err.getLocalizedMessage, ErrorCode.BackendErrorCode))
   }
 }
 
