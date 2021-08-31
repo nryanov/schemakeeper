@@ -26,7 +26,7 @@ trait DBSpec extends IOSpec {
 
   override def runF[A](fa: => F[Unit]): Unit = super.runF(migrate() *> fa)
 
-  private def migrate(): F[Int] = IO.delay(flyway.clean()) *> IO.delay(flyway.migrate())
+  private def migrate(): F[Unit] = IO.delay(flyway.clean()) *> IO.delay(flyway.migrate()).void
 
   def createService(config: Config): DBBackedService[F] = createService0(config).unsafeRunSync()
 
