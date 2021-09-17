@@ -13,8 +13,8 @@ import cats.syntax.flatMap._
 import cats.syntax.applicative._
 import cats.syntax.option._
 import cats.syntax.monadError._
-import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
-import io.chrisdavenport.log4cats.{Logger, SelfAwareStructuredLogger}
+import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.{Logger, SelfAwareStructuredLogger}
 import schemakeeper.server.util.Utils
 import schemakeeper.server.storage.SchemaStorage
 import schemakeeper.api.{SchemaId, SchemaMetadata, SubjectMetadata, SubjectSchemaMetadata}
