@@ -21,7 +21,7 @@ lazy val unirestVersion = "3.13.0"
 // test
 lazy val http4sVersion = "0.22.2"
 lazy val logbackVersion = "1.2.5"
-lazy val junitInterface = "0.11"
+lazy val junitInterface = "0.13.2"
 lazy val munitVersion = "0.7.29"
 lazy val testcontainersVersion = "0.39.7"
 lazy val testcontainersJavaVersion = "1.16.0"
@@ -93,7 +93,7 @@ lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
     "org.apache.avro" % "avro" % avroVersion,
     "org.scalameta" %% "munit" % munitVersion % Test,
-    ("com.novocode" % "junit-interface" % junitInterface % Test).exclude("junit", "junit-dep")
+    ("com.github.sbt" % "junit-interface" % junitInterface % Test).exclude("junit", "junit-dep")
   ),
   crossPaths := false,
   testFrameworks += new TestFramework("munit.Framework"),
