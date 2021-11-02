@@ -17,7 +17,7 @@ lazy val mysqlDriverVersion = "8.0.26"
 lazy val mariadbDriverVersion = "2.7.4"
 lazy val kafkaClientVersion = "2.8.0"
 // client
-lazy val unirestVersion = "3.13.0"
+lazy val unirestVersion = "3.13.3"
 // test
 lazy val http4sVersion = "0.22.2"
 lazy val logbackVersion = "1.2.5"
