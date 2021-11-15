@@ -4,7 +4,7 @@ lazy val kindProjectorVersion = "0.13.2"
 // avro
 lazy val avroVersion = "1.10.2"
 lazy val protobufVersion = "3.17.3"
-lazy val thriftVersion = "0.14.2"
+lazy val thriftVersion = "0.15.0"
 // server
 lazy val tapirVersion = "0.18.3"
 lazy val pureconfigVersion = "0.16.0"
@@ -19,11 +19,11 @@ lazy val kafkaClientVersion = "2.8.0"
 // client
 lazy val unirestVersion = "3.13.0"
 // test
-lazy val http4sVersion = "0.22.2"
-lazy val logbackVersion = "1.2.7"
+lazy val http4sVersion = "0.22.4"
+lazy val logbackVersion = "1.2.5"
 lazy val junitInterface = "0.13.2"
 lazy val munitVersion = "0.7.29"
-lazy val testcontainersVersion = "0.39.7"
+lazy val testcontainersVersion = "0.39.8"
 lazy val testcontainersJavaVersion = "1.16.0"
 
 val scala2_12 = "2.12.13"
