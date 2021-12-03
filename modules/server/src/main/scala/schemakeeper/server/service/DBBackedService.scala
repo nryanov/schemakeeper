@@ -43,7 +43,7 @@ class DBBackedService[F[_]](
     result <- subjectMetadata.liftTo[F](SubjectDoesNotExist(subject))
   } yield result
 
-  //todo: we need to restrict to change subject compatibility freely from one type to another
+  // todo: we need to restrict to change subject compatibility freely from one type to another
   override def updateSubjectSettings(
     subject: String,
     compatibilityType: CompatibilityType,
