@@ -4,26 +4,26 @@ lazy val kindProjectorVersion = "0.13.2"
 // avro
 lazy val avroVersion = "1.10.2"
 lazy val protobufVersion = "3.17.3"
-lazy val thriftVersion = "0.14.2"
+lazy val thriftVersion = "0.15.0"
 // server
 lazy val tapirVersion = "0.18.3"
-lazy val pureconfigVersion = "0.16.0"
+lazy val pureconfigVersion = "0.17.1"
 lazy val enumeratumVersion = "1.7.0"
-lazy val log4catsVersion = "1.1.1"
+lazy val log4catsVersion = "1.2.0"
 lazy val doobieVersion = "0.13.4"
 lazy val flywayVersion = "7.15.0"
-lazy val postgresqlDriverVersion = "42.2.23"
+lazy val postgresqlDriverVersion = "42.2.24"
 lazy val mysqlDriverVersion = "8.0.26"
 lazy val mariadbDriverVersion = "2.7.4"
-lazy val kafkaClientVersion = "2.8.0"
+lazy val kafkaClientVersion = "2.8.1"
 // client
 lazy val unirestVersion = "3.13.0"
 // test
-lazy val http4sVersion = "0.22.2"
+lazy val http4sVersion = "0.22.4"
 lazy val logbackVersion = "1.2.5"
 lazy val junitInterface = "0.13.2"
 lazy val munitVersion = "0.7.29"
-lazy val testcontainersVersion = "0.39.7"
+lazy val testcontainersVersion = "0.39.8"
 lazy val testcontainersJavaVersion = "1.16.0"
 
 val scala2_12 = "2.12.13"
@@ -162,7 +162,7 @@ lazy val server = project
       "ch.qos.logback" % "logback-classic" % logbackVersion,
       "com.github.pureconfig" %% "pureconfig" % pureconfigVersion,
       "com.beachape" %% "enumeratum" % enumeratumVersion,
-      "io.chrisdavenport" %% "log4cats-slf4j" % log4catsVersion,
+      "org.typelevel" %% "log4cats-slf4j" % log4catsVersion,
       "org.tpolecat" %% "doobie-quill" % doobieVersion,
       "org.tpolecat" %% "doobie-hikari" % doobieVersion,
       "org.tpolecat" %% "doobie-h2" % doobieVersion,
