@@ -13,7 +13,7 @@ lazy val log4catsVersion = "1.2.0"
 lazy val doobieVersion = "0.13.4"
 lazy val flywayVersion = "7.15.0"
 lazy val postgresqlDriverVersion = "42.2.24"
-lazy val mysqlDriverVersion = "8.0.26"
+lazy val mysqlDriverVersion = "8.0.27"
 lazy val mariadbDriverVersion = "2.7.4"
 lazy val kafkaClientVersion = "2.8.1"
 // client
