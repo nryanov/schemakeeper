@@ -21,7 +21,7 @@ lazy val unirestVersion = "3.13.0"
 // test
 lazy val http4sVersion = "0.22.4"
 lazy val logbackVersion = "1.2.5"
-lazy val junitInterface = "0.13.2"
+lazy val junitInterface = "0.13.3"
 lazy val munitVersion = "0.7.29"
 lazy val testcontainersVersion = "0.39.8"
 lazy val testcontainersJavaVersion = "1.16.0"
