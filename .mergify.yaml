@@ -1,14 +1,14 @@
 pull_request_rules:
-  - name: assign and label scala-steward's PRs
+  - name: Label dependency update PRs
     conditions:
-      - author=scala-steward
+      - author=nryanov-auto
     actions:
       label:
         add: [dependency-update]
-  - name: automatically merge Scala Steward PRs on CI success
+  - name: automatically merge dependency update PRs on CI success
     conditions:
-      - author=scala-steward
-      - "status-success=scalafmt"
+      - author=nryanov-auto
+      - "status-success=scalafmt (adopt@1.8, 2.12.13)"
       - "status-success=Scala 2.12.13, Java adopt@1.8"
     actions:
       merge:
