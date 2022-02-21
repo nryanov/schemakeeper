@@ -2,8 +2,8 @@ import com.typesafe.sbt.packager.docker._
 
 lazy val kindProjectorVersion = "0.13.2"
 // avro
-lazy val avroVersion = "1.10.2"
-lazy val protobufVersion = "3.19.4"
+lazy val avroVersion = "1.11.0"
+lazy val protobufVersion = "3.19.1"
 lazy val thriftVersion = "0.15.0"
 // server
 lazy val tapirVersion = "0.18.3"
@@ -17,13 +17,13 @@ lazy val mysqlDriverVersion = "8.0.27"
 lazy val mariadbDriverVersion = "2.7.4"
 lazy val kafkaClientVersion = "2.8.1"
 // client
-lazy val unirestVersion = "3.13.0"
+lazy val unirestVersion = "3.13.4"
 // test
 lazy val http4sVersion = "0.22.4"
-lazy val logbackVersion = "1.2.5"
+lazy val logbackVersion = "1.2.7"
 lazy val junitInterface = "0.13.2"
 lazy val munitVersion = "0.7.29"
-lazy val testcontainersVersion = "0.39.8"
+lazy val testcontainersVersion = "0.39.12"
 lazy val testcontainersJavaVersion = "1.16.2"
 
 val scala2_12 = "2.12.13"
