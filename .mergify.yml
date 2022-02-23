@@ -1,0 +1,15 @@
+pull_request_rules:
+  - name: Label dependency update PRs
+    conditions:
+      - author=nryanov-auto
+    actions:
+      label:
+        add: [dependency-update]
+  - name: automatically merge dependency update PRs on CI success
+    conditions:
+      - author=nryanov-auto
+      - "status-success=scalafmt (adopt@1.8, 2.12.13)"
+      - "status-success=Scala 2.12.13, Java adopt@1.8"
+    actions:
+      merge:
+        method: merge
