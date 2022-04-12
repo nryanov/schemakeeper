@@ -24,7 +24,7 @@ lazy val logbackVersion = "1.2.11"
 lazy val junitInterface = "0.13.3"
 lazy val munitVersion = "0.7.29"
 lazy val testcontainersVersion = "0.40.5"
-lazy val testcontainersJavaVersion = "1.16.3"
+lazy val testcontainersJavaVersion = "1.17.0"
 
 val scala2_12 = "2.12.13"
 
