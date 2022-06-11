@@ -26,7 +26,7 @@ lazy val munitVersion = "0.7.29"
 lazy val testcontainersVersion = "0.40.8"
 lazy val testcontainersJavaVersion = "1.17.2"
 
-val scala2_12 = "2.12.13"
+val scala2_12 = "2.12.16"
 
 val compileAndTest = "compile->compile;test->test"
 
